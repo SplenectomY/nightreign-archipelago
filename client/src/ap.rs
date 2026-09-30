@@ -108,11 +108,14 @@ fn handle_server_text(text: &str, log: &impl Fn(&str), next_index: &mut i64) {
         let Some(id) = parse_i64_after(&text[at..], "item") else {
             break;
         };
+        let ap_index = index + count;
         log(&format!(
-            "NRAP received {} ({id}) index {}",
-            item_name(id),
-            index + count
+            "NRAP received {} ({id}) index {ap_index}",
+            item_name(id)
         ));
+        if let Some(msg) = crate::grant::apply_received(id, ap_index) {
+            log(&msg);
+        }
         count += 1;
         from = at + 8;
     }
@@ -130,10 +133,7 @@ fn read_text(socket: &mut Socket) -> Result<Option<String>, String> {
             Ok(None)
         }
         Ok(Message::Pong(_)) | Ok(Message::Frame(_)) => Ok(None),
-        Ok(Message::Binary(_)) => {
-            // Compressed or unexpected binary. Log length only via Err-ok path.
-            Ok(None)
-        }
+        Ok(Message::Binary(_)) => Ok(None),
         Ok(Message::Close(_)) => Err("server closed".into()),
         Err(_) => Ok(None),
     }
