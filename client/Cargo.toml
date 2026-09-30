@@ -1,0 +1,9 @@
+[package]
+name = "nightreign_ap"
+version = "0.1.0"
+edition = "2021"
+description = "Archipelago runtime client for Elden Ring Nightreign"
+license = "MIT"
+
+[lib]
+crate-type = ["cdylib"]
