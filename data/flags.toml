@@ -1,5 +1,5 @@
-# Filled by testers. The client reads this from the DLL directory, then
-# from %LOCALAPPDATA%/nightreign-archipelago/flags.toml.
+# Source: Smithbox NightBossMenuParam on Nightreign 1.3.3.0
+# Memory poller is not wired yet. These IDs are param-derived candidates.
 
 game_version = "1.3.3.0"
 
@@ -8,14 +8,138 @@ host = "127.0.0.1:38281"
 slot = "Player1"
 password = ""
 
-# Phase 0 poller. event_flag_id 0 means "not discovered yet".
+# Shared board unlock after the first Nightlord (vanilla: Gladius).
+# Adel..Caligo all use unlockEventFlag 110.
+board_unlock_after_gladius = 110
+heolstor_unlock = 115
+harmonia_unlock = 135
+straghess_unlock = 136
+deep_of_night_unlock = 130
+
 [[flag]]
 location = "Nightlord - Gladius"
 location_id = 839000001
 kind = "event_flag"
 event_flag_id = 150
-survives_hold = false
-survives_relaunch = false
-zero_on_new_save = false
+unlock_event_flag = 0
 verified_version = ""
-pointer_note = "NightBossMenuParam row 0 field defeatEventFlag. Candidate only until CE confirms 0 before kill, 1 after Hold + relaunch."
+pointer_note = "NightBossMenuParam row 0 defeatEventFlag"
+
+[[flag]]
+location = "Nightlord - Adel"
+location_id = 839000002
+kind = "event_flag"
+event_flag_id = 151
+unlock_event_flag = 110
+
+[[flag]]
+location = "Nightlord - Gnoster"
+location_id = 839000003
+kind = "event_flag"
+event_flag_id = 152
+unlock_event_flag = 110
+
+[[flag]]
+location = "Nightlord - Maris"
+location_id = 839000004
+kind = "event_flag"
+event_flag_id = 153
+unlock_event_flag = 110
+
+[[flag]]
+location = "Nightlord - Libra"
+location_id = 839000005
+kind = "event_flag"
+event_flag_id = 154
+unlock_event_flag = 110
+
+[[flag]]
+location = "Nightlord - Fulghor"
+location_id = 839000006
+kind = "event_flag"
+event_flag_id = 155
+unlock_event_flag = 110
+
+[[flag]]
+location = "Nightlord - Caligo"
+location_id = 839000007
+kind = "event_flag"
+event_flag_id = 156
+unlock_event_flag = 110
+
+[[flag]]
+location = "Nightlord - Heolstor"
+location_id = 839000008
+kind = "event_flag"
+event_flag_id = 160
+unlock_event_flag = 115
+
+[[flag]]
+location = "Nightlord - Harmonia"
+location_id = 839000009
+kind = "event_flag"
+event_flag_id = 161
+unlock_event_flag = 135
+
+[[flag]]
+location = "Nightlord - Straghess"
+location_id = 839000010
+kind = "event_flag"
+event_flag_id = 162
+unlock_event_flag = 136
+
+[[flag]]
+location = "Everdark - Gladius"
+location_id = 839000101
+kind = "event_flag"
+event_flag_id = 170
+unlock_event_flag = 150
+
+[[flag]]
+location = "Everdark - Adel"
+location_id = 839000102
+kind = "event_flag"
+event_flag_id = 171
+unlock_event_flag = 151
+
+[[flag]]
+location = "Everdark - Gnoster"
+location_id = 839000103
+kind = "event_flag"
+event_flag_id = 172
+unlock_event_flag = 152
+
+[[flag]]
+location = "Everdark - Maris"
+location_id = 839000104
+kind = "event_flag"
+event_flag_id = 173
+unlock_event_flag = 153
+
+[[flag]]
+location = "Everdark - Libra"
+location_id = 839000105
+kind = "event_flag"
+event_flag_id = 174
+unlock_event_flag = 154
+
+[[flag]]
+location = "Everdark - Fulghor"
+location_id = 839000106
+kind = "event_flag"
+event_flag_id = 175
+unlock_event_flag = 155
+
+[[flag]]
+location = "Everdark - Caligo"
+location_id = 839000107
+kind = "event_flag"
+event_flag_id = 176
+unlock_event_flag = 156
+
+[[flag]]
+location = "Everdark - Harmonia"
+location_id = 839000108
+kind = "event_flag"
+event_flag_id = 181
+unlock_event_flag = 161
