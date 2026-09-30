@@ -1,6 +1,4 @@
 //! Phase 0 client. Attach, write nrap.log, poll flags.toml.
-//! Event-flag resolution and the Archipelago socket land once testers
-//! return a real flag ID.
 
 #![cfg(windows)]
 
@@ -14,10 +12,19 @@ use std::time::Duration;
 
 type BOOL = i32;
 type DWORD = u32;
+type HANDLE = *mut c_void;
 type HMODULE = *mut c_void;
 type LPVOID = *mut c_void;
 
 const DLL_PROCESS_ATTACH: DWORD = 1;
+const STD_OUTPUT_HANDLE: DWORD = 0xFFFF_FFF5;
+const STD_ERROR_HANDLE: DWORD = 0xFFFF_FFF4;
+const GENERIC_READ: DWORD = 0x8000_0000;
+const GENERIC_WRITE: DWORD = 0x4000_0000;
+const FILE_SHARE_READ: DWORD = 1;
+const FILE_SHARE_WRITE: DWORD = 2;
+const OPEN_EXISTING: DWORD = 3;
+const INVALID_HANDLE_VALUE: HANDLE = -1isize as HANDLE;
 
 static DLL_MODULE: OnceLock<usize> = OnceLock::new();
 
@@ -26,6 +33,24 @@ extern "system" {
     fn AllocConsole() -> BOOL;
     fn GetModuleHandleA(name: *const u8) -> HMODULE;
     fn GetModuleFileNameA(module: HMODULE, buf: *mut u8, size: DWORD) -> DWORD;
+    fn GetStdHandle(kind: DWORD) -> HANDLE;
+    fn SetStdHandle(kind: DWORD, handle: HANDLE) -> BOOL;
+    fn CreateFileA(
+        name: *const u8,
+        access: DWORD,
+        share: DWORD,
+        security: LPVOID,
+        creation: DWORD,
+        flags: DWORD,
+        template: HANDLE,
+    ) -> HANDLE;
+    fn WriteFile(
+        file: HANDLE,
+        buf: *const u8,
+        len: DWORD,
+        written: *mut DWORD,
+        overlapped: LPVOID,
+    ) -> BOOL;
 }
 
 #[no_mangle]
@@ -41,7 +66,44 @@ pub extern "system" fn DllMain(
     1
 }
 
+fn bind_console() {
+    unsafe {
+        AllocConsole();
+        let con = CreateFileA(
+            b"CONOUT$\0".as_ptr(),
+            GENERIC_READ | GENERIC_WRITE,
+            FILE_SHARE_READ | FILE_SHARE_WRITE,
+            std::ptr::null_mut(),
+            OPEN_EXISTING,
+            0,
+            std::ptr::null_mut(),
+        );
+        if con != INVALID_HANDLE_VALUE && !con.is_null() {
+            SetStdHandle(STD_OUTPUT_HANDLE, con);
+            SetStdHandle(STD_ERROR_HANDLE, con);
+        }
+    }
+}
+
+fn write_console(msg: &str) {
+    let line = format!("{msg}\r\n");
+    unsafe {
+        let h = GetStdHandle(STD_OUTPUT_HANDLE);
+        if !h.is_null() && h != INVALID_HANDLE_VALUE {
+            let mut written = 0u32;
+            WriteFile(
+                h,
+                line.as_ptr(),
+                line.len() as DWORD,
+                &mut written,
+                std::ptr::null_mut(),
+            );
+        }
+    }
+}
+
 fn log_line(dir: &Option<PathBuf>, msg: &str) {
+    write_console(msg);
     println!("{msg}");
     if let Some(dir) = dir {
         if let Ok(mut f) = OpenOptions::new()
@@ -56,7 +118,7 @@ fn log_line(dir: &Option<PathBuf>, msg: &str) {
 
 fn dll_dir() -> Option<PathBuf> {
     let module = *DLL_MODULE.get().unwrap_or(&0) as HMODULE;
-    let mut buf = vec![0u8; 260];
+    let mut buf = vec![0u8; 520];
     let n = unsafe { GetModuleFileNameA(module, buf.as_mut_ptr(), buf.len() as DWORD) };
     if n == 0 {
         return None;
@@ -68,9 +130,7 @@ fn dll_dir() -> Option<PathBuf> {
 
 fn worker() {
     let dir = dll_dir();
-    unsafe {
-        AllocConsole();
-    }
+    bind_console();
     log_line(&dir, "NRAP attached");
     let base = unsafe { GetModuleHandleA(std::ptr::null()) };
     log_line(&dir, &format!("NRAP nightreign.exe base = {base:p}"));
