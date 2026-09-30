@@ -57,6 +57,7 @@ extern "system" {
     ) -> BOOL;
     fn CreateMutexA(sa: LPVOID, owner: BOOL, name: *const u8) -> HANDLE;
     fn GetLastError() -> DWORD;
+    fn SetLastError(code: DWORD);
 }
 
 #[no_mangle]
@@ -68,6 +69,7 @@ pub extern "system" fn DllMain(
     if reason == DLL_PROCESS_ATTACH {
         let _ = DLL_MODULE.set(module as usize);
         unsafe {
+            SetLastError(0);
             let mtx = CreateMutexA(std::ptr::null_mut(), 1, b"Local\\NRAP_worker\0".as_ptr());
             if mtx.is_null() || GetLastError() == ERROR_ALREADY_EXISTS {
                 return 1;
@@ -116,7 +118,6 @@ fn write_console(msg: &str) {
 
 fn log_line(dir: &Option<PathBuf>, msg: &str) {
     write_console(msg);
-    println!("{msg}");
     if let Some(dir) = dir {
         if let Ok(mut f) = OpenOptions::new()
             .create(true)
