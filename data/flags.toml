@@ -10,6 +10,12 @@ host = "127.0.0.1:38281"
 slot = "Player1"
 password = ""
 
+[scan]
+# Exact HUD Murk. 0 = do not scan.
+# Set this, save the file, wait for NRAP murk scan.
+# Spend Murk, set this to the new amount, save again.
+murk = 0
+
 [[flag]]
 location = "Board unlock after first Nightlord"
 location_id = 839000100
