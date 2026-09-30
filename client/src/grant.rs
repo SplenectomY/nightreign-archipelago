@@ -42,13 +42,14 @@ fn load_addrs() -> Vec<usize> {
         .unwrap_or_default()
 }
 
-fn add_murk(amount: i32) -> Result<i32, String> {
+fn add_murk(amount: i32) -> Result<(i32, String), String> {
     let addrs = load_addrs();
     if addrs.is_empty() {
         return Err("no murk_cands.txt addresses".into());
     }
     let mut last = 0i32;
     let mut wrote = 0usize;
+    let mut detail = Vec::new();
     for p in addrs {
         if p < 0x10000 {
             continue;
@@ -57,14 +58,16 @@ fn add_murk(amount: i32) -> Result<i32, String> {
             let old = std::ptr::read_unaligned(p as *const i32);
             let new = old.saturating_add(amount);
             std::ptr::write_unaligned(p as *mut i32, new);
-            last = new;
+            let check = std::ptr::read_unaligned(p as *const i32);
+            detail.push(format!("{p:X}:{old}->{check}"));
+            last = check;
             wrote += 1;
         }
     }
     if wrote == 0 {
         return Err("wallet addresses not writable".into());
     }
-    Ok(last)
+    Ok((last, detail.join(" ")))
 }
 
 pub fn init(dir: Option<&PathBuf>, bundle_amount: i32) -> Result<String, String> {
@@ -82,6 +85,14 @@ pub fn init(dir: Option<&PathBuf>, bundle_amount: i32) -> Result<String, String>
     ))
 }
 
+pub fn force_grant() -> String {
+    let amt = BUNDLE_AMOUNT.load(Ordering::SeqCst);
+    match add_murk(amt) {
+        Ok((new, detail)) => format!("NRAP force grant +{amt} wallet={new} {detail}"),
+        Err(e) => format!("NRAP force grant failed: {e}"),
+    }
+}
+
 pub fn apply_received(item_id: i64, index: i64) -> Option<String> {
     let next = NEXT_GRANT.load(Ordering::SeqCst) as i64;
     if index < next {
@@ -95,8 +106,16 @@ pub fn apply_received(item_id: i64, index: i64) -> Option<String> {
         return Some(format!("NRAP grant skipped {item_id} (no handler)"));
     }
     let amt = BUNDLE_AMOUNT.load(Ordering::SeqCst);
+    let addrs = load_addrs();
+    if addrs.len() != 3 {
+        PENDING_MURK.fetch_add(amt, Ordering::SeqCst);
+        return Some(format!(
+            "NRAP grant queued +{amt} Murk (waiting for 3 wallet addrs, have {})",
+            addrs.len()
+        ));
+    }
     match add_murk(amt) {
-        Ok(new) => Some(format!("NRAP granted Murk +{amt} wallet={new}")),
+        Ok((new, detail)) => Some(format!("NRAP granted Murk +{amt} wallet={new} {detail}")),
         Err(e) => {
             PENDING_MURK.fetch_add(amt, Ordering::SeqCst);
             Some(format!("NRAP grant queued +{amt} Murk ({e})"))
@@ -109,10 +128,13 @@ pub fn retry_pending() -> Option<String> {
     if amt <= 0 {
         return None;
     }
+    if load_addrs().len() != 3 {
+        return None;
+    }
     match add_murk(amt) {
-        Ok(new) => {
+        Ok((new, detail)) => {
             PENDING_MURK.store(0, Ordering::SeqCst);
-            Some(format!("NRAP granted queued Murk +{amt} wallet={new}"))
+            Some(format!("NRAP granted queued Murk +{amt} wallet={new} {detail}"))
         }
         Err(_) => None,
     }
