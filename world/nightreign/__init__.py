@@ -6,7 +6,7 @@ from BaseClasses import Item, ItemClassification, Location, MultiWorld, Region, 
 from worlds.AutoWorld import WebWorld, World
 
 from .Items import ITEM_NAME_TO_ID, item_table
-from .Locations import LOCATION_NAME_TO_ID
+from .Locations import LOCATION_NAME_TO_ID, SHOP_LOCATIONS
 from .Options import NightreignOptions
 
 
@@ -43,18 +43,17 @@ class NightreignWorld(World):
         hold = Region("Roundtable Hold", self.player, self.multiworld)
         limveld = Region("Limveld", self.player, self.multiworld)
 
-        hold.add_locations(
-            {
-                "Nightlord - Gladius": LOCATION_NAME_TO_ID["Nightlord - Gladius"],
-                "Nightlord - Adel": LOCATION_NAME_TO_ID["Nightlord - Adel"],
-                "Nightlord - Gnoster": LOCATION_NAME_TO_ID["Nightlord - Gnoster"],
-                "Board unlock after first Nightlord": LOCATION_NAME_TO_ID[
-                    "Board unlock after first Nightlord"
-                ],
-                "Shop - Phase 0 Probe": LOCATION_NAME_TO_ID["Shop - Phase 0 Probe"],
-            },
-            NightreignLocation,
-        )
+        hold_locs = {
+            "Nightlord - Gladius": LOCATION_NAME_TO_ID["Nightlord - Gladius"],
+            "Nightlord - Adel": LOCATION_NAME_TO_ID["Nightlord - Adel"],
+            "Nightlord - Gnoster": LOCATION_NAME_TO_ID["Nightlord - Gnoster"],
+            "Board unlock after first Nightlord": LOCATION_NAME_TO_ID[
+                "Board unlock after first Nightlord"
+            ],
+        }
+        for name in SHOP_LOCATIONS:
+            hold_locs[name] = LOCATION_NAME_TO_ID[name]
+        hold.add_locations(hold_locs, NightreignLocation)
         limveld.add_locations(
             {
                 "Victory": LOCATION_NAME_TO_ID["Victory"],
@@ -67,14 +66,16 @@ class NightreignWorld(World):
         self.multiworld.regions += [menu, hold, limveld]
 
     def create_items(self) -> None:
+        # 10 Hold locations + Victory. Progression set is 6, rest are Murk filler.
         pool: List[Item] = [
             self.create_item("Expedition Unlock - Tricephalos"),
             self.create_item("Expedition Unlock - Heolstor"),
             self.create_item("Expedition Unlock - Harmonia"),
             self.create_item("Expedition Unlock - Straghess"),
-            self.create_item("Murk Bundle"),
             self.create_item("Victory"),
         ]
+        while len(pool) < len(LOCATION_NAME_TO_ID):
+            pool.append(self.create_item("Murk Bundle"))
         self.multiworld.itempool += pool
 
     def create_item(self, name: str) -> Item:
