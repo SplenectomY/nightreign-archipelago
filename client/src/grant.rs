@@ -15,7 +15,9 @@ const DEFAULT_BUNDLE: i32 = 1000;
 
 static MURK_OBJ: AtomicUsize = AtomicUsize::new(0);
 static BUNDLE_AMOUNT: AtomicI32 = AtomicI32::new(DEFAULT_BUNDLE);
+static PENDING_MURK: AtomicI32 = AtomicI32::new(0);
 static NEXT_GRANT: AtomicUsize = AtomicUsize::new(0);
+static CAPTURE_SLOT: AtomicUsize = AtomicUsize::new(0);
 static STATE_PATH: Mutex<Option<PathBuf>> = Mutex::new(None);
 
 #[link(name = "kernel32")]
@@ -27,12 +29,6 @@ extern "system" {
 const MEM_COMMIT: u32 = 0x1000;
 const MEM_RESERVE: u32 = 0x2000;
 const PAGE_EXECUTE_READWRITE: u32 = 0x40;
-
-/// Hook site writes the getter's rcx (Murk object) here, then runs the original load.
-#[repr(C)]
-struct HookPayload {
-    capture: usize,
-}
 
 fn write_rel32(buf: &mut [u8], at: usize, target: usize, after: usize) {
     let rel = target.wrapping_sub(after) as i32;
@@ -53,10 +49,6 @@ fn install_hook(span: ModuleSpan) -> Result<usize, String> {
         if tramp.is_null() {
             return Err("VirtualAlloc trampoline failed".into());
         }
-        // trampoline:
-        // 48 89 0D disp32    mov [rip+disp], rcx   ; capture
-        // 8B 81 D0 00 00 00  mov eax, [rcx+0xD0]
-        // C3                 ret
         let capture = tramp as usize + 32;
         let mut code = [0u8; 16];
         code[0] = 0x48;
@@ -76,19 +68,14 @@ fn install_hook(span: ModuleSpan) -> Result<usize, String> {
         if VirtualProtect(src as *mut u8, 8, PAGE_EXECUTE_READWRITE, &mut old) == 0 {
             return Err("VirtualProtect getter failed".into());
         }
-        // E9 rel32 ; nop nop
         let mut jmp = [0xE9u8, 0, 0, 0, 0, 0x90, 0x90];
         let rel32 = (tramp as usize).wrapping_sub(src + 5) as i32;
         jmp[1..5].copy_from_slice(&rel32.to_le_bytes());
         std::ptr::copy_nonoverlapping(jmp.as_ptr(), src as *mut u8, 7);
-        let _ = capture;
-        // Store capture address so the worker can read it.
         CAPTURE_SLOT.store(capture, Ordering::SeqCst);
         Ok(src)
     }
 }
-
-static CAPTURE_SLOT: AtomicUsize = AtomicUsize::new(0);
 
 fn refresh_obj() {
     let slot = CAPTURE_SLOT.load(Ordering::SeqCst);
@@ -105,7 +92,7 @@ fn add_murk(amount: i32) -> Result<i32, String> {
     refresh_obj();
     let obj = MURK_OBJ.load(Ordering::SeqCst);
     if obj == 0 {
-        return Err("Murk object not captured yet (open the Hold HUD / bazaar)".into());
+        return Err("Murk object not captured yet".into());
     }
     unsafe {
         let p = (obj + MURK_OFF) as *mut i32;
@@ -142,7 +129,6 @@ pub fn init(dir: Option<&PathBuf>, bundle_amount: i32) -> Result<String, String>
     ))
 }
 
-/// Apply one ReceivedItems entry. `index` is the AP inventory index.
 pub fn apply_received(item_id: i64, index: i64) -> Option<String> {
     let next = NEXT_GRANT.load(Ordering::SeqCst) as i64;
     if index < next {
@@ -158,14 +144,25 @@ pub fn apply_received(item_id: i64, index: i64) -> Option<String> {
     let amt = BUNDLE_AMOUNT.load(Ordering::SeqCst);
     match add_murk(amt) {
         Ok(new) => Some(format!("NRAP granted Murk +{amt} wallet={new}")),
-        Err(e) => Some(format!("NRAP grant queued, {e}")),
+        Err(_) => {
+            PENDING_MURK.fetch_add(amt, Ordering::SeqCst);
+            Some(format!(
+                "NRAP grant queued +{amt} Murk (open Hold HUD if this stays queued)"
+            ))
+        }
     }
 }
 
 pub fn retry_pending() -> Option<String> {
-    refresh_obj();
-    if MURK_OBJ.load(Ordering::SeqCst) == 0 {
+    let amt = PENDING_MURK.load(Ordering::SeqCst);
+    if amt <= 0 {
         return None;
     }
-    None
+    match add_murk(amt) {
+        Ok(new) => {
+            PENDING_MURK.store(0, Ordering::SeqCst);
+            Some(format!("NRAP granted queued Murk +{amt} wallet={new}"))
+        }
+        Err(_) => None,
+    }
 }
