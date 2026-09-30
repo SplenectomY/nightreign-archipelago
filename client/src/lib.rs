@@ -4,6 +4,7 @@
 
 mod aob;
 mod ap;
+mod flag_write;
 mod flagman;
 mod grant;
 mod scan;
@@ -313,6 +314,7 @@ fn worker() {
     let mut fail_logged = false;
     let mut last_murk_scan = 0i32;
     let mut last_grant_now = false;
+    let mut last_debug_flag = 0u32;
     loop {
         if man.is_none() {
             match flagman::resolve() {
@@ -385,6 +387,17 @@ fn worker() {
                     log_line(&dir, &grant::force_grant());
                 }
                 last_grant_now = gn;
+            }
+            if let Some(flag) = flag_write::debug_flag_from_toml(&text) {
+                if flag != last_debug_flag {
+                    last_debug_flag = flag;
+                    match flag_write::set_flag(flag, true) {
+                        Ok(msg) => log_line(&dir, &msg),
+                        Err(e) => log_line(&dir, &format!("NRAP SetEventFlag failed: {e}")),
+                    }
+                }
+            } else {
+                last_debug_flag = 0;
             }
         }
         thread::sleep(Duration::from_millis(500));
