@@ -312,6 +312,7 @@ fn worker() {
     let mut man = None;
     let mut fail_logged = false;
     let mut last_murk_scan = 0i32;
+    let mut last_grant_now = false;
     loop {
         if man.is_none() {
             match flagman::resolve() {
@@ -378,6 +379,11 @@ fn worker() {
                     log_line(&dir, &scan::run(dir.as_ref(), v));
                 }
             }
+            let gn = scan::grant_now_from_toml(&text);
+            if gn && !last_grant_now {
+                log_line(&dir, &grant::force_grant());
+            }
+            last_grant_now = gn;
         }
         thread::sleep(Duration::from_millis(500));
     }
