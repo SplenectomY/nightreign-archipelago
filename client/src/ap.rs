@@ -94,7 +94,7 @@ fn preview(text: &str) -> String {
     }
 }
 
-fn handle_server_text(text: &str, log: &impl Fn(&str), next_index: &mut i64) {
+fn handle_server_text(text: &str, log: &impl Fn(&str), next_index: &mut i64, drop_goods: i32) {
     log(&format!("NRAP AP rx {}", preview(text)));
     if text.contains("ConnectionRefused") {
         log(&format!("NRAP AP server refused: {text}"));
@@ -122,6 +122,9 @@ fn handle_server_text(text: &str, log: &impl Fn(&str), next_index: &mut i64) {
         if let Some(msg) = crate::flag_write::apply_item(id) {
             log(&msg);
         }
+        if let Some(msg) = crate::drop::apply_item(id, drop_goods) {
+            log(&msg);
+        }
         count += 1;
         from = at + 8;
     }
@@ -145,10 +148,15 @@ fn read_text(socket: &mut Socket) -> Result<Option<String>, String> {
     }
 }
 
-fn drain_server(socket: &mut Socket, log: &impl Fn(&str), next_index: &mut i64) -> Result<(), String> {
+fn drain_server(
+    socket: &mut Socket,
+    log: &impl Fn(&str),
+    next_index: &mut i64,
+    drop_goods: i32,
+) -> Result<(), String> {
     loop {
         match read_text(socket)? {
-            Some(t) => handle_server_text(&t, log, next_index),
+            Some(t) => handle_server_text(&t, log, next_index, drop_goods),
             None => return Ok(()),
         }
     }
@@ -158,6 +166,7 @@ fn connect_and_handshake(
     cfg: &ApConfig,
     log: &impl Fn(&str),
     next_index: &mut i64,
+    drop_goods: i32,
 ) -> Result<Socket, String> {
     let addr = cfg.addr();
     let stream = TcpStream::connect(&addr).map_err(|e| format!("tcp {addr}: {e}"))?;
@@ -169,7 +178,7 @@ fn connect_and_handshake(
     let (mut socket, _) =
         ws_client(&url, stream).map_err(|e| format!("ws handshake {url}: {e}"))?;
     if let Ok(Some(room)) = read_text(&mut socket) {
-        handle_server_text(&room, log, next_index);
+        handle_server_text(&room, log, next_index, drop_goods);
     }
     let connect = format!(
         "[{{\"cmd\":\"Connect\",\"password\":\"{}\",\"game\":\"{}\",\"name\":\"{}\",\"uuid\":\"\",\"version\":{{\"major\":0,\"minor\":5,\"build\":1,\"class\":\"Version\"}},\"items_handling\":{},\"tags\":[\"AP\"],\"slot_data\":false}}]",
@@ -188,7 +197,7 @@ fn connect_and_handshake(
     if !(reply.contains("Connected") || reply.contains("RoomInfo")) {
         return Err(format!("unexpected handshake: {reply}"));
     }
-    handle_server_text(&reply, log, next_index);
+    handle_server_text(&reply, log, next_index, drop_goods);
     socket
         .get_ref()
         .set_read_timeout(Some(Duration::from_millis(80)))
@@ -212,16 +221,16 @@ fn send_checks(socket: &mut Socket, ids: &[i64]) -> Result<(), String> {
         .map_err(|e| format!("LocationChecks: {e}"))
 }
 
-pub fn run(cfg: ApConfig, rx: Receiver<i64>, log: impl Fn(&str)) {
+pub fn run(cfg: ApConfig, rx: Receiver<i64>, drop_goods: i32, log: impl Fn(&str)) {
     log(&format!("NRAP AP targeting {} slot {}", cfg.host, cfg.slot));
     let mut pending: Vec<i64> = Vec::new();
     loop {
         let mut next_index = 0i64;
-        match connect_and_handshake(&cfg, &log, &mut next_index) {
+        match connect_and_handshake(&cfg, &log, &mut next_index, drop_goods) {
             Ok(mut socket) => {
                 log("NRAP AP connected");
                 for _ in 0..20 {
-                    if drain_server(&mut socket, &log, &mut next_index).is_err() {
+                    if drain_server(&mut socket, &log, &mut next_index, drop_goods).is_err() {
                         log("NRAP AP server closed");
                         break;
                     }
@@ -243,13 +252,15 @@ pub fn run(cfg: ApConfig, rx: Receiver<i64>, log: impl Fn(&str)) {
                                 break;
                             }
                             log(&format!("NRAP AP LocationChecks {id}"));
-                            if drain_server(&mut socket, &log, &mut next_index).is_err() {
+                            if drain_server(&mut socket, &log, &mut next_index, drop_goods).is_err()
+                            {
                                 log("NRAP AP server closed");
                                 break;
                             }
                         }
                         Err(RecvTimeoutError::Timeout) => {
-                            if drain_server(&mut socket, &log, &mut next_index).is_err() {
+                            if drain_server(&mut socket, &log, &mut next_index, drop_goods).is_err()
+                            {
                                 log("NRAP AP server closed");
                                 break;
                             }
