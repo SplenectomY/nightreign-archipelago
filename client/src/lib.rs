@@ -322,11 +322,15 @@ fn worker() {
     let mut last_grant_now = false;
     let mut last_debug_flag = 0u32;
     let mut last_debug_drop = 0i32;
+    let mut shop_mans: Vec<flagman::FlagMan> = Vec::new();
+    let mut last_shop = String::new();
     loop {
         if man.is_none() {
             match flagman::resolve() {
                 Ok(found) => {
                     log_line(&dir, &found.describe());
+                    shop_mans = flagman::collect_all();
+                    log_line(&dir, &format!("NRAP shopscan candidates={}", shop_mans.len()));
                     man = Some(found);
                 }
                 Err(e) => {
@@ -375,6 +379,13 @@ fn worker() {
                         }
                     }
                 }
+            }
+        }
+        if !shop_mans.is_empty() {
+            let snap = flagman::shop_snapshot_of(&shop_mans);
+            if snap != last_shop {
+                log_line(&dir, &format!("NRAP shopscan {snap}"));
+                last_shop = snap;
             }
         }
         if let Some(msg) = grant::retry_pending() {
