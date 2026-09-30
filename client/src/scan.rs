@@ -49,6 +49,27 @@ pub fn murk_from_toml(text: &str) -> Option<i32> {
     None
 }
 
+pub fn grant_now_from_toml(text: &str) -> bool {
+    let mut in_scan = false;
+    for line in text.lines() {
+        let line = line.trim();
+        if line.starts_with('[') {
+            in_scan = line == "[scan]";
+            continue;
+        }
+        if !in_scan || line.starts_with('#') {
+            continue;
+        }
+        if let Some((k, v)) = line.split_once('=') {
+            if k.trim() == "grant_now" {
+                let v = v.trim();
+                return v == "1" || v.eq_ignore_ascii_case("true");
+            }
+        }
+    }
+    false
+}
+
 fn readable_regions() -> Vec<(usize, usize)> {
     let mut out = Vec::new();
     let mut addr = 0x10000usize;
