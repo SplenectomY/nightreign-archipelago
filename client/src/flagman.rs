@@ -16,6 +16,8 @@ const OFF_ENTRY_COUNT: usize = 0x24;
 const OFF_HOLDER: usize = 0x28;
 const OFF_ROOT: usize = 0x38;
 
+const SHOP_PROBE: &[u32] = &[110, 150, 67000, 67600, 67640, 67650, 67700];
+
 #[repr(C)]
 struct MemoryBasicInformation {
     base_address: *mut c_void,
@@ -100,6 +102,21 @@ fn read_u8(ptr: usize) -> Option<u8> {
     Some(unsafe { std::ptr::read_unaligned(ptr as *const u8) })
 }
 
+fn bit_at(base: usize, bit: u32, msb: bool) -> Option<bool> {
+    let byte = (bit / 8) as usize;
+    let shift = if msb { 7 - (bit % 8) } else { bit % 8 };
+    let v = read_u8(base.saturating_add(byte))?;
+    Some((v >> shift) & 1 == 1)
+}
+
+fn fmt_bit(v: Option<bool>) -> char {
+    match v {
+        Some(true) => '1',
+        Some(false) => '0',
+        None => '-',
+    }
+}
+
 #[derive(Clone, Copy, Debug)]
 pub struct FlagMan {
     pub singleton_slot: usize,
@@ -129,15 +146,11 @@ impl FlagMan {
     }
 
     pub fn get(&self, flag: u32) -> Option<bool> {
-        let (base, bit) = self.loc(flag)?;
-        let byte = (bit / 8) as usize;
-        let shift = 7 - (bit % 8);
-        let v = read_u8(base.saturating_add(byte))?;
-        Some((v >> shift) & 1 == 1)
+        self.read_flag(flag, true, false)
     }
 
-    fn loc(&self, flag: u32) -> Option<(usize, u32)> {
-        if self.divisor == 0 || self.entry_size == 0 {
+    fn group_base(&self, flag: u32, ptr_table: bool) -> Option<(usize, u32)> {
+        if self.divisor == 0 {
             return None;
         }
         let group = flag / self.divisor;
@@ -145,14 +158,48 @@ impl FlagMan {
         if group >= self.entry_count {
             return None;
         }
-        let base = self
-            .holder
-            .saturating_add((group as usize).saturating_mul(self.entry_size as usize));
-        let need = (bit / 8) as usize + 1;
-        if !readable(base, need) {
-            return None;
+        if ptr_table {
+            let slot = self.holder.saturating_add((group as usize).saturating_mul(8));
+            let base = read_usize(slot)?;
+            if base < 0x10000 || !readable(base, (bit / 8) as usize + 1) {
+                return None;
+            }
+            Some((base, bit))
+        } else {
+            if self.entry_size == 0 {
+                return None;
+            }
+            let base = self
+                .holder
+                .saturating_add((group as usize).saturating_mul(self.entry_size as usize));
+            if !readable(base, (bit / 8) as usize + 1) {
+                return None;
+            }
+            Some((base, bit))
         }
-        Some((base, bit))
+    }
+
+    fn read_flag(&self, flag: u32, msb: bool, ptr_table: bool) -> Option<bool> {
+        let (base, bit) = self.group_base(flag, ptr_table)?;
+        bit_at(base, bit, msb)
+    }
+
+    fn probe_line(&self) -> String {
+        let mut s = format!("inst=0x{:X} {}", self.instance, self.pattern);
+        for (name, msb, ptrs) in [
+            ("slab_msb", true, false),
+            ("slab_lsb", false, false),
+            ("ptr_msb", true, true),
+            ("ptr_lsb", false, true),
+        ] {
+            s.push(' ');
+            s.push_str(name);
+            s.push('=');
+            for flag in SHOP_PROBE {
+                s.push(fmt_bit(self.read_flag(*flag, msb, ptrs)));
+            }
+        }
+        s
     }
 }
 
@@ -163,7 +210,6 @@ fn looks_like_flagman(span: ModuleSpan, inst: usize) -> Option<(u32, u32, u32, u
     let divisor = read_u32(inst + OFF_DIVISOR)?;
     let entry_size = read_u32(inst + OFF_ENTRY_SIZE)?;
     let entry_count = read_u32(inst + OFF_ENTRY_COUNT)?;
-    // ER/NR family: 1000 bits/group, 125-byte rows.
     if divisor != 1000 {
         return None;
     }
@@ -174,12 +220,12 @@ fn looks_like_flagman(span: ModuleSpan, inst: usize) -> Option<(u32, u32, u32, u
         return None;
     }
     let holder = read_usize(inst + OFF_HOLDER)?;
-    let root = read_usize(inst + OFF_ROOT).unwrap_or(0);
-    let holder_bytes = (entry_count as usize).saturating_mul(entry_size as usize).min(4096);
+    let holder_bytes = (entry_count as usize)
+        .saturating_mul(entry_size as usize)
+        .min(4096);
     if !heap_ptr(span, holder, holder_bytes.max(16)) {
         return None;
     }
-    let _ = root;
     Some((divisor, entry_size, entry_count, holder))
 }
 
@@ -217,11 +263,12 @@ const PATTERNS: &[Pattern] = &[
     },
 ];
 
-pub fn resolve() -> Result<FlagMan, String> {
-    let span = ModuleSpan::nightreign().ok_or_else(|| "no nightreign module".to_string())?;
+fn collect_all() -> Vec<FlagMan> {
+    let Some(span) = ModuleSpan::nightreign() else {
+        return Vec::new();
+    };
     let hay = span.slice();
-    let mut last = "no CSEventFlagMan singleton with divisor=1000".to_string();
-
+    let mut out = Vec::new();
     for pat in PATTERNS {
         let mut from = 0usize;
         let mut hits = 0u32;
@@ -241,15 +288,17 @@ pub fn resolve() -> Result<FlagMan, String> {
             let Some(inst) = read_usize(slot) else {
                 continue;
             };
+            if inst < 0x10000 {
+                continue;
+            }
             let Some((divisor, entry_size, entry_count, holder)) = looks_like_flagman(span, inst)
             else {
-                last = format!(
-                    "{} slot=0x{slot:X} inst=0x{inst:X} failed flagman shape check",
-                    pat.name
-                );
                 continue;
             };
-            return Ok(FlagMan {
+            if out.iter().any(|m: &FlagMan| m.instance == inst) {
+                continue;
+            }
+            out.push(FlagMan {
                 singleton_slot: slot,
                 instance: inst,
                 bits: holder,
@@ -262,5 +311,24 @@ pub fn resolve() -> Result<FlagMan, String> {
             });
         }
     }
-    Err(last)
+    out
+}
+
+pub fn resolve() -> Result<FlagMan, String> {
+    collect_all()
+        .into_iter()
+        .next()
+        .ok_or_else(|| "no CSEventFlagMan singleton with divisor=1000".to_string())
+}
+
+/// Compact snapshot. Order per layout: 110,150,67000,67600,67640,67650,67700.
+pub fn shop_snapshot() -> String {
+    let mans = collect_all();
+    if mans.is_empty() {
+        return "none".into();
+    }
+    mans.iter()
+        .map(|m| m.probe_line())
+        .collect::<Vec<_>>()
+        .join(" | ")
 }
