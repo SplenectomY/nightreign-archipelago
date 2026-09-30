@@ -132,7 +132,7 @@ fn log_line(dir: &Option<PathBuf>, msg: &str) {
 fn dll_dir() -> Option<PathBuf> {
     let module = *DLL_MODULE.get().unwrap_or(&0) as HMODULE;
     let mut buf = vec![0u8; 520];
-    let n = unsafe { GetModuleHandleA(module, buf.as_mut_ptr(), buf.len() as DWORD) };
+    let n = unsafe { GetModuleFileNameA(module, buf.as_mut_ptr(), buf.len() as DWORD) };
     if n == 0 {
         return None;
     }
