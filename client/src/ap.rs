@@ -7,6 +7,8 @@ use tungstenite::protocol::WebSocket;
 use tungstenite::{client::client as ws_client, Message};
 
 const GAME: &str = "Elden Ring Nightreign";
+// Remote + own world + starting inventory.
+const ITEMS_HANDLING: u8 = 0b111;
 
 #[derive(Clone)]
 pub struct ApConfig {
@@ -61,6 +63,73 @@ fn escape(s: &str) -> String {
     s.replace('\\', "\\\\").replace('"', "\\\"")
 }
 
+fn item_name(id: i64) -> &'static str {
+    match id {
+        839_100_001 => "Expedition Unlock - Tricephalos",
+        839_100_100 => "Murk Bundle",
+        839_100_900 => "Victory",
+        _ => "unknown item",
+    }
+}
+
+fn parse_i64_after(hay: &str, key: &str) -> Option<i64> {
+    let needle = format!("\"{key}\":");
+    let i = hay.find(&needle)?;
+    let rest = hay[i + needle.len()..].trim_start();
+    let num: String = rest
+        .chars()
+        .take_while(|c| c.is_ascii_digit() || *c == '-')
+        .collect();
+    num.parse().ok()
+}
+
+fn handle_server_text(text: &str, log: &impl Fn(&str), next_index: &mut i64) {
+    if text.contains("ConnectionRefused") {
+        log(&format!("NRAP AP server refused: {text}"));
+        return;
+    }
+    if !text.contains("ReceivedItems") {
+        return;
+    }
+    let index = parse_i64_after(text, "index").unwrap_or(0);
+    if index < *next_index && index != 0 {
+        return;
+    }
+    if index == 0 {
+        *next_index = 0;
+    }
+    let mut from = 0usize;
+    let mut count = 0i64;
+    while let Some(rel) = text[from..].find("\"item\":") {
+        let at = from + rel;
+        let Some(id) = parse_i64_after(&text[at..], "item") else {
+            break;
+        };
+        log(&format!(
+            "NRAP received {} ({id}) index {}",
+            item_name(id),
+            index + count
+        ));
+        count += 1;
+        from = at + 7;
+    }
+    if count == 0 {
+        log(&format!("NRAP ReceivedItems index={index} (no item ids parsed)"));
+    }
+    *next_index = index + count.max(1);
+}
+
+fn drain_server(socket: &mut Socket, log: &impl Fn(&str), next_index: &mut i64) -> Result<(), String> {
+    loop {
+        match socket.read() {
+            Ok(Message::Text(t)) => handle_server_text(&t.to_string(), log, next_index),
+            Ok(Message::Close(_)) => return Err("server closed".into()),
+            Ok(_) => {}
+            Err(_) => return Ok(()),
+        }
+    }
+}
+
 fn connect_and_handshake(cfg: &ApConfig) -> Result<Socket, String> {
     let addr = cfg.addr();
     let stream = TcpStream::connect(&addr).map_err(|e| format!("tcp {addr}: {e}"))?;
@@ -73,10 +142,11 @@ fn connect_and_handshake(cfg: &ApConfig) -> Result<Socket, String> {
         ws_client(&url, stream).map_err(|e| format!("ws handshake {url}: {e}"))?;
     let _ = socket.read();
     let connect = format!(
-        "[{{\"cmd\":\"Connect\",\"password\":\"{}\",\"game\":\"{}\",\"name\":\"{}\",\"uuid\":\"\",\"version\":{{\"major\":0,\"minor\":5,\"build\":1,\"class\":\"Version\"}},\"items_handling\":0,\"tags\":[\"AP\"],\"slot_data\":false}}]",
+        "[{{\"cmd\":\"Connect\",\"password\":\"{}\",\"game\":\"{}\",\"name\":\"{}\",\"uuid\":\"\",\"version\":{{\"major\":0,\"minor\":5,\"build\":1,\"class\":\"Version\"}},\"items_handling\":{},\"tags\":[\"AP\"],\"slot_data\":false}}]",
         escape(&cfg.password),
         GAME,
-        escape(&cfg.slot)
+        escape(&cfg.slot),
+        ITEMS_HANDLING
     );
     socket
         .send(Message::Text(connect.into()))
@@ -108,9 +178,7 @@ fn send_checks(socket: &mut Socket, ids: &[i64]) -> Result<(), String> {
         .map(|id| id.to_string())
         .collect::<Vec<_>>()
         .join(",");
-    let pkt = format!(
-        "[{{\"cmd\":\"LocationChecks\",\"locations\":[{list}]}}]"
-    );
+    let pkt = format!("[{{\"cmd\":\"LocationChecks\",\"locations\":[{list}]}}]");
     socket
         .send(Message::Text(pkt.into()))
         .map_err(|e| format!("LocationChecks: {e}"))
@@ -123,13 +191,15 @@ pub fn run(cfg: ApConfig, rx: Receiver<i64>, log: impl Fn(&str)) {
         match connect_and_handshake(&cfg) {
             Ok(mut socket) => {
                 log("NRAP AP connected");
+                let mut next_index = 0i64;
+                let _ = drain_server(&mut socket, &log, &mut next_index);
                 if let Err(e) = send_checks(&mut socket, &pending) {
                     log(&format!("NRAP AP resend failed: {e}"));
                 } else if !pending.is_empty() {
                     log(&format!("NRAP AP resent {} cached checks", pending.len()));
                 }
                 loop {
-                    match rx.recv_timeout(Duration::from_millis(400)) {
+                    match rx.recv_timeout(Duration::from_millis(250)) {
                         Ok(id) => {
                             if !pending.contains(&id) {
                                 pending.push(id);
@@ -139,14 +209,17 @@ pub fn run(cfg: ApConfig, rx: Receiver<i64>, log: impl Fn(&str)) {
                                 break;
                             }
                             log(&format!("NRAP AP LocationChecks {id}"));
-                        }
-                        Err(RecvTimeoutError::Timeout) => match socket.read() {
-                            Ok(Message::Close(_)) => {
+                            if drain_server(&mut socket, &log, &mut next_index).is_err() {
                                 log("NRAP AP server closed");
                                 break;
                             }
-                            Ok(_) | Err(_) => {}
-                        },
+                        }
+                        Err(RecvTimeoutError::Timeout) => {
+                            if drain_server(&mut socket, &log, &mut next_index).is_err() {
+                                log("NRAP AP server closed");
+                                break;
+                            }
+                        }
                         Err(RecvTimeoutError::Disconnected) => return,
                     }
                 }
