@@ -1,0 +1,21 @@
+# Filled by testers. The client reads this from the DLL directory, then
+# from %LOCALAPPDATA%/nightreign-archipelago/flags.toml.
+
+game_version = "unknown"
+
+[ap]
+host = "127.0.0.1:38281"
+slot = "Player1"
+password = ""
+
+# Phase 0 poller. event_flag_id 0 means "not discovered yet".
+[[flag]]
+location = "Nightlord - Gladius"
+location_id = 839000001
+kind = "event_flag"
+event_flag_id = 0
+survives_hold = false
+survives_relaunch = false
+zero_on_new_save = false
+verified_version = ""
+pointer_note = ""
