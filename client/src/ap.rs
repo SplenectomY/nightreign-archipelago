@@ -65,6 +65,9 @@ fn escape(s: &str) -> String {
 fn item_name(id: i64) -> &'static str {
     match id {
         839_100_001 => "Expedition Unlock - Tricephalos",
+        839_100_008 => "Expedition Unlock - Heolstor",
+        839_100_009 => "Expedition Unlock - Harmonia",
+        839_100_010 => "Expedition Unlock - Straghess",
         839_100_100 => "Murk Bundle",
         839_100_900 => "Victory",
         _ => "unknown item",
@@ -114,6 +117,9 @@ fn handle_server_text(text: &str, log: &impl Fn(&str), next_index: &mut i64) {
             item_name(id)
         ));
         if let Some(msg) = crate::grant::apply_received(id, ap_index) {
+            log(&msg);
+        }
+        if let Some(msg) = crate::flag_write::apply_item(id) {
             log(&msg);
         }
         count += 1;
