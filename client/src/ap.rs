@@ -7,7 +7,6 @@ use tungstenite::protocol::WebSocket;
 use tungstenite::{client::client as ws_client, Message};
 
 const GAME: &str = "Elden Ring Nightreign";
-// Remote + own world + starting inventory.
 const ITEMS_HANDLING: u8 = 0b111;
 
 #[derive(Clone)]
@@ -83,7 +82,17 @@ fn parse_i64_after(hay: &str, key: &str) -> Option<i64> {
     num.parse().ok()
 }
 
+fn preview(text: &str) -> String {
+    let t = text.replace('\n', " ");
+    if t.len() <= 240 {
+        t
+    } else {
+        format!("{}…", &t[..240])
+    }
+}
+
 fn handle_server_text(text: &str, log: &impl Fn(&str), next_index: &mut i64) {
+    log(&format!("NRAP AP rx {}", preview(text)));
     if text.contains("ConnectionRefused") {
         log(&format!("NRAP AP server refused: {text}"));
         return;
@@ -92,12 +101,6 @@ fn handle_server_text(text: &str, log: &impl Fn(&str), next_index: &mut i64) {
         return;
     }
     let index = parse_i64_after(text, "index").unwrap_or(0);
-    if index < *next_index && index != 0 {
-        return;
-    }
-    if index == 0 {
-        *next_index = 0;
-    }
     let mut from = 0usize;
     let mut count = 0i64;
     while let Some(rel) = text[from..].find("\"item\":") {
@@ -111,7 +114,7 @@ fn handle_server_text(text: &str, log: &impl Fn(&str), next_index: &mut i64) {
             index + count
         ));
         count += 1;
-        from = at + 7;
+        from = at + 8;
     }
     if count == 0 {
         log(&format!("NRAP ReceivedItems index={index} (no item ids parsed)"));
@@ -119,18 +122,37 @@ fn handle_server_text(text: &str, log: &impl Fn(&str), next_index: &mut i64) {
     *next_index = index + count.max(1);
 }
 
+fn read_text(socket: &mut Socket) -> Result<Option<String>, String> {
+    match socket.read() {
+        Ok(Message::Text(t)) => Ok(Some(t.to_string())),
+        Ok(Message::Ping(p)) => {
+            let _ = socket.send(Message::Pong(p));
+            Ok(None)
+        }
+        Ok(Message::Pong(_)) | Ok(Message::Frame(_)) => Ok(None),
+        Ok(Message::Binary(_)) => {
+            // Compressed or unexpected binary. Log length only via Err-ok path.
+            Ok(None)
+        }
+        Ok(Message::Close(_)) => Err("server closed".into()),
+        Err(_) => Ok(None),
+    }
+}
+
 fn drain_server(socket: &mut Socket, log: &impl Fn(&str), next_index: &mut i64) -> Result<(), String> {
     loop {
-        match socket.read() {
-            Ok(Message::Text(t)) => handle_server_text(&t.to_string(), log, next_index),
-            Ok(Message::Close(_)) => return Err("server closed".into()),
-            Ok(_) => {}
-            Err(_) => return Ok(()),
+        match read_text(socket)? {
+            Some(t) => handle_server_text(&t, log, next_index),
+            None => return Ok(()),
         }
     }
 }
 
-fn connect_and_handshake(cfg: &ApConfig) -> Result<Socket, String> {
+fn connect_and_handshake(
+    cfg: &ApConfig,
+    log: &impl Fn(&str),
+    next_index: &mut i64,
+) -> Result<Socket, String> {
     let addr = cfg.addr();
     let stream = TcpStream::connect(&addr).map_err(|e| format!("tcp {addr}: {e}"))?;
     stream
@@ -140,7 +162,9 @@ fn connect_and_handshake(cfg: &ApConfig) -> Result<Socket, String> {
     let url = format!("ws://{addr}");
     let (mut socket, _) =
         ws_client(&url, stream).map_err(|e| format!("ws handshake {url}: {e}"))?;
-    let _ = socket.read();
+    if let Ok(Some(room)) = read_text(&mut socket) {
+        handle_server_text(&room, log, next_index);
+    }
     let connect = format!(
         "[{{\"cmd\":\"Connect\",\"password\":\"{}\",\"game\":\"{}\",\"name\":\"{}\",\"uuid\":\"\",\"version\":{{\"major\":0,\"minor\":5,\"build\":1,\"class\":\"Version\"}},\"items_handling\":{},\"tags\":[\"AP\"],\"slot_data\":false}}]",
         escape(&cfg.password),
@@ -151,21 +175,19 @@ fn connect_and_handshake(cfg: &ApConfig) -> Result<Socket, String> {
     socket
         .send(Message::Text(connect.into()))
         .map_err(|e| format!("Connect send: {e}"))?;
-    let reply = socket.read().map_err(|e| format!("Connect read: {e}"))?;
-    let text = match reply {
-        Message::Text(t) => t.to_string(),
-        other => return Err(format!("Connect reply not text: {other:?}")),
-    };
-    if text.contains("ConnectionRefused") {
-        return Err(format!("ConnectionRefused: {text}"));
+    let reply = read_text(&mut socket)?.ok_or_else(|| "no Connect reply".to_string())?;
+    if reply.contains("ConnectionRefused") {
+        return Err(format!("ConnectionRefused: {reply}"));
     }
-    if !(text.contains("Connected") || text.contains("RoomInfo")) {
-        return Err(format!("unexpected handshake: {text}"));
+    if !(reply.contains("Connected") || reply.contains("RoomInfo")) {
+        return Err(format!("unexpected handshake: {reply}"));
     }
+    handle_server_text(&reply, log, next_index);
     socket
         .get_ref()
-        .set_read_timeout(Some(Duration::from_millis(50)))
+        .set_read_timeout(Some(Duration::from_millis(80)))
         .ok();
+    let _ = socket.send(Message::Text("[{\"cmd\":\"Sync\"}]".into()));
     Ok(socket)
 }
 
@@ -188,11 +210,17 @@ pub fn run(cfg: ApConfig, rx: Receiver<i64>, log: impl Fn(&str)) {
     log(&format!("NRAP AP targeting {} slot {}", cfg.host, cfg.slot));
     let mut pending: Vec<i64> = Vec::new();
     loop {
-        match connect_and_handshake(&cfg) {
+        let mut next_index = 0i64;
+        match connect_and_handshake(&cfg, &log, &mut next_index) {
             Ok(mut socket) => {
                 log("NRAP AP connected");
-                let mut next_index = 0i64;
-                let _ = drain_server(&mut socket, &log, &mut next_index);
+                for _ in 0..20 {
+                    if drain_server(&mut socket, &log, &mut next_index).is_err() {
+                        log("NRAP AP server closed");
+                        break;
+                    }
+                    std::thread::sleep(Duration::from_millis(50));
+                }
                 if let Err(e) = send_checks(&mut socket, &pending) {
                     log(&format!("NRAP AP resend failed: {e}"));
                 } else if !pending.is_empty() {
