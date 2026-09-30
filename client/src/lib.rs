@@ -9,7 +9,6 @@ use std::ffi::c_void;
 use std::fs::{self, OpenOptions};
 use std::io::Write;
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::OnceLock;
 use std::thread;
 use std::time::Duration;
@@ -29,9 +28,9 @@ const FILE_SHARE_READ: DWORD = 1;
 const FILE_SHARE_WRITE: DWORD = 2;
 const OPEN_EXISTING: DWORD = 3;
 const INVALID_HANDLE_VALUE: HANDLE = -1isize as HANDLE;
+const ERROR_ALREADY_EXISTS: DWORD = 183;
 
 static DLL_MODULE: OnceLock<usize> = OnceLock::new();
-static STARTED: AtomicBool = AtomicBool::new(false);
 
 #[link(name = "kernel32")]
 extern "system" {
@@ -56,6 +55,8 @@ extern "system" {
         written: *mut DWORD,
         overlapped: LPVOID,
     ) -> BOOL;
+    fn CreateMutexA(sa: LPVOID, owner: BOOL, name: *const u8) -> HANDLE;
+    fn GetLastError() -> DWORD;
 }
 
 #[no_mangle]
@@ -66,9 +67,13 @@ pub extern "system" fn DllMain(
 ) -> BOOL {
     if reason == DLL_PROCESS_ATTACH {
         let _ = DLL_MODULE.set(module as usize);
-        if !STARTED.swap(true, Ordering::SeqCst) {
-            thread::spawn(worker);
+        unsafe {
+            let mtx = CreateMutexA(std::ptr::null_mut(), 1, b"Local\\NRAP_worker\0".as_ptr());
+            if mtx.is_null() || GetLastError() == ERROR_ALREADY_EXISTS {
+                return 1;
+            }
         }
+        thread::spawn(worker);
     }
     1
 }
@@ -142,6 +147,15 @@ struct Watch {
     last: Option<bool>,
 }
 
+fn toml_key_value(line: &str) -> Option<(&str, &str)> {
+    let line = line.trim();
+    if line.starts_with('#') || line.starts_with('[') {
+        return None;
+    }
+    let (k, v) = line.split_once('=')?;
+    Some((k.trim(), v.trim().trim_matches('"')))
+}
+
 fn parse_watches(text: &str) -> Vec<Watch> {
     let mut out = Vec::new();
     let mut location = None::<String>;
@@ -158,20 +172,18 @@ fn parse_watches(text: &str) -> Vec<Watch> {
         }
     };
     for line in text.lines() {
-        let line = line.trim();
-        if line.starts_with("[[flag]]") {
+        if line.trim().starts_with("[[flag]]") {
             flush(&mut location, &mut flag, &mut out);
             continue;
         }
-        if let Some(rest) = line.strip_prefix("location") {
-            if let Some(v) = rest.split('=').nth(1) {
-                location = Some(v.trim().trim_matches('"').to_string());
-            }
+        let Some((k, v)) = toml_key_value(line) else {
+            continue;
+        };
+        if k == "location" {
+            location = Some(v.to_string());
         }
-        if let Some(rest) = line.strip_prefix("event_flag_id") {
-            if let Some(v) = rest.split('=').nth(1) {
-                flag = v.trim().parse().ok();
-            }
+        if k == "event_flag_id" {
+            flag = v.parse().ok();
         }
     }
     flush(&mut location, &mut flag, &mut out);
