@@ -1,6 +1,5 @@
 # Nightreign 1.3.3.0
 # Shop stock flags from Smithbox ShopLineUpParam eventFlag_forStock (2026-09-30).
-# eventFlag_forRelease is the board/progress requirement, not the purchase check.
 
 game_version = "1.3.3.0"
 
@@ -15,7 +14,6 @@ murk = 0
 grant_now = 0
 
 [grant]
-# 0 = do not call MapItemMan. 1000000 crashed Nightreign.
 drop_item_id = 0
 
 [debug]
@@ -161,3 +159,9 @@ location = "Shop - Delicate Burning Scene"
 location_id = 839000505
 kind = "shop"
 event_flag_id = 67000
+
+[[flag]]
+location = "Shop - Heartening Cry"
+location_id = 839000506
+kind = "shop"
+event_flag_id = 67700
