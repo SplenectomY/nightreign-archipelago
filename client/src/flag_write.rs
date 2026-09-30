@@ -1,14 +1,16 @@
 //! In-process SetEventFlag via EventFlagBaseA.
-//! AOB from jacksonstubblefield/nightreign-ap.
 
 #![cfg(windows)]
 
 use crate::aob::{self, ModuleSpan};
 use crate::flagman;
+use std::sync::Mutex;
 
 const BASE_A: &str = "48 89 5C 24 08 44 8B 49 1C 44";
 
 type SetFlagFn = unsafe extern "C" fn(inst: usize, flag: u32, on: u32);
+
+static PENDING: Mutex<Vec<u32>> = Mutex::new(Vec::new());
 
 fn find_setter(span: ModuleSpan) -> Option<usize> {
     let rel = aob::find_pattern(span.slice(), BASE_A)?;
@@ -39,7 +41,6 @@ pub fn debug_flag_from_toml(text: &str) -> Option<u32> {
     None
 }
 
-/// Set `flag` to on/off using the live CSFD4 instance.
 pub fn set_flag(flag: u32, on: bool) -> Result<String, String> {
     let span = ModuleSpan::nightreign().ok_or_else(|| "no nightreign module".to_string())?;
     let fn_addr = find_setter(span).ok_or_else(|| "EventFlagBaseA AOB not found".to_string())?;
@@ -74,6 +75,27 @@ pub fn apply_item(item_id: i64) -> Option<String> {
     let flag = flag_for_item(item_id)?;
     match set_flag(flag, true) {
         Ok(msg) => Some(msg),
-        Err(e) => Some(format!("NRAP SetEventFlag failed item={item_id} flag={flag}: {e}")),
+        Err(e) => {
+            let mut q = PENDING.lock().unwrap();
+            if !q.contains(&flag) {
+                q.push(flag);
+            }
+            Some(format!("NRAP SetEventFlag queued flag={flag} item={item_id} ({e})"))
+        }
+    }
+}
+
+pub fn retry_pending() -> Option<String> {
+    let mut q = PENDING.lock().unwrap();
+    if q.is_empty() {
+        return None;
+    }
+    let flag = q[0];
+    match set_flag(flag, true) {
+        Ok(msg) => {
+            q.remove(0);
+            Some(msg)
+        }
+        Err(_) => None,
     }
 }
