@@ -79,11 +79,11 @@ fn connect_and_handshake(cfg: &ApConfig) -> Result<Socket, String> {
         escape(&cfg.slot)
     );
     socket
-        .send(Message::Text(connect))
+        .send(Message::Text(connect.into()))
         .map_err(|e| format!("Connect send: {e}"))?;
     let reply = socket.read().map_err(|e| format!("Connect read: {e}"))?;
     let text = match reply {
-        Message::Text(t) => t,
+        Message::Text(t) => t.to_string(),
         other => return Err(format!("Connect reply not text: {other:?}")),
     };
     if text.contains("ConnectionRefused") {
@@ -108,9 +108,11 @@ fn send_checks(socket: &mut Socket, ids: &[i64]) -> Result<(), String> {
         .map(|id| id.to_string())
         .collect::<Vec<_>>()
         .join(",");
-    let pkt = format!("[{\"cmd\":\"LocationChecks\",\"locations\":[{list}]}]");
+    let pkt = format!(
+        "[{{\"cmd\":\"LocationChecks\",\"locations\":[{list}]}}]"
+    );
     socket
-        .send(Message::Text(pkt))
+        .send(Message::Text(pkt.into()))
         .map_err(|e| format!("LocationChecks: {e}"))
 }
 
