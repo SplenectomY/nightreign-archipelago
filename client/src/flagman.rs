@@ -116,8 +116,8 @@ pub struct FlagMan {
     pub bits: usize,
     pub layout: &'static str,
     pub pattern: &'static str,
-    divisor: u32,
-    entry_size: u32,
+    pub divisor: u32,
+    pub entry_size: u32,
     holder: usize,
     root: usize,
 }
@@ -126,7 +126,7 @@ impl FlagMan {
     pub fn get(&self, flag: u32) -> Option<bool> {
         let (base, bit) = self.loc(flag)?;
         let byte = (bit / 8) as usize;
-        let shift = 7 - (bit % 8); // CSFD4 stores MSB first
+        let shift = 7 - (bit % 8);
         let v = read_u8(base.saturating_add(byte))?;
         Some((v >> shift) & 1 == 1)
     }
@@ -169,7 +169,8 @@ impl FlagMan {
             2 => read_usize(found + NODE_LOCATION)?,
             1 => {
                 let loc = read_u32(found + NODE_LOCATION)? as usize;
-                self.holder.saturating_add(loc.saturating_mul(self.entry_size as usize))
+                self.holder
+                    .saturating_add(loc.saturating_mul(self.entry_size as usize))
             }
             _ => return None,
         };
