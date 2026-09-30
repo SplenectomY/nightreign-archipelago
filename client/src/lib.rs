@@ -34,6 +34,18 @@ const ERROR_ALREADY_EXISTS: DWORD = 183;
 
 static DLL_MODULE: OnceLock<usize> = OnceLock::new();
 
+#[repr(C)]
+struct SystemTime {
+    year: u16,
+    month: u16,
+    day_of_week: u16,
+    day: u16,
+    hour: u16,
+    minute: u16,
+    second: u16,
+    milliseconds: u16,
+}
+
 #[link(name = "kernel32")]
 extern "system" {
     fn AllocConsole() -> BOOL;
@@ -60,6 +72,18 @@ extern "system" {
     fn CreateMutexA(sa: LPVOID, owner: BOOL, name: *const u8) -> HANDLE;
     fn GetLastError() -> DWORD;
     fn SetLastError(code: DWORD);
+    fn GetLocalTime(out: *mut SystemTime);
+}
+
+fn timestamp() -> String {
+    unsafe {
+        let mut st = std::mem::zeroed::<SystemTime>();
+        GetLocalTime(&mut st);
+        format!(
+            "{:04}-{:02}-{:02} {:02}:{:02}:{:02}.{:03}",
+            st.year, st.month, st.day, st.hour, st.minute, st.second, st.milliseconds
+        )
+    }
 }
 
 #[no_mangle]
@@ -119,14 +143,15 @@ fn write_console(msg: &str) {
 }
 
 fn log_line(dir: &Option<PathBuf>, msg: &str) {
-    write_console(msg);
+    let line = format!("[{}] {msg}", timestamp());
+    write_console(&line);
     if let Some(dir) = dir {
         if let Ok(mut f) = OpenOptions::new()
             .create(true)
             .append(true)
             .open(dir.join("nrap.log"))
         {
-            let _ = writeln!(f, "{msg}");
+            let _ = writeln!(f, "{line}");
         }
     }
 }
