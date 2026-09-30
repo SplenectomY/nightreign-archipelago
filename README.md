@@ -6,6 +6,14 @@ Runtime Archipelago world for *Elden Ring Nightreign*. Vanilla game files stay o
 
 Repo: https://github.com/SplenectomY/nightreign-archipelago
 
+## Testers: do not install Rust
+
+Download the latest zip from [Releases](https://github.com/SplenectomY/nightreign-archipelago/releases). It already contains `nightreign_ap.dll`.
+
+If there is no release yet, someone with repo access runs Actions → **Release** → Run workflow. Details in [`docs/RELEASING.md`](docs/RELEASING.md).
+
+You still need Nightreign, Seamless Coop, and me3. You do not need Visual Studio or `cargo`.
+
 ## Locked design
 
 - **Offline first.** Generate locally, host `MultiServer` on localhost. Official From matchmaking is never used.
@@ -27,6 +35,8 @@ docs/                 design + tester briefs
 data/                 flag table the client reads
 ```
 
+Planned check list for feedback: [`docs/LOCATIONS_AND_UNLOCKS.md`](docs/LOCATIONS_AND_UNLOCKS.md).
+
 ## Phase 0 goal
 
 One end-to-end loop:
@@ -39,14 +49,16 @@ One end-to-end loop:
 
 Tester work is in [`docs/PHASE0_TESTER.md`](docs/PHASE0_TESTER.md). Flag hunt is in [`docs/FLAG_DISCOVERY.md`](docs/FLAG_DISCOVERY.md).
 
-## Requirements (Phase 0)
+## Requirements (Phase 0 testers)
 
 - Nightreign PC (Steam)
-- [Seamless Coop for Nightreign](https://www.nexusmods.com/eldenringnightreign) — **required launch path**
-- [me3](https://github.com/garyttierney/me3) — used to inject our DLL next to `nrsc.dll`, or as a solo attach fallback
-- [Archipelago 0.6.7+](https://archipelago.gg) for generate + local host
-- Rust nightly/stable + MSVC if you build the client
+- [Seamless Coop for Nightreign](https://www.nexusmods.com/eldenringnightreign)
+- [me3](https://github.com/garyttierney/me3)
+- The zip from Releases
 - Cheat Engine 7.5+ and Smithbox for flag work
+- Archipelago 0.6.7+ only if you are doing the server half
+
+Developers who want to change the DLL still use Rust + MSVC. That is optional.
 
 ## Quick generate (apworld skeleton)
 
@@ -57,6 +69,8 @@ python tools/pack_apworld.py
 # put players/Nightreign.yaml in Archipelago/Players/
 # Generate, then host the output zip with MultiServer
 ```
+
+The same apworld is inside the Release zip.
 
 ## References
 
