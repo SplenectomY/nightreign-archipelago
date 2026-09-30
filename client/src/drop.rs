@@ -1,11 +1,9 @@
-//! In-process MapItemMan item drop.
-//! AOBs from jacksonstubblefield/nightreign-ap (Sly ItemDrop CT table).
+//! In-process MapItemMan item drop. Do not call until *map_slot is non-null (Hold).
 
 #![cfg(windows)]
 
 use crate::aob::{self, ModuleSpan};
 use std::ffi::c_void;
-use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Mutex;
 
 const MAPITEMMAN_AOB: &str = "48 8B C8 E8 ?? ?? ?? ?? 0F 28 00 66 0F 7F 44 24 50";
@@ -36,13 +34,9 @@ struct DropState {
 }
 
 static STATE: Mutex<Option<DropState>> = Mutex::new(None);
-static LAST_ID: AtomicUsize = AtomicUsize::new(0);
+static PENDING: Mutex<Vec<(i32, u8)>> = Mutex::new(Vec::new());
 
 fn rip_slot(span: ModuleSpan, match_off: usize, extra: usize) -> Option<usize> {
-    let addr = span.base + match_off + extra;
-    aob::rip_rel(span, match_off + extra, 3, 7)
-        .or_else(|| Some(addr))
-        .filter(|_| true);
     let hay = span.slice();
     let at = match_off + extra;
     if at + 7 > hay.len() {
@@ -73,6 +67,10 @@ fn tls_index(fetcher: usize) -> Option<u32> {
     }
 }
 
+fn map_item_man(st: &DropState) -> usize {
+    unsafe { std::ptr::read_unaligned(st.map_slot as *const usize) }
+}
+
 pub fn init() -> Result<String, String> {
     let span = ModuleSpan::nightreign().ok_or_else(|| "no module".to_string())?;
     let man_rel = aob::find_pattern(span.slice(), MAPITEMMAN_AOB)
@@ -99,10 +97,10 @@ pub fn init() -> Result<String, String> {
     ))
 }
 
-fn drop_id(item_id: i32, qty: u8) -> Result<String, String> {
+fn drop_now(item_id: i32, qty: u8) -> Result<String, String> {
     let st = STATE.lock().unwrap();
     let st = st.as_ref().ok_or_else(|| "drop not initialized".to_string())?;
-    let man = unsafe { std::ptr::read_unaligned(st.map_slot as *const usize) };
+    let man = map_item_man(st);
     if man < 0x10000 {
         return Err(format!("MapItemMan null (slot 0x{:X})", st.map_slot));
     }
@@ -125,14 +123,17 @@ fn drop_id(item_id: i32, qty: u8) -> Result<String, String> {
     unsafe {
         f(man, st.item_data, 0, 1);
     }
-    LAST_ID.store(item_id as usize, Ordering::SeqCst);
     Ok(format!(
         "NRAP drop item={item_id} qty={qty} man=0x{man:X} fn=0x{:X}",
         st.drop_fn
     ))
 }
 
-/// Murk Bundle (839100100) or a debug id.
+fn queue(item_id: i32, qty: u8) {
+    let mut q = PENDING.lock().unwrap();
+    q.push((item_id, qty));
+}
+
 pub fn apply_item(item_id: i64, drop_goods_id: i32) -> Option<String> {
     if item_id != 839_100_100 {
         return None;
@@ -140,9 +141,27 @@ pub fn apply_item(item_id: i64, drop_goods_id: i32) -> Option<String> {
     if drop_goods_id == 0 {
         return Some("NRAP drop skipped (grant.drop_item_id = 0)".into());
     }
-    match drop_id(drop_goods_id, 1) {
+    match drop_now(drop_goods_id, 1) {
         Ok(msg) => Some(msg),
-        Err(e) => Some(format!("NRAP drop failed: {e}")),
+        Err(e) => {
+            queue(drop_goods_id, 1);
+            Some(format!("NRAP drop queued item={drop_goods_id} ({e})"))
+        }
+    }
+}
+
+pub fn retry_pending() -> Option<String> {
+    let mut q = PENDING.lock().unwrap();
+    if q.is_empty() {
+        return None;
+    }
+    let (id, qty) = q[0];
+    match drop_now(id, qty) {
+        Ok(msg) => {
+            q.remove(0);
+            Some(msg)
+        }
+        Err(_) => None,
     }
 }
 
@@ -191,8 +210,11 @@ pub fn debug_drop_from_toml(text: &str) -> Option<i32> {
 }
 
 pub fn debug_drop(item_id: i32) -> String {
-    match drop_id(item_id, 1) {
+    match drop_now(item_id, 1) {
         Ok(msg) => msg,
-        Err(e) => format!("NRAP debug drop failed: {e}"),
+        Err(e) => {
+            queue(item_id, 1);
+            format!("NRAP debug drop queued item={item_id} ({e})")
+        }
     }
 }
