@@ -15,6 +15,30 @@ fn find_setter(span: ModuleSpan) -> Option<usize> {
     Some(span.base + rel)
 }
 
+pub fn debug_flag_from_toml(text: &str) -> Option<u32> {
+    let mut in_debug = false;
+    for line in text.lines() {
+        let line = line.trim();
+        if line.starts_with('[') {
+            in_debug = line == "[debug]";
+            continue;
+        }
+        if !in_debug || line.starts_with('#') {
+            continue;
+        }
+        if let Some((k, v)) = line.split_once('=') {
+            if k.trim() == "set_flag" {
+                let n: u32 = v.trim().parse().ok()?;
+                if n == 0 {
+                    return None;
+                }
+                return Some(n);
+            }
+        }
+    }
+    None
+}
+
 /// Set `flag` to on/off using the live CSFD4 instance.
 pub fn set_flag(flag: u32, on: bool) -> Result<String, String> {
     let span = ModuleSpan::nightreign().ok_or_else(|| "no nightreign module".to_string())?;
@@ -36,13 +60,12 @@ pub fn set_flag(flag: u32, on: bool) -> Result<String, String> {
     ))
 }
 
-/// AP item -> event flag. Murk Bundle does not set a flag.
 pub fn flag_for_item(item_id: i64) -> Option<u32> {
     match item_id {
-        839_100_001 => Some(110), // board / Tricephalos expedition
-        839_100_008 => Some(115), // Heolstor / Night Aspect
-        839_100_009 => Some(135), // Harmonia
-        839_100_010 => Some(136), // Straghess
+        839_100_001 => Some(110),
+        839_100_008 => Some(115),
+        839_100_009 => Some(135),
+        839_100_010 => Some(136),
         _ => None,
     }
 }
