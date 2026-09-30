@@ -46,6 +46,11 @@ class NightreignWorld(World):
         hold.add_locations(
             {
                 "Nightlord - Gladius": LOCATION_NAME_TO_ID["Nightlord - Gladius"],
+                "Nightlord - Adel": LOCATION_NAME_TO_ID["Nightlord - Adel"],
+                "Nightlord - Gnoster": LOCATION_NAME_TO_ID["Nightlord - Gnoster"],
+                "Board unlock after first Nightlord": LOCATION_NAME_TO_ID[
+                    "Board unlock after first Nightlord"
+                ],
                 "Shop - Phase 0 Probe": LOCATION_NAME_TO_ID["Shop - Phase 0 Probe"],
             },
             NightreignLocation,
@@ -64,6 +69,9 @@ class NightreignWorld(World):
     def create_items(self) -> None:
         pool: List[Item] = [
             self.create_item("Expedition Unlock - Tricephalos"),
+            self.create_item("Expedition Unlock - Heolstor"),
+            self.create_item("Expedition Unlock - Harmonia"),
+            self.create_item("Expedition Unlock - Straghess"),
             self.create_item("Murk Bundle"),
             self.create_item("Victory"),
         ]
