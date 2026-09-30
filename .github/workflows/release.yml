@@ -1,0 +1,72 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to create or reuse
+        required: true
+        default: v0.1.0-phase0
+      prerelease:
+        description: Mark as prerelease
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Build release DLL
+        working-directory: client
+        run: cargo build --release --target x86_64-pc-windows-msvc
+
+      - name: Pack apworld
+        shell: bash
+        run: python tools/pack_apworld.py
+
+      - name: Stage tester zip
+        shell: bash
+        run: |
+          mkdir -p dist/nightreign-ap
+          cp client/target/x86_64-pc-windows-msvc/release/nightreign_ap.dll dist/nightreign-ap/
+          cp data/flags.toml dist/nightreign-ap/
+          cp profiles/nightreign-ap.me3 dist/nightreign-ap/
+          cp nightreign.apworld dist/nightreign-ap/
+          cp players/Nightreign.yaml dist/nightreign-ap/
+          cp docs/PHASE0_TESTER.md dist/nightreign-ap/
+          cat > dist/nightreign-ap/README.txt << 'EOF'
+          Nightreign Archipelago — tester pack
+
+          1. Install Seamless Coop for Nightreign and me3.
+          2. Edit nightreign-ap.me3: set the nrsc.dll path and point the second native at THIS folder's nightreign_ap.dll.
+          3. Keep flags.toml next to the DLL.
+          4. Launch via me3 with that profile. A console should print "NRAP attached".
+          5. You do not need Rust or Visual Studio.
+
+          Optional: drop nightreign.apworld into Archipelago/custom_worlds/ and use Nightreign.yaml to generate.
+          EOF
+          powershell -Command "Compress-Archive -Path dist/nightreign-ap/* -DestinationPath dist/nightreign-ap-windows.zip -Force"
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
+          name: ${{ github.event.inputs.tag || github.ref_name }}
+          prerelease: ${{ github.event_name == 'workflow_dispatch' && inputs.prerelease || startsWith(github.ref, 'refs/tags/v0') }}
+          generate_release_notes: true
+          files: dist/nightreign-ap-windows.zip
+          body: |
+            Tester pack. No Rust or MSVC required.
+
+            Zip contains `nightreign_ap.dll`, `flags.toml`, me3 profile, apworld, and the Phase 0 tester brief.
