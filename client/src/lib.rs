@@ -132,7 +132,7 @@ fn log_line(dir: &Option<PathBuf>, msg: &str) {
 fn dll_dir() -> Option<PathBuf> {
     let module = *DLL_MODULE.get().unwrap_or(&0) as HMODULE;
     let mut buf = vec![0u8; 520];
-    let n = unsafe { GetModuleFileNameA(module, buf.as_mut_ptr(), buf.len() as DWORD) };
+    let n = unsafe { GetModuleHandleA(module, buf.as_mut_ptr(), buf.len() as DWORD) };
     if n == 0 {
         return None;
     }
@@ -146,6 +146,7 @@ struct Watch {
     location: String,
     flag: u32,
     last: Option<bool>,
+    miss_logged: bool,
 }
 
 fn toml_key_value(line: &str) -> Option<(&str, &str)> {
@@ -168,6 +169,7 @@ fn parse_watches(text: &str) -> Vec<Watch> {
                     location: loc,
                     flag: id,
                     last: None,
+                    miss_logged: false,
                 });
             }
         }
@@ -259,17 +261,7 @@ fn worker() {
         if man.is_none() {
             match flagman::resolve() {
                 Ok(found) => {
-                    log_line(
-                        &dir,
-                        &format!(
-                            "NRAP flagman pattern={} layout={} slot=0x{:X} inst=0x{:X} bits=0x{:X}",
-                            found.pattern,
-                            found.layout,
-                            found.singleton_slot,
-                            found.instance,
-                            found.bits
-                        ),
-                    );
+                    log_line(&dir, &found.describe());
                     man = Some(found);
                 }
                 Err(e) => {
@@ -305,10 +297,13 @@ fn worker() {
                         }
                     }
                     None => {
-                        log_line(&dir, "NRAP flag read failed; rescanning flagman");
-                        man = None;
-                        fail_logged = false;
-                        break;
+                        if !w.miss_logged {
+                            log_line(
+                                &dir,
+                                &format!("NRAP {} flag {} not in holder", w.location, w.flag),
+                            );
+                            w.miss_logged = true;
+                        }
                     }
                 }
             }
