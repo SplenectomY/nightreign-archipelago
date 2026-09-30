@@ -1,0 +1,19 @@
+{
+  "families": {
+    "world": "Open-world / field elites that are not church, fortress, castle, shifting earth, or raid.",
+    "church": "Church POI bosses",
+    "fortress": "Fort / encampment bosses",
+    "castle": "Castle bosses",
+    "shifting_earth": "Shifting Earth dungeon bosses",
+    "raid": "Raid event bosses"
+  },
+  "thresholds": {
+    "world": [1, 3, 6],
+    "church": [1, 3],
+    "fortress": [1, 3],
+    "castle": [1, 2],
+    "shifting_earth": [1, 2],
+    "raid": [1]
+  },
+  "entities": []
+}
