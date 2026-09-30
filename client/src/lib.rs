@@ -1,9 +1,10 @@
-//! Phase 0 client. Attach, resolve event flags, submit AP checks, grant Murk.
+//! Phase 0 client. Attach, resolve event flags, submit AP checks, grant items.
 
 #![cfg(windows)]
 
 mod aob;
 mod ap;
+mod drop;
 mod flag_write;
 mod flagman;
 mod grant;
@@ -272,6 +273,10 @@ fn worker() {
         Ok(msg) => log_line(&dir, &msg),
         Err(e) => log_line(&dir, &format!("NRAP murk hook failed: {e}")),
     }
+    match drop::init() {
+        Ok(msg) => log_line(&dir, &msg),
+        Err(e) => log_line(&dir, &format!("NRAP drop init failed: {e}")),
+    }
 
     let config = find_config(dir.as_ref());
     log_line(
@@ -305,8 +310,9 @@ fn worker() {
     if let Some(text) = text.as_deref() {
         let ap_cfg = ap::ApConfig::from_toml(text);
         let dir_ap = dir.clone();
+        let drop_goods = drop::drop_item_id_from_toml(text);
         thread::spawn(move || {
-            ap::run(ap_cfg, rx, |msg| log_line(&dir_ap, msg));
+            ap::run(ap_cfg, rx, drop_goods, |msg| log_line(&dir_ap, msg));
         });
     }
 
@@ -315,6 +321,7 @@ fn worker() {
     let mut last_murk_scan = 0i32;
     let mut last_grant_now = false;
     let mut last_debug_flag = 0u32;
+    let mut last_debug_drop = 0i32;
     loop {
         if man.is_none() {
             match flagman::resolve() {
@@ -398,6 +405,14 @@ fn worker() {
                 }
             } else {
                 last_debug_flag = 0;
+            }
+            if let Some(id) = drop::debug_drop_from_toml(&text) {
+                if id != last_debug_drop {
+                    last_debug_drop = id;
+                    log_line(&dir, &drop::debug_drop(id));
+                }
+            } else {
+                last_debug_drop = 0;
             }
         }
         thread::sleep(Duration::from_millis(500));
