@@ -27,7 +27,23 @@ const PAGE_GUARD: u32 = 0x100;
 const PAGE_NOACCESS: u32 = 0x01;
 const READABLE: u32 = 0x02 | 0x04 | 0x08 | 0x20 | 0x40 | 0x80;
 const MAX_HITS: usize = 64;
-const MAX_BYTES: usize = 512 * 1024 * 1024;
+const MAX_BYTES: usize = 256 * 1024 * 1024;
+
+fn page_readable(p: usize) -> bool {
+    if p < 0x10000 {
+        return false;
+    }
+    unsafe {
+        let mut mbi = std::mem::zeroed::<Mbi>();
+        if VirtualQuery(p as *const u8, &mut mbi, std::mem::size_of::<Mbi>()) == 0 {
+            return false;
+        }
+        mbi.state == MEM_COMMIT
+            && mbi.protect & PAGE_GUARD == 0
+            && mbi.protect & PAGE_NOACCESS == 0
+            && mbi.protect & READABLE != 0
+    }
+}
 
 pub fn murk_from_toml(text: &str) -> Option<i32> {
     let mut in_scan = false;
@@ -81,11 +97,7 @@ fn readable_regions() -> Vec<(usize, usize)> {
             break;
         }
         let size = mbi.region_size.max(0x1000);
-        if mbi.state == MEM_COMMIT
-            && mbi.protect & PAGE_GUARD == 0
-            && mbi.protect & PAGE_NOACCESS == 0
-            && mbi.protect & READABLE != 0
-        {
+        if page_readable(mbi.base) && size <= 32 * 1024 * 1024 {
             out.push((mbi.base, size));
             scanned = scanned.saturating_add(size);
         }
@@ -101,22 +113,18 @@ fn collect(value: i32, only: Option<&[usize]>) -> Vec<usize> {
     let mut hits = Vec::new();
     if let Some(list) = only {
         for &p in list {
-            let ok = unsafe {
-                let mut mbi = std::mem::zeroed::<Mbi>();
-                if VirtualQuery(p as *const u8, &mut mbi, std::mem::size_of::<Mbi>()) == 0 {
-                    false
-                } else {
-                    mbi.state == MEM_COMMIT && std::ptr::read_unaligned(p as *const i32) == value
-                }
-            };
-            if ok {
+            if !page_readable(p) {
+                continue;
+            }
+            let v = unsafe { std::ptr::read_unaligned(p as *const i32) };
+            if v == value {
                 hits.push(p);
             }
         }
         return hits;
     }
     for (base, size) in readable_regions() {
-        if size < 4 {
+        if size < 4 || !page_readable(base) {
             continue;
         }
         let slice = unsafe { std::slice::from_raw_parts(base as *const u8, size) };
