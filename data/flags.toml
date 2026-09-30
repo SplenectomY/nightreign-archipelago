@@ -165,3 +165,9 @@ location = "Shop - Heartening Cry"
 location_id = 839000506
 kind = "shop"
 event_flag_id = 67700
+
+[[flag]]
+location = "Shop - Calm Down"
+location_id = 839000507
+kind = "shop"
+event_flag_id = 67670
