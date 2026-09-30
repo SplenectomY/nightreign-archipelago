@@ -1,0 +1,12 @@
+/target/
+**/*.dll
+**/*.pdb
+**/*.apworld
+__pycache__/
+*.pyc
+.idea/
+.vscode/
+*.user
+.env
+client/config.local.toml
+/output/
