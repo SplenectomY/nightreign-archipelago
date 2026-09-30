@@ -2,6 +2,8 @@
 # Reader: CSFD4VirtualMemoryFlag holder[group], divisor=1000, entry_size=125.
 # Verified in Hold on a post-Gladius Seamless save, 2026-09-30: flags 110 and 150
 # stay 1 with no idle chatter.
+#
+# Murk wallet scan is parked. Do not set scan.murk while that work is on hold.
 
 game_version = "1.3.3.0"
 
@@ -11,10 +13,9 @@ slot = "Player1"
 password = ""
 
 [scan]
-# Exact HUD Murk. 0 = do not scan.
-# Set this, save the file, wait for NRAP murk scan.
-# Spend Murk, set this to the new amount, save again.
+enable = false
 murk = 0
+grant_now = 0
 
 [[flag]]
 location = "Board unlock after first Nightlord"
