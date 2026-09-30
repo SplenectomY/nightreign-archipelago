@@ -14,7 +14,6 @@ const OFF_DIVISOR: usize = 0x1C;
 const OFF_ENTRY_SIZE: usize = 0x20;
 const OFF_ENTRY_COUNT: usize = 0x24;
 const OFF_HOLDER: usize = 0x28;
-const OFF_ROOT: usize = 0x38;
 
 const SHOP_PROBE: &[u32] = &[110, 150, 67000, 67600, 67640, 67650, 67700];
 
@@ -263,7 +262,7 @@ const PATTERNS: &[Pattern] = &[
     },
 ];
 
-fn collect_all() -> Vec<FlagMan> {
+pub fn collect_all() -> Vec<FlagMan> {
     let Some(span) = ModuleSpan::nightreign() else {
         return Vec::new();
     };
@@ -321,9 +320,8 @@ pub fn resolve() -> Result<FlagMan, String> {
         .ok_or_else(|| "no CSEventFlagMan singleton with divisor=1000".to_string())
 }
 
-/// Compact snapshot. Order per layout: 110,150,67000,67600,67640,67650,67700.
-pub fn shop_snapshot() -> String {
-    let mans = collect_all();
+/// Order per layout: 110,150,67000,67600,67640,67650,67700.
+pub fn shop_snapshot_of(mans: &[FlagMan]) -> String {
     if mans.is_empty() {
         return "none".into();
     }
