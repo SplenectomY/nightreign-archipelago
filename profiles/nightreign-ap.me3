@@ -1,0 +1,15 @@
+profileVersion = "v1"
+
+[[supports]]
+game = "nightreign"
+
+# Point these at real files on the tester machine.
+# Launch with me3, not Steam Play, so EAC never loads.
+
+[[natives]]
+path = 'C:/REPLACE/SeamlessCoop/nrsc.dll'
+optional = false
+
+[[natives]]
+path = 'C:/REPLACE/nightreign-archipelago/client/target/release/nightreign_ap.dll'
+optional = false
