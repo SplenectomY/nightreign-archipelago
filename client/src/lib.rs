@@ -1,10 +1,11 @@
-//! Phase 0 client. Attach, resolve event flags, submit AP checks.
+//! Phase 0 client. Attach, resolve event flags, submit AP checks, grant Murk.
 
 #![cfg(windows)]
 
 mod aob;
 mod ap;
 mod flagman;
+mod grant;
 
 use std::ffi::c_void;
 use std::fs::{self, OpenOptions};
@@ -265,6 +266,10 @@ fn worker() {
                 .unwrap_or_else(|| "<unknown>".into())
         ),
     );
+    match grant::init(dir.as_ref(), 1000) {
+        Ok(msg) => log_line(&dir, &msg),
+        Err(e) => log_line(&dir, &format!("NRAP murk hook failed: {e}")),
+    }
 
     let config = find_config(dir.as_ref());
     log_line(
@@ -359,6 +364,9 @@ fn worker() {
                     }
                 }
             }
+        }
+        if let Some(msg) = grant::retry_pending() {
+            log_line(&dir, &msg);
         }
         thread::sleep(Duration::from_millis(500));
     }
