@@ -7,3 +7,6 @@ license = "MIT"
 
 [lib]
 crate-type = ["cdylib"]
+
+[dependencies]
+tungstenite = { version = "0.24", default-features = false, features = ["handshake"] }
