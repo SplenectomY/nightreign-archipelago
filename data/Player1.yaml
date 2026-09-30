@@ -1,0 +1,16 @@
+name: Player1
+game: Elden Ring Nightreign
+requires:
+  version: 0.5.0
+
+Elden Ring Nightreign:
+  progression_balancing: 50
+  accessibility: items
+  goal: heolstor
+  nightlord_count: 4
+  specific_nightlord: heolstor
+  include_everdark: true
+  include_dlc: true
+  shop_checks: unique_only
+  starting_nightfarers: 1
+  death_link: false
