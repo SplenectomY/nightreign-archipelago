@@ -269,7 +269,7 @@ fn worker() {
     );
     match grant::init(dir.as_ref(), 1000) {
         Ok(msg) => log_line(&dir, &msg),
-        Err(e) => log_line(&dir, &format!("NRAP murk hook failed: {e}"));
+        Err(e) => log_line(&dir, &format!("NRAP murk hook failed: {e}")),
     }
 
     let config = find_config(dir.as_ref());
