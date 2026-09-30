@@ -3,13 +3,15 @@ profileVersion = "v1"
 [[supports]]
 game = "nightreign"
 
-# Point these at real files on the tester machine.
-# Launch with me3, not Steam Play, so EAC never loads.
+# Launch with me3, not Steam Play.
+# Seamless first when present. Mark optional so a bad path does not block AP.
 
 [[natives]]
-path = 'C:/REPLACE/SeamlessCoop/nrsc.dll'
-optional = false
+path = 'C:/Program Files (x86)/Steam/steamapps/common/ELDEN RING NIGHTREIGN/Game/SeamlessCoop/nrsc.dll'
+optional = true
+load_early = true
 
 [[natives]]
-path = 'C:/REPLACE/nightreign-archipelago/client/target/release/nightreign_ap.dll'
+path = 'C:/Mods/nightreign-ap/nightreign_ap.dll'
 optional = false
+load_early = true
