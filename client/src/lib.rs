@@ -161,7 +161,7 @@ fn log_line(dir: &Option<PathBuf>, msg: &str) {
 fn dll_dir() -> Option<PathBuf> {
     let module = *DLL_MODULE.get().unwrap_or(&0) as HMODULE;
     let mut buf = vec![0u8; 520];
-    let n = unsafe { GetModuleFileNameA(module, buf.as_mut_ptr(), buf.len() as DWORD) };
+    let n = unsafe { GetModuleHandleA(module, buf.as_mut_ptr(), buf.len() as DWORD) };
     if n == 0 {
         return None;
     }
@@ -372,18 +372,20 @@ fn worker() {
             log_line(&dir, &msg);
         }
         if let Some(text) = config.as_ref().and_then(|p| fs::read_to_string(p).ok()) {
-            if let Some(v) = scan::murk_from_toml(&text) {
-                if v != 0 && v != last_murk_scan {
-                    last_murk_scan = v;
-                    log_line(&dir, "NRAP murk scan starting");
-                    log_line(&dir, &scan::run(dir.as_ref(), v));
+            if scan::enabled(&text) {
+                if let Some(v) = scan::murk_from_toml(&text) {
+                    if v != 0 && v != last_murk_scan {
+                        last_murk_scan = v;
+                        log_line(&dir, "NRAP murk scan starting");
+                        log_line(&dir, &scan::run(dir.as_ref(), v));
+                    }
                 }
+                let gn = scan::grant_now_from_toml(&text);
+                if gn && !last_grant_now {
+                    log_line(&dir, &grant::force_grant());
+                }
+                last_grant_now = gn;
             }
-            let gn = scan::grant_now_from_toml(&text);
-            if gn && !last_grant_now {
-                log_line(&dir, &grant::force_grant());
-            }
-            last_grant_now = gn;
         }
         thread::sleep(Duration::from_millis(500));
     }
