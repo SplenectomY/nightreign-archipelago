@@ -15,8 +15,14 @@ const OFF_ENTRY_SIZE: usize = 0x20;
 const OFF_ENTRY_COUNT: usize = 0x24;
 const OFF_HOLDER: usize = 0x28;
 
+/// nightreign.exe 1.3.3.0 CSFD4VirtualMemoryFlag::GetFlag (GiovanavoiG/NightreignAP).
+const VMF_GET_FLAG_RVA: usize = 0x60CE40;
+const VMF_GET_FLAG_SIG: &[u8] = &[0x44, 0x8B, 0x41, 0x1C, 0x44, 0x8B, 0xDA];
+
 // 110, 150, Delicate Burning, Polite Bow, Warm Welcome, Strength, Heartening Cry, Calm Down
 const SHOP_PROBE: &[u32] = &[110, 150, 67000, 67600, 67640, 67650, 67700, 67670];
+
+type GetFlagFn = unsafe extern "C" fn(inst: usize, flag: u32) -> u8;
 
 #[repr(C)]
 struct MemoryBasicInformation {
@@ -117,6 +123,27 @@ fn fmt_bit(v: Option<bool>) -> char {
     }
 }
 
+fn game_get_fn() -> Option<GetFlagFn> {
+    let span = ModuleSpan::nightreign()?;
+    let addr = span.base + VMF_GET_FLAG_RVA;
+    if !readable(addr, VMF_GET_FLAG_SIG.len()) {
+        return None;
+    }
+    let bytes = unsafe { std::slice::from_raw_parts(addr as *const u8, VMF_GET_FLAG_SIG.len()) };
+    if bytes != VMF_GET_FLAG_SIG {
+        return None;
+    }
+    Some(unsafe { std::mem::transmute(addr) })
+}
+
+fn game_get(inst: usize, flag: u32) -> Option<bool> {
+    if inst < 0x10000 {
+        return None;
+    }
+    let f = game_get_fn()?;
+    Some(unsafe { f(inst, flag) } != 0)
+}
+
 #[derive(Clone, Copy, Debug)]
 pub struct FlagMan {
     pub singleton_slot: usize,
@@ -146,7 +173,7 @@ impl FlagMan {
     }
 
     pub fn get(&self, flag: u32) -> Option<bool> {
-        self.read_flag(flag, true, false)
+        game_get(self.instance, flag).or_else(|| self.read_flag(flag, true, false))
     }
 
     fn group_base(&self, flag: u32, ptr_table: bool) -> Option<(usize, u32)> {
@@ -186,6 +213,10 @@ impl FlagMan {
 
     fn probe_line(&self) -> String {
         let mut s = format!("inst=0x{:X} {}", self.instance, self.pattern);
+        s.push_str(" game=");
+        for flag in SHOP_PROBE {
+            s.push(fmt_bit(game_get(self.instance, *flag)));
+        }
         for (name, msb, ptrs) in [
             ("slab_msb", true, false),
             ("slab_lsb", false, false),
