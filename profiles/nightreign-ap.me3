@@ -3,15 +3,15 @@ profileVersion = "v1"
 [[supports]]
 game = "nightreign"
 
-# Launch with me3, not Steam Play.
-# Seamless first when present. Mark optional so a bad path does not block AP.
+# Seamless MUST load before our DLL. SignIn is patched in nrsc DllMain.
+# Do not launch with nrsc_launcher.exe and this profile at the same time.
 
 [[natives]]
 path = 'C:/Program Files (x86)/Steam/steamapps/common/ELDEN RING NIGHTREIGN/Game/SeamlessCoop/nrsc.dll'
-optional = true
+optional = false
 load_early = true
 
 [[natives]]
 path = 'C:/Mods/nightreign-ap/nightreign_ap.dll'
 optional = false
-load_early = true
+load_early = false
