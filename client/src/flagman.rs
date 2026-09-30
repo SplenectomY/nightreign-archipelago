@@ -1,6 +1,4 @@
 //! CSEventFlagMan lookup matching Elden Ring CSFD4VirtualMemoryFlag.
-//! Groups of `divisor` bits (usually 1000), tree at +0x38, holder at +0x28,
-//! bits stored MSB-first in each byte.
 
 #![cfg(windows)]
 
@@ -14,16 +12,9 @@ const MEM_IMAGE: u32 = 0x0100_0000;
 
 const OFF_DIVISOR: usize = 0x1C;
 const OFF_ENTRY_SIZE: usize = 0x20;
+const OFF_ENTRY_COUNT: usize = 0x24;
 const OFF_HOLDER: usize = 0x28;
 const OFF_ROOT: usize = 0x38;
-
-const NODE_LEFT: usize = 0x0;
-const NODE_PARENT: usize = 0x8;
-const NODE_RIGHT: usize = 0x10;
-const NODE_IS_LEAF: usize = 0x19;
-const NODE_GROUP: usize = 0x20;
-const NODE_LOC_MODE: usize = 0x28;
-const NODE_LOCATION: usize = 0x30;
 
 #[repr(C)]
 struct MemoryBasicInformation {
@@ -118,11 +109,25 @@ pub struct FlagMan {
     pub pattern: &'static str,
     pub divisor: u32,
     pub entry_size: u32,
+    pub entry_count: u32,
     holder: usize,
-    root: usize,
 }
 
 impl FlagMan {
+    pub fn describe(&self) -> String {
+        format!(
+            "NRAP flagman pattern={} layout={} slot=0x{:X} inst=0x{:X} holder=0x{:X} divisor={} entry_size={} entry_count={}",
+            self.pattern,
+            self.layout,
+            self.singleton_slot,
+            self.instance,
+            self.holder,
+            self.divisor,
+            self.entry_size,
+            self.entry_count
+        )
+    }
+
     pub fn get(&self, flag: u32) -> Option<bool> {
         let (base, bit) = self.loc(flag)?;
         let byte = (bit / 8) as usize;
@@ -137,68 +142,45 @@ impl FlagMan {
         }
         let group = flag / self.divisor;
         let bit = flag % self.divisor;
-        let root = self.root;
-        let parent = read_usize(root + NODE_PARENT)?;
-        let mut current = parent;
-        let mut found = root;
-        let mut walks = 0u32;
-        while read_u8(current + NODE_IS_LEAF)? == 0 {
-            walks += 1;
-            if walks > 1000 {
-                return None;
-            }
-            let current_group = read_u32(current + NODE_GROUP)?;
-            let next = if current_group < group {
-                let right = read_usize(current + NODE_RIGHT)?;
-                found = current;
-                right
-            } else {
-                read_usize(current + NODE_LEFT)?
-            };
-            current = next;
-        }
-        if found == root {
+        if group >= self.entry_count {
             return None;
         }
-        let found_group = read_u32(found + NODE_GROUP)?;
-        if group < found_group {
-            return None;
-        }
-        let mode = read_u32(found + NODE_LOC_MODE)?;
-        let base = match mode {
-            2 => read_usize(found + NODE_LOCATION)?,
-            1 => {
-                let loc = read_u32(found + NODE_LOCATION)? as usize;
-                self.holder
-                    .saturating_add(loc.saturating_mul(self.entry_size as usize))
-            }
-            _ => return None,
-        };
-        if !readable(base, ((bit / 8) + 1) as usize) {
+        let base = self
+            .holder
+            .saturating_add((group as usize).saturating_mul(self.entry_size as usize));
+        let need = (bit / 8) as usize + 1;
+        if !readable(base, need) {
             return None;
         }
         Some((base, bit))
     }
 }
 
-fn looks_like_flagman(span: ModuleSpan, inst: usize) -> Option<(u32, u32, usize, usize)> {
+fn looks_like_flagman(span: ModuleSpan, inst: usize) -> Option<(u32, u32, u32, usize)> {
     if !heap_ptr(span, inst, 0x48) {
         return None;
     }
     let divisor = read_u32(inst + OFF_DIVISOR)?;
     let entry_size = read_u32(inst + OFF_ENTRY_SIZE)?;
-    if !(100..=10_000).contains(&divisor) {
+    let entry_count = read_u32(inst + OFF_ENTRY_COUNT)?;
+    // ER/NR family: 1000 bits/group, 125-byte rows.
+    if divisor != 1000 {
         return None;
     }
-    if !(8..=4096).contains(&entry_size) {
+    if entry_size < 16 || entry_size > 4096 {
+        return None;
+    }
+    if entry_count == 0 || entry_count > 10_000 {
         return None;
     }
     let holder = read_usize(inst + OFF_HOLDER)?;
-    let root = read_usize(inst + OFF_ROOT)?;
-    if !heap_ptr(span, holder, 16) || !heap_ptr(span, root, 0x38) {
+    let root = read_usize(inst + OFF_ROOT).unwrap_or(0);
+    let holder_bytes = (entry_count as usize).saturating_mul(entry_size as usize).min(4096);
+    if !heap_ptr(span, holder, holder_bytes.max(16)) {
         return None;
     }
-    Some((divisor, entry_size, holder, root))
+    let _ = root;
+    Some((divisor, entry_size, entry_count, holder))
 }
 
 struct Pattern {
@@ -238,7 +220,7 @@ const PATTERNS: &[Pattern] = &[
 pub fn resolve() -> Result<FlagMan, String> {
     let span = ModuleSpan::nightreign().ok_or_else(|| "no nightreign module".to_string())?;
     let hay = span.slice();
-    let mut last = "no CSEventFlagMan singleton with valid divisor/holder".to_string();
+    let mut last = "no CSEventFlagMan singleton with divisor=1000".to_string();
 
     for pat in PATTERNS {
         let mut from = 0usize;
@@ -259,7 +241,8 @@ pub fn resolve() -> Result<FlagMan, String> {
             let Some(inst) = read_usize(slot) else {
                 continue;
             };
-            let Some((divisor, entry_size, holder, root)) = looks_like_flagman(span, inst) else {
+            let Some((divisor, entry_size, entry_count, holder)) = looks_like_flagman(span, inst)
+            else {
                 last = format!(
                     "{} slot=0x{slot:X} inst=0x{inst:X} failed flagman shape check",
                     pat.name
@@ -270,12 +253,12 @@ pub fn resolve() -> Result<FlagMan, String> {
                 singleton_slot: slot,
                 instance: inst,
                 bits: holder,
-                layout: "CSFD4VirtualMemoryFlag",
+                layout: "CSFD4 holder[group]",
                 pattern: pat.name,
                 divisor,
                 entry_size,
+                entry_count,
                 holder,
-                root,
             });
         }
     }
