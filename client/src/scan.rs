@@ -29,6 +29,26 @@ const READABLE: u32 = 0x02 | 0x04 | 0x08 | 0x20 | 0x40 | 0x80;
 const MAX_HITS: usize = 64;
 const MAX_BYTES: usize = 512 * 1024 * 1024;
 
+pub fn murk_from_toml(text: &str) -> Option<i32> {
+    let mut in_scan = false;
+    for line in text.lines() {
+        let line = line.trim();
+        if line.starts_with('[') {
+            in_scan = line == "[scan]";
+            continue;
+        }
+        if !in_scan || line.starts_with('#') {
+            continue;
+        }
+        if let Some((k, v)) = line.split_once('=') {
+            if k.trim() == "murk" {
+                return v.trim().parse().ok();
+            }
+        }
+    }
+    None
+}
+
 fn readable_regions() -> Vec<(usize, usize)> {
     let mut out = Vec::new();
     let mut addr = 0x10000usize;
@@ -117,7 +137,6 @@ fn save_cands(path: &PathBuf, hits: &[usize]) {
     let _ = fs::write(path, body);
 }
 
-/// Scan for `value`. If a previous candidate file exists, only test those.
 pub fn run(dir: Option<&PathBuf>, value: i32) -> String {
     let path = dir.map(|d| d.join("murk_cands.txt"));
     let prior = path.as_ref().map(load_cands).unwrap_or_default();
