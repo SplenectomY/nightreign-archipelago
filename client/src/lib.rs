@@ -1,14 +1,16 @@
-//! Phase 0 client. Attach, resolve event flags, log 0->1 edges.
+//! Phase 0 client. Attach, resolve event flags, submit AP checks.
 
 #![cfg(windows)]
 
 mod aob;
+mod ap;
 mod flagman;
 
 use std::ffi::c_void;
 use std::fs::{self, OpenOptions};
 use std::io::Write;
 use std::path::PathBuf;
+use std::sync::mpsc;
 use std::sync::OnceLock;
 use std::thread;
 use std::time::Duration;
@@ -144,9 +146,11 @@ fn dll_dir() -> Option<PathBuf> {
 #[derive(Clone)]
 struct Watch {
     location: String,
+    location_id: i64,
     flag: u32,
     last: Option<bool>,
     miss_logged: bool,
+    submitted: bool,
 }
 
 fn toml_key_value(line: &str) -> Option<(&str, &str)> {
@@ -161,22 +165,29 @@ fn toml_key_value(line: &str) -> Option<(&str, &str)> {
 fn parse_watches(text: &str) -> Vec<Watch> {
     let mut out = Vec::new();
     let mut location = None::<String>;
+    let mut location_id = None::<i64>;
     let mut flag = None::<u32>;
-    let flush = |location: &mut Option<String>, flag: &mut Option<u32>, out: &mut Vec<Watch>| {
+    let flush = |location: &mut Option<String>,
+                 location_id: &mut Option<i64>,
+                 flag: &mut Option<u32>,
+                 out: &mut Vec<Watch>| {
         if let (Some(loc), Some(id)) = (location.take(), flag.take()) {
             if id != 0 {
                 out.push(Watch {
                     location: loc,
+                    location_id: location_id.take().unwrap_or(0),
                     flag: id,
                     last: None,
                     miss_logged: false,
+                    submitted: false,
                 });
             }
         }
+        let _ = location_id.take();
     };
     for line in text.lines() {
         if line.trim().starts_with("[[flag]]") {
-            flush(&mut location, &mut flag, &mut out);
+            flush(&mut location, &mut location_id, &mut flag, &mut out);
             continue;
         }
         let Some((k, v)) = toml_key_value(line) else {
@@ -185,11 +196,14 @@ fn parse_watches(text: &str) -> Vec<Watch> {
         if k == "location" {
             location = Some(v.to_string());
         }
+        if k == "location_id" {
+            location_id = v.parse().ok();
+        }
         if k == "event_flag_id" {
             flag = v.parse().ok();
         }
     }
-    flush(&mut location, &mut flag, &mut out);
+    flush(&mut location, &mut location_id, &mut flag, &mut out);
     out
 }
 
@@ -239,20 +253,29 @@ fn worker() {
         ),
     );
 
-    let mut watches = config
-        .as_ref()
-        .and_then(|p| fs::read_to_string(p).ok())
-        .map(|t| parse_watches(&t))
-        .unwrap_or_default();
+    let text = config.as_ref().and_then(|p| fs::read_to_string(p).ok());
+    let mut watches = text.as_deref().map(parse_watches).unwrap_or_default();
     if watches.is_empty() {
         log_line(&dir, "NRAP no event_flag_id values in flags.toml");
     } else {
         for w in &watches {
             log_line(
                 &dir,
-                &format!("NRAP watching {} flag {}", w.location, w.flag),
+                &format!(
+                    "NRAP watching {} flag {} loc {}",
+                    w.location, w.flag, w.location_id
+                ),
             );
         }
+    }
+
+    let (tx, rx) = mpsc::channel::<i64>();
+    if let Some(text) = text.as_deref() {
+        let ap_cfg = ap::ApConfig::from_toml(text);
+        let dir_ap = dir.clone();
+        thread::spawn(move || {
+            ap::run(ap_cfg, rx, |msg| log_line(&dir_ap, msg));
+        });
     }
 
     let mut man = None;
@@ -294,6 +317,10 @@ fn worker() {
                                 );
                             }
                             w.last = Some(on);
+                        }
+                        if on && !w.submitted && w.location_id != 0 {
+                            let _ = tx.send(w.location_id);
+                            w.submitted = true;
                         }
                     }
                     None => {
