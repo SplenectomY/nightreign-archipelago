@@ -380,6 +380,12 @@ fn worker() {
         if let Some(msg) = grant::retry_pending() {
             log_line(&dir, &msg);
         }
+        if let Some(msg) = flag_write::retry_pending() {
+            log_line(&dir, &msg);
+        }
+        if let Some(msg) = drop::retry_pending() {
+            log_line(&dir, &msg);
+        }
         if let Some(text) = config.as_ref().and_then(|p| fs::read_to_string(p).ok()) {
             if scan::enabled(&text) {
                 if let Some(v) = scan::murk_from_toml(&text) {
