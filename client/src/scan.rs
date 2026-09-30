@@ -1,4 +1,4 @@
-//! In-process 4-byte value scan. Used to find the Hold Murk wallet.
+//! In-process 4-byte value scan. Parked: requires [scan] enable = true.
 
 #![cfg(windows)]
 
@@ -45,7 +45,7 @@ fn page_readable(p: usize) -> bool {
     }
 }
 
-pub fn murk_from_toml(text: &str) -> Option<i32> {
+fn scan_section_key(text: &str, key: &str) -> Option<String> {
     let mut in_scan = false;
     for line in text.lines() {
         let line = line.trim();
@@ -57,33 +57,30 @@ pub fn murk_from_toml(text: &str) -> Option<i32> {
             continue;
         }
         if let Some((k, v)) = line.split_once('=') {
-            if k.trim() == "murk" {
-                return v.trim().parse().ok();
+            if k.trim() == key {
+                return Some(v.trim().trim_matches('"').to_string());
             }
         }
     }
     None
 }
 
+pub fn enabled(text: &str) -> bool {
+    matches!(
+        scan_section_key(text, "enable").as_deref(),
+        Some("1" | "true" | "True")
+    )
+}
+
+pub fn murk_from_toml(text: &str) -> Option<i32> {
+    scan_section_key(text, "murk")?.parse().ok()
+}
+
 pub fn grant_now_from_toml(text: &str) -> bool {
-    let mut in_scan = false;
-    for line in text.lines() {
-        let line = line.trim();
-        if line.starts_with('[') {
-            in_scan = line == "[scan]";
-            continue;
-        }
-        if !in_scan || line.starts_with('#') {
-            continue;
-        }
-        if let Some((k, v)) = line.split_once('=') {
-            if k.trim() == "grant_now" {
-                let v = v.trim();
-                return v == "1" || v.eq_ignore_ascii_case("true");
-            }
-        }
-    }
-    false
+    matches!(
+        scan_section_key(text, "grant_now").as_deref(),
+        Some("1" | "true" | "True")
+    )
 }
 
 fn readable_regions() -> Vec<(usize, usize)> {
