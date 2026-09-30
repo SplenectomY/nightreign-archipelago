@@ -1,0 +1,13 @@
+name: Player1
+game: Elden Ring Nightreign
+description: Phase 0 template for Nightreign Archipelago
+
+Elden Ring Nightreign:
+  goal: heolstor
+  nightlord_count: 4
+  specific_nightlord: heolstor
+  include_everdark: true
+  include_dlc: true
+  shop_checks: unique_only
+  starting_nightfarers: 1
+  death_link: false
