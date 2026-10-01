@@ -75,6 +75,14 @@ fn item_name(id: i64) -> &'static str {
     }
 }
 
+fn parse_seed(text: &str) -> Option<String> {
+    let key = "\"seed_name\":\"";
+    let at = text.find(key)?;
+    let rest = &text[at+key.len()..];
+    let end = rest.find('"')?;
+    Some(rest[..end].to_string())
+}
+
 fn parse_i64_after(hay: &str, key: &str) -> Option<i64> {
     let needle = format!("\"{key}\":");
     let i = hay.find(&needle)?;
