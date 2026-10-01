@@ -337,6 +337,46 @@ pub fn load_cache(dir: Option<&std::path::PathBuf>) -> String {
     format!("NRAP unlock cache loaded {} seed={seed}", flags.len())
 }
 
+static BOSS_KILLS: Mutex<u32> = Mutex::new(0);
+static BOSS_PATH: Mutex<Option<std::path::PathBuf>> = Mutex::new(None);
+
+fn boss_path(dir: &std::path::PathBuf) -> std::path::PathBuf {
+    dir.join("boss_kills.txt")
+}
+
+pub fn load_boss_kills(dir: Option<&std::path::PathBuf>) -> String {
+    let Some(dir) = dir else { return "NRAP boss kills no dir".into() };
+    let path = boss_path(dir);
+    let text = std::fs::read_to_string(&path).unwrap_or_default();
+    let mut seed = String::new();
+    let mut count = 0u32;
+    for line in text.lines() {
+        if let Some(rest) = line.trim().strip_prefix("seed=") { seed = rest.to_string(); }
+        if let Some(rest) = line.trim().strip_prefix("count=") { count = rest.parse().unwrap_or(0); }
+    }
+    *BOSS_PATH.lock().unwrap() = Some(path);
+    *BOSS_KILLS.lock().unwrap() = count;
+    format!("NRAP boss kills loaded {count} seed={seed}")
+}
+
+pub fn note_boss_kill() -> Option<String> {
+    if !ARMED.load(std::sync::atomic::Ordering::SeqCst) {
+        return Some("NRAP boss kill ignored, seed not armed".into());
+    }
+    let mut count = BOSS_KILLS.lock().unwrap();
+    *count += 1;
+    let n = *count;
+    if let Some(path) = BOSS_PATH.lock().unwrap().as_ref() {
+        let seed = CACHE_SEED.lock().unwrap().clone();
+        let _ = std::fs::write(path, format!("seed={seed}\ncount={n}\n"));
+    }
+    Some(format!("NRAP boss kills {n}"))
+}
+
+pub fn boss_kill_count() -> u32 {
+    *BOSS_KILLS.lock().unwrap()
+}
+
 pub fn bind_seed(seed: &str) -> String {
     let known = CACHE_SEED.lock().unwrap().clone();
     if !known.is_empty() && known != seed {
@@ -350,7 +390,15 @@ pub fn bind_seed(seed: &str) -> String {
     }
     *CACHE_SEED.lock().unwrap() = seed.to_string();
     ARMED.store(true, std::sync::atomic::Ordering::SeqCst);
-    format!("NRAP unlock cache armed seed={seed} flags={}", CACHED.lock().unwrap().len())
+    if let Some(path) = BOSS_PATH.lock().unwrap().as_ref() {
+        let text = std::fs::read_to_string(path).unwrap_or_default();
+        let saved = text.lines().find_map(|l| l.trim().strip_prefix("seed=")).unwrap_or("");
+        if saved != seed {
+            *BOSS_KILLS.lock().unwrap() = 0;
+            let _ = std::fs::write(path, format!("seed={seed}\ncount=0\n"));
+        }
+    }
+    format!("NRAP unlock cache armed seed={seed} flags={} boss_kills={}", CACHED.lock().unwrap().len(), boss_kill_count())
 }
 
 pub fn remember_unlock(item_id: i64) {

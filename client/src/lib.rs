@@ -333,6 +333,7 @@ fn worker() {
     );
 
     log_line(&dir, &flag_write::load_cache(dir.as_ref()));
+    log_line(&dir, &flag_write::load_boss_kills(dir.as_ref()));
     let text = config.as_ref().and_then(|p| fs::read_to_string(p).ok());
     if let Some(text) = text.as_ref() {
         let in_pool = text.lines().any(|l| l.trim() == "heolstor_in_pool = true");
@@ -408,6 +409,18 @@ fn worker() {
                                 );
                                 if let Some(msg) = flag_write::note_defeat(w.flag) {
                                     log_line(&dir, &msg);
+                                }
+                                if w.flag == 7512 {
+                                    if let Some(msg) = flag_write::note_boss_kill() {
+                                        log_line(&dir, &msg);
+                                    }
+                                    let n = flag_write::boss_kill_count();
+                                    for (need, loc) in [(1, 839000801i64), (3, 839000803), (5, 839000805), (10, 839000810), (20, 839000820)] {
+                                        if n == need {
+                                            let _ = tx.send(loc);
+                                            log_line(&dir, &format!("NRAP boss kill check {need} loc {loc}"));
+                                        }
+                                    }
                                 }
                             } else {
                                 log_line(

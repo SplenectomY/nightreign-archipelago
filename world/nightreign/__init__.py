@@ -103,6 +103,8 @@ class NightreignWorld(World):
                 hold_locs[name] = LOCATION_NAME_TO_ID[name]
         for i in range(1, 28):
             hold_locs[f"Murk {i}"] = LOCATION_NAME_TO_ID[f"Murk {i}"]
+        for name in ["Bosses Killed (1)", "Bosses Killed (3)", "Bosses Killed (5)", "Bosses Killed (10)", "Bosses Killed (20)"]:
+            hold_locs[name] = LOCATION_NAME_TO_ID[name]
         for loc_name, _item in self._nightlords() + self._everdark():
             hold_locs[loc_name] = LOCATION_NAME_TO_ID[loc_name]
         hold.add_locations(hold_locs, NightreignLocation)

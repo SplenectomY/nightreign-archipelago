@@ -730,3 +730,8 @@ kind = "shop"
 event_flag_id = 67290
 release_flag = 68883
 
+[[flag]]
+location = "Night boss defeated"
+location_id = 839000751
+kind = "event_flag"
+event_flag_id = 7512
