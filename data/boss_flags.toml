@@ -165,3 +165,11 @@ boss = "Demihuman Queen"
 bits = [74000, 74001, 74007, 74008, 74009, 74010, 74011, 74013, 74014, 74017, 74019]
 sample = "2026-10-01-run2"
 notes = "Repeated from the Gladius overworld sample. Second line was 869000-869003."
+
+[[day_boss]]
+nightlord = "Adel"
+day = 2
+boss = "Outland Commander"
+bits = [896007, 896008, 896011, 896012, 896016]
+sample = "2026-10-01"
+notes = "Start included 752021, 752025, 752028, 896003. Those are no longer Ancient Dragon."

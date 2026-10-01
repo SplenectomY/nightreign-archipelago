@@ -39,8 +39,9 @@ Death bits are the after line. Before/during bits are the scan that preceded it.
 | Adel | 1 | Duke's Dear Freja | 878001, 878006, 878009, 878010, 878015 | 878000 |
 | Adel | 1 | Valiant Gargoyle | 1102, 88016, 623900, 878001, 878006, 878009, 878010 | 88014, 878007, 878008, 878011, 878012, 893900, 893901, 893902, 893903 |
 | Adel | 1 | Valiant Gargoyle run 2 | 53022, 81019, 623900, 749800, 752000, 752001, 752002, 752003, 752004, 920900 | 88014, 116005 |
-| Adel | 2 | Ancient Dragon | 1105, 1314, 9018, 200010, 200011, 200099 | 752021, 752025, 752028, 797003, 797007, 797010, 896003 |
+| Adel | 2 | Ancient Dragon | 1105, 1314, 200010, 200011, 200099 | 797003, 797007, 797010 |
 | Adel | 1 | Night's Cavalry | 905001, 905006, 905015, 905016 | 905000, 905007, 905008, 905011, 905012, 905013 |
+| Adel | 2 | Outland Commander | 9015, 9018, 9019, 752021, 752025, 752028, 842021, 842025, 842028, 896003, 896013, 896014, 896015 | 896007, 896008, 896011, 896012, 896016 |
 | Gladius | 1 | Demihuman Queen | 1102, 1108, 9015, 9019, 623900, 896001, 896011, 896012, 920900 | 896007, 896008, 896013, 896017 |
 | Gladius | overworld | Demihuman Queen | 531, 74000-74019, 779011-779023, truncated +35 | 74018 |
 | Adel | overworld | Demihuman Queen run 2 | 74000, 74001, 74007-74011, 74013, 74014, 74017, 74019, 797011-797024, truncated +40 | 869000, 869001, 869002, 869003 |
@@ -62,6 +63,8 @@ Fell Omen, Adel overworld, 2026-10-01, 19:20 to 19:21. The start line was +119 a
 Tree Sentinel, Adel overworld, 2026-10-01, 19:25 to 19:27. `5000` rose mid-fight. End line also had 532, 9130, 758800. `51201`-`51203` did not rise.
 
 Overworld Demihuman Queen, Adel, 2026-10-01. The 740xx cluster repeated from the Gladius overworld Demihuman Queen. `5000` rose again at the start.
+
+Outland Commander, Adel Night 2, 2026-10-01. `752021`, `752025`, `752028`, and `896003` rose at the start, so they are not Ancient Dragon. `896002` rose mid-fight and is already noise.
 ## Adding a sample
 
 Copy a row. Keep the Nightlord, day, and boss name. If the same pair is run again, add the new bits in the notes column of `data/boss_flags.toml` instead of deleting the first sample.
