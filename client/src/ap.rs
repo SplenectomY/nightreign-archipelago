@@ -244,6 +244,13 @@ fn send_goal(socket: &mut Socket) -> Result<bool, String> {
     Ok(true)
 }
 
+fn send_say(socket: &mut Socket, text: &str) -> Result<(), String> {
+    let pkt = format!("[{{\"cmd\":\"Say\",\"text\":\"{text}\"}}]");
+    socket
+        .send(Message::Text(pkt.into()))
+        .map_err(|e| format!("Say: {e}"))
+}
+
 fn send_checks(socket: &mut Socket, ids: &[i64]) -> Result<(), String> {
     if ids.is_empty() {
         return Ok(());
@@ -259,7 +266,7 @@ fn send_checks(socket: &mut Socket, ids: &[i64]) -> Result<(), String> {
         .map_err(|e| format!("LocationChecks: {e}"))
 }
 
-pub fn run(cfg: ApConfig, rx: Receiver<i64>, drop_goods: i32, log: impl Fn(&str)) {
+pub fn run(cfg: ApConfig, rx: Receiver<i64>, say_rx: Receiver<String>, drop_goods: i32, log: impl Fn(&str)) {
     log(&format!("NRAP AP targeting {} slot {}", cfg.host, cfg.slot));
     let mut pending: Vec<i64> = Vec::new();
     loop {
@@ -280,6 +287,12 @@ pub fn run(cfg: ApConfig, rx: Receiver<i64>, drop_goods: i32, log: impl Fn(&str)
                     log(&format!("NRAP AP resent {} cached checks", pending.len()));
                 }
                 loop {
+                    while let Ok(line) = say_rx.try_recv() {
+                        match send_say(&mut socket, &line) {
+                            Ok(()) => log(&format!("NRAP AP say {line}")),
+                            Err(e) => log(&format!("NRAP AP say failed: {e}")),
+                        }
+                    }
                     match rx.recv_timeout(Duration::from_millis(250)) {
                         Ok(id) => {
                             if !pending.contains(&id) {

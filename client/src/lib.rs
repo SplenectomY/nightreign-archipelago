@@ -14,6 +14,7 @@ mod scan;
 
 use std::ffi::c_void;
 use std::fs::{self, OpenOptions};
+use std::io::{self, BufRead};
 use std::io::Write;
 use std::path::PathBuf;
 use std::sync::mpsc;
@@ -318,14 +319,31 @@ fn worker() {
     }
 
     let (tx, rx) = mpsc::channel::<i64>();
+    let (say_tx, say_rx) = mpsc::channel::<String>();
     if let Some(text) = text.as_deref() {
         let ap_cfg = ap::ApConfig::from_toml(text);
         let dir_ap = dir.clone();
         let drop_goods = drop::drop_item_id_from_toml(text);
         thread::spawn(move || {
-            ap::run(ap_cfg, rx, drop_goods, |msg| log_line(&dir_ap, msg));
+            ap::run(ap_cfg, rx, say_rx, drop_goods, |msg| log_line(&dir_ap, msg));
         });
     }
+    thread::spawn(move || {
+        let stdin = std::io::stdin();
+        loop {
+            let mut line = String::new();
+            if stdin.read_line(&mut line).is_err() {
+                break;
+            }
+            let line = line.trim().to_string();
+            if line.is_empty() {
+                continue;
+            }
+            if line.starts_with('!') {
+                let _ = say_tx.send(line);
+            }
+        }
+    });
 
     let mut man = None;
     let mut fail_logged = false;
