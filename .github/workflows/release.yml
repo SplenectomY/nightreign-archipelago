@@ -58,7 +58,7 @@ jobs:
           5. Generate, host MultiServer, then launch with me3. Do not also launch nrsc_launcher.exe.
           6. The console must print NRAP attached and NRAP AP connected.
 
-          regulation/regulation.bin is included and the profile loads it. Do not open the expedition board unless the Nightfarer you are controlling has been granted. A locked active Nightfarer exits the game and Windows writes no crash dump. Remove the [[packages]] block to run without that override.
+          regulation/regulation.bin is included and the profile loads it. Shop rows stay hidden until their release flag is granted. Do not open character select or the expedition board until the log shows the unlock cache armed, or the menu can exit the game. Remove the [[packages]] block to run without that override.
 
           You do not need Rust or Visual Studio.
           EOF
