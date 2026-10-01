@@ -70,8 +70,7 @@ pub fn set_flag(flag: u32, on: bool) -> Result<String, String> {
     ))
 }
 
-/// Low unnamed flags. The setter kept 115 and did not keep 900203.
-/// Everdark rows use their own flags so a base defeat does not open them.
+/// Low unnamed flags. 210 and 211 are already named, so Everdark starts at 212.
 pub fn flag_for_item(item_id: i64) -> Option<u32> {
     match item_id {
         839_100_002 => Some(190),
@@ -83,14 +82,14 @@ pub fn flag_for_item(item_id: i64) -> Option<u32> {
         839_100_008 => Some(115),
         839_100_009 => Some(135),
         839_100_010 => Some(136),
-        839_100_111 => Some(210),
-        839_100_112 => Some(211),
-        839_100_113 => Some(212),
-        839_100_114 => Some(213),
-        839_100_115 => Some(214),
-        839_100_116 => Some(215),
-        839_100_117 => Some(216),
-        839_100_118 => Some(217),
+        839_100_111 => Some(212),
+        839_100_112 => Some(213),
+        839_100_113 => Some(214),
+        839_100_114 => Some(215),
+        839_100_115 => Some(216),
+        839_100_116 => Some(217),
+        839_100_117 => Some(218),
+        839_100_118 => Some(219),
         _ => None,
     }
 }
