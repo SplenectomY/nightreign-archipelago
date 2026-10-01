@@ -149,3 +149,11 @@ boss = "Fell Omen"
 bits = [878002, 1022002, 1076002, 1085002, 1094002, 1103002, 1112002, 1121002]
 sample = "2026-10-01"
 notes = "Start line truncated +119. 878000 rose at fight start. 51201-51203 rose across the fight."
+
+[[day_boss]]
+nightlord = "Adel"
+day = 0
+boss = "Tree Sentinel"
+bits = [761000, 761001, 761002, 761003, 761004, 761005]
+sample = "2026-10-01"
+notes = "Start: 9132, 650830, 653045-653052. 5000 rose mid-fight."
