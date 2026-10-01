@@ -383,9 +383,8 @@ fn worker() {
         if let Some(msg) = flag_write::retry_pending() {
             log_line(&dir, &msg);
         }
-        let hero_msg = hero::apply();
-        if hero_msg.contains("->") {
-            log_line(&dir, &hero_msg);
+        if let Some(msg) = hero::apply() {
+            log_line(&dir, &msg);
         }
         if let Some(msg) = drop::retry_pending() {
             log_line(&dir, &msg);

@@ -18,6 +18,7 @@ extern "system" {
 
 static OBJECT: AtomicUsize = AtomicUsize::new(0);
 static WANTED: AtomicU32 = AtomicU32::new(0);
+static WYLDER_GRANTED: AtomicU32 = AtomicU32::new(0);
 static GETTER_ADDR: AtomicUsize = AtomicUsize::new(0);
 
 pub fn session_id(item_id: i64) -> Option<u8> {
@@ -113,30 +114,36 @@ pub fn init() -> Result<String, String> {
 
 pub fn want(item_id: i64) -> Option<String> {
     let id = session_id(item_id)?;
+    if id == 1 {
+        WYLDER_GRANTED.store(1, Ordering::SeqCst);
+        return None;
+    }
     WANTED.store(id as u32, Ordering::SeqCst);
-    Some(apply())
+    apply()
 }
 
-pub fn apply() -> String {
+/// Write only when the live body is Wylder and Wylder was not granted.
+pub fn apply() -> Option<String> {
+    if WYLDER_GRANTED.load(Ordering::SeqCst) != 0 {
+        return None;
+    }
     let id = WANTED.load(Ordering::SeqCst) as u8;
-    if id == 0 {
-        return "NRAP hero no starting id yet".into();
+    if id == 0 || id == 1 {
+        return None;
     }
     let saved = OBJECT.load(Ordering::SeqCst);
     if saved < 0x10000 {
-        return "NRAP hero object not captured".into();
+        return None;
     }
     let object = unsafe { std::ptr::read_unaligned(saved as *const usize) };
-    let Some(slot) = slot_addr(object) else {
-        return format!("NRAP hero object not live saved=0x{saved:X} rcx=0x{object:X}");
-    };
+    let slot = slot_addr(object)?;
     let before = unsafe { std::ptr::read_unaligned(slot as *const u8) };
-    if before == id {
-        return format!("NRAP hero slot=0x{slot:X} already {id}");
+    if before != 1 {
+        return None;
     }
     if !write_byte(slot, id) {
-        return format!("NRAP hero write failed slot=0x{slot:X}");
+        return Some(format!("NRAP hero write failed slot=0x{slot:X}"));
     }
     let after = unsafe { std::ptr::read_unaligned(slot as *const u8) };
-    format!("NRAP hero slot=0x{slot:X} {before}->{after}")
+    Some(format!("NRAP hero Wylder not granted, slot=0x{slot:X} {before}->{after}"))
 }
