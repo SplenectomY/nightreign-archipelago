@@ -36,6 +36,20 @@ class SpecificNightlord(Choice):
     default = 7
 
 
+class HeolstorInPool(Toggle):
+    """If false, Heolstor is not a shuffled unlock. The slot opens him after heolstor_unlock_count other Nightlord unlocks."""
+    display_name = "Heolstor In Pool"
+    default = False
+
+
+class HeolstorUnlockCount(Range):
+    """Other Nightlord expedition unlocks required before this slot can open Heolstor. Ignored when Heolstor is in the pool."""
+    display_name = "Heolstor Unlock Count"
+    range_start = 1
+    range_end = 9
+    default = 4
+
+
 class IncludeEverdark(Toggle):
     """Add Everdark Sovereign locations. Client will attempt an offline unlock."""
     display_name = "Include Everdark"
@@ -75,6 +89,8 @@ class NightreignOptions(PerGameCommonOptions):
     goal: Goal
     nightlord_count: NightlordCount
     specific_nightlord: SpecificNightlord
+    heolstor_in_pool: HeolstorInPool
+    heolstor_unlock_count: HeolstorUnlockCount
     include_everdark: IncludeEverdark
     include_dlc: IncludeDlc
     shop_checks: ShopChecks
