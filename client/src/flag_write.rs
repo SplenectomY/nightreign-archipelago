@@ -354,6 +354,12 @@ pub fn shop_granted(flag: u32) -> bool {
 }
 
 pub fn apply_item(item_id: i64) -> Option<String> {
+    if let Some(release) = shop_release(item_id) {
+        return Some(match set_flag(release, true) {
+            Ok(msg) => format!("{msg} (shop row unlocked)"),
+            Err(e) => format!("NRAP shop release queued flag={release} ({e})"),
+        });
+    }
     let gate = None;
     let Some(flag) = flag_for_item(item_id) else {
         return gate.or_else(|| Some(format!("NRAP grant {item_id} (no unlock flag)")));
