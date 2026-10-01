@@ -70,8 +70,16 @@ pub fn set_flag(flag: u32, on: bool) -> Result<String, String> {
     ))
 }
 
+/// Regulation override gives each secondary Nightlord its own unlock flag.
+/// Flag 110 is never set.
 pub fn flag_for_item(item_id: i64) -> Option<u32> {
     match item_id {
+        839_100_002 => Some(900_201),
+        839_100_003 => Some(900_202),
+        839_100_004 => Some(900_203),
+        839_100_005 => Some(900_204),
+        839_100_006 => Some(900_205),
+        839_100_007 => Some(900_206),
         839_100_008 => Some(115),
         839_100_009 => Some(135),
         839_100_010 => Some(136),
@@ -114,7 +122,7 @@ pub fn apply_item(item_id: i64) -> Option<String> {
     menu::grant(item_id);
     let gate = note_unlock(item_id);
     let Some(flag) = flag_for_item(item_id) else {
-        return gate.or_else(|| Some(format!("NRAP menu grant {item_id} (no shared flag)")));
+        return gate.or_else(|| Some(format!("NRAP grant {item_id} (no unlock flag)")));
     };
     let msg = match set_flag(flag, true) {
         Ok(msg) => msg,
