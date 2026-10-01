@@ -207,6 +207,8 @@ pub fn apply_item(item_id: i64) -> Option<String> {
 }
 
 pub fn retry_pending() -> Option<String> {
+    // Wylder is the default active body. The board exits if flag 222 is off.
+    remember_nightfarer(222);
     let reapplied = reapply_nightfarers();
     let mut q = PENDING.lock().unwrap();
     if q.is_empty() {
