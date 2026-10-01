@@ -5,6 +5,7 @@ game = "nightreign"
 
 # Seamless MUST load before our DLL. SignIn is patched in nrsc DllMain.
 # Do not launch with nrsc_launcher.exe and this profile at the same time.
+# Paths must use forward slashes. Backslashes are escape characters and the file will not load.
 
 [[natives]]
 path = 'C:/Program Files (x86)/Steam/steamapps/common/ELDEN RING NIGHTREIGN/Game/SeamlessCoop/nrsc.dll'
