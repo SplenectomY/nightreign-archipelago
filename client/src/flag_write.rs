@@ -11,10 +11,18 @@ const BASE_A: &str = "48 89 5C 24 08 44 8B 49 1C 44";
 type SetFlagFn = unsafe extern "C" fn(inst: usize, flag: u32, on: u32);
 
 static PENDING: Mutex<Vec<u32>> = Mutex::new(Vec::new());
+static HEOLSTOR_IN_POOL: Mutex<bool> = Mutex::new(false);
+static HEOLSTOR_NEED: Mutex<u32> = Mutex::new(4);
+static UNLOCKS: Mutex<Vec<i64>> = Mutex::new(Vec::new());
 
 fn find_setter(span: ModuleSpan) -> Option<usize> {
     let rel = aob::find_pattern(span.slice(), BASE_A)?;
     Some(span.base + rel)
+}
+
+pub fn configure_heolstor(in_pool: bool, count: u32) {
+    *HEOLSTOR_IN_POOL.lock().unwrap() = in_pool;
+    *HEOLSTOR_NEED.lock().unwrap() = count.max(1);
 }
 
 pub fn debug_flag_from_toml(text: &str) -> Option<u32> {
@@ -63,7 +71,7 @@ pub fn set_flag(flag: u32, on: bool) -> Result<String, String> {
 
 pub fn flag_for_item(item_id: i64) -> Option<u32> {
     match item_id {
-        839_100_001 => Some(110),
+        839_100_001..=839_100_007 => Some(110),
         839_100_008 => Some(115),
         839_100_009 => Some(135),
         839_100_010 => Some(136),
@@ -71,18 +79,54 @@ pub fn flag_for_item(item_id: i64) -> Option<u32> {
     }
 }
 
+fn note_unlock(item_id: i64) -> Option<String> {
+    if !(839_100_001..=839_100_007).contains(&item_id) && item_id != 839_100_009 && item_id != 839_100_010 {
+        return None;
+    }
+    if *HEOLSTOR_IN_POOL.lock().unwrap() {
+        return None;
+    }
+    let mut got = UNLOCKS.lock().unwrap();
+    if !got.contains(&item_id) {
+        got.push(item_id);
+    }
+    let need = *HEOLSTOR_NEED.lock().unwrap();
+    if got.len() < need as usize {
+        return Some(format!(
+            "NRAP Heolstor gate {}/{} (local, not in pool)",
+            got.len(),
+            need
+        ));
+    }
+    match set_flag(115, true) {
+        Ok(msg) => Some(format!("{msg} after {} Nightlord unlocks", got.len())),
+        Err(e) => {
+            let mut q = PENDING.lock().unwrap();
+            if !q.contains(&115) {
+                q.push(115);
+            }
+            Some(format!("NRAP Heolstor gate met, flag 115 queued ({e})"))
+        }
+    }
+}
+
 pub fn apply_item(item_id: i64) -> Option<String> {
+    let gate = note_unlock(item_id);
     let flag = flag_for_item(item_id)?;
-    match set_flag(flag, true) {
-        Ok(msg) => Some(msg),
+    let msg = match set_flag(flag, true) {
+        Ok(msg) => msg,
         Err(e) => {
             let mut q = PENDING.lock().unwrap();
             if !q.contains(&flag) {
                 q.push(flag);
             }
-            Some(format!("NRAP SetEventFlag queued flag={flag} item={item_id} ({e})"))
+            format!("NRAP SetEventFlag queued flag={flag} item={item_id} ({e})")
         }
-    }
+    };
+    Some(match gate {
+        Some(extra) => format!("{msg}; {extra}"),
+        None => msg,
+    })
 }
 
 pub fn retry_pending() -> Option<String> {
