@@ -10,4 +10,6 @@ Elden Ring Nightreign:
   include_dlc: true
   shop_checks: unique_only
   starting_nightfarers: 1
+  starting_shop_min: 3
+  starting_shop_max: 6
   death_link: false

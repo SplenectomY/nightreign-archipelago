@@ -78,6 +78,22 @@ class StartingNightfarers(Range):
     default = 1
 
 
+class StartingShopMin(Range):
+    """Minimum shop items unlocked at the start. Rolled once per generation."""
+    display_name = "Starting Shop Min"
+    range_start = 0
+    range_end = 40
+    default = 3
+
+
+class StartingShopMax(Range):
+    """Maximum shop items unlocked at the start. Rolled once per generation."""
+    display_name = "Starting Shop Max"
+    range_start = 0
+    range_end = 40
+    default = 6
+
+
 class DeathLink(Toggle):
     """Not implemented in Phase 0."""
     display_name = "Death Link"
@@ -95,4 +111,6 @@ class NightreignOptions(PerGameCommonOptions):
     include_dlc: IncludeDlc
     shop_checks: ShopChecks
     starting_nightfarers: StartingNightfarers
+    starting_shop_min: StartingShopMin
+    starting_shop_max: StartingShopMax
     death_link: DeathLink

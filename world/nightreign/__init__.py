@@ -126,8 +126,16 @@ class NightreignWorld(World):
         pool: List[Item] = [self.create_item(name) for name in unlocks if name != start]
         pool += [self.create_item(name) for name in everdark]
         pool += [self.create_item(name) for name in roster[start_count:]]
-        if self.options.shop_checks.current_key != "none":
-            pool += [self.create_item(name) for name in SHOP_ITEMS]
+        shop = list(SHOP_ITEMS) if self.options.shop_checks.current_key != "none" else []
+        self.random.shuffle(shop)
+        low = int(self.options.starting_shop_min)
+        high = int(self.options.starting_shop_max)
+        if high < low:
+            low, high = high, low
+        start_shop = min(self.random.randint(low, high) if high else 0, len(shop))
+        for name in shop[:start_shop]:
+            self.push_precollected(self.create_item(name))
+        pool += [self.create_item(name) for name in shop[start_shop:]]
         unfilled = sum(1 for loc in self.multiworld.get_locations(self.player) if not loc.item)
         # Victory is locked in set_rules, so leave one location empty.
         murk = ["Murk Purse"] * 8 + ["Murk Bundle"] * 8 + ["Murk Coffer"] * 6 + ["Murk Chest"] * 3 + ["Murk Hoard"] * 2
