@@ -109,3 +109,11 @@ boss = "Duke's Dear Freja"
 bits = [878000, 878001, 878006, 878009, 878010, 878015]
 sample = "2026-10-01"
 notes = "9015 and 9019 rose on the after line and are the shared pair."
+
+[[day_boss]]
+nightlord = "Adel"
+day = 1
+boss = "Valiant Gargoyle"
+bits = [88014, 878007, 878008, 878011, 878012, 893900, 893901, 893902, 893903]
+sample = "2026-10-01"
+notes = "Before: 1102, 88016, 623900, 878001, 878006, 878009, 878010. After also had 878000 and the shared post-fight set."
