@@ -31,15 +31,15 @@ These are the Hold flags already watched by the client.
 
 ## Day bosses
 
-| Nightlord | Day | Boss | Death bits | Sample |
-|---|---:|---|---|---|
-| Adel | 1 | Gaping Dragon | 887007, 887008, 887010, 887012, 887013, 887014 | 2026-10-01 |
-| Adel | 2 | Ancient Dragon | 752021, 752025, 752028, 797003, 797007, 797010, 896002, 896003 | 2026-10-01 |
-| Gladius | 1 | Demihuman Queen | 896007, 896008, 896013, 896017 | 2026-10-01 |
-| Gladius | overworld | Demihuman Queen | 5000, 67014, 67043, 67044, 67048, 67050, 67051, 67052, 67057, 67060, 67062, 74018 | 2026-10-01 |
-| Adel | 1 | Duke's Dear Freja | 878000, 878001, 878006, 878009, 878010, 878015 | 2026-10-01 |
+Death bits are the after line. Before/during bits are the scan that preceded it. Noise already removed from the after column: `896002`, `896006`, `896009`, `896010`. `9015` and `9019` are the shared pair and are left in the column where they rose.
 
-Fight bits that came on before the death are not in this table. For the Adel Day 1 fight those were the earlier `887000`-`887011` flags.
+| Nightlord | Day | Boss | Before / during | After |
+|---|---:|---|---|---|
+| Adel | 1 | Gaping Dragon | 1102, 1108, 9015, 9019, 67020, 887000, 887001, 887006, 887009, 887011 | 887007, 887008, 887010, 887012, 887013, 887014 |
+| Adel | 1 | Duke's Dear Freja | 878001, 878006, 878009, 878010, 878015 | 878000 |
+| Adel | 2 | Ancient Dragon | 1105, 1314, 9015, 9018, 9019, 200010, 200011, 200099 | 752021, 752025, 752028, 797003, 797007, 797010, 896003 |
+| Gladius | 1 | Demihuman Queen | 1102, 1108, 9015, 9019, 623900, 896001, 896011, 896012, 920900 | 896007, 896008, 896013, 896017 |
+| Gladius | overworld | Demihuman Queen | 531, 74000-74019, 779011-779023, truncated +35 | 5000, 67014, 67043, 67044, 67048, 67050, 67051, 67052, 67057, 67060, 67062, 74018 |
 
 ## Adding a sample
 
