@@ -16,3 +16,9 @@ load_early = true
 path = 'C:/Mods/nightreign-ap/nightreign_ap.dll'
 optional = false
 load_early = false
+
+# Regulation override. Gates expeditions and default Nightfarers.
+# Removing this block stops the expedition-board exit. Paths use forward slashes.
+[[packages]]
+id = "nrap-regulation"
+path = 'C:/Mods/nightreign-ap/regulation'

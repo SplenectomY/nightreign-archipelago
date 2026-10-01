@@ -45,6 +45,8 @@ jobs:
           cp nightreign.apworld dist/nightreign-ap/
           cp players/Nightreign.yaml dist/nightreign-ap/
           cp docs/PHASE0_TESTER.md dist/nightreign-ap/
+          mkdir -p dist/nightreign-ap/regulation
+          cp regulation/regulation.bin dist/nightreign-ap/regulation/
           cp README.md dist/nightreign-ap/
           cat > dist/nightreign-ap/README.txt << 'EOF'
           Nightreign Archipelago — tester pack
@@ -56,7 +58,7 @@ jobs:
           5. Generate, host MultiServer, then launch with me3. Do not also launch nrsc_launcher.exe.
           6. The console must print NRAP attached and NRAP AP connected.
 
-          The regulation package is not in this zip. Without it the board is vanilla. With it, do not open the expedition board unless the Nightfarer you are controlling has been granted. A locked active Nightfarer exits the game and Windows writes no crash dump.
+          regulation/regulation.bin is included and the profile loads it. Do not open the expedition board unless the Nightfarer you are controlling has been granted. A locked active Nightfarer exits the game and Windows writes no crash dump. Remove the [[packages]] block to run without that override.
 
           You do not need Rust or Visual Studio.
           EOF
@@ -75,4 +77,4 @@ jobs:
 
             Zip contains `nightreign_ap.dll`, `flags.toml`, me3 profile, apworld, player yaml, and the install notes.
 
-            The regulation package is not included. Board gating crashes are only reproducible with that package, supplied separately.
+            The regulation package is included and enabled. Board gating can exit the game when the active Nightfarer is locked.

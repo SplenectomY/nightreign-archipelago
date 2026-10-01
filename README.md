@@ -21,7 +21,7 @@ You still need Nightreign, Seamless Coop, and me3. You do not need Visual Studio
 5. The console must print `NRAP attached` and `NRAP AP connected`.
 6. Copy `nightreign.apworld` to `%USERPROFILE%\Archipelago\custom_worlds\` and `Nightreign.yaml` to the Archipelago Players folder. Generate, then host the output with MultiServer before launching the game.
 
-The regulation package that gates the expedition board and the default Nightfarers is a separate folder, `regulation/regulation.bin`, loaded by the me3 profile. It is not in the zip. Without it the board is vanilla and the board-crash test cannot be run. With it, do not open the expedition board unless the Nightfarer you are walking around as has been granted. A locked active Nightfarer exits the game without a Windows crash dump.
+The zip includes `regulation/regulation.bin`, and the profile loads it. Do not open the expedition board unless the Nightfarer you are walking around as has been granted. A locked active Nightfarer exits the game without a Windows crash dump. Remove the `[[packages]]` block to run without that override.
 
 ## Locked design
 
