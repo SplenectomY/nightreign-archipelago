@@ -36,6 +36,7 @@ These are the Hold flags already watched by the client.
 | Adel | 1 | Gaping Dragon | 887007, 887008, 887010, 887012, 887013, 887014 | 2026-10-01 |
 | Adel | 2 | Ancient Dragon | 752021, 752025, 752028, 797003, 797007, 797010, 896002, 896003 | 2026-10-01 |
 | Gladius | 1 | Demihuman Queen | 896007, 896008, 896013, 896017 | 2026-10-01 |
+| Gladius | overworld | Demihuman Queen | 5000, 67014, 67043, 67044, 67048, 67050, 67051, 67052, 67057, 67060, 67062, 74018 | 2026-10-01 |
 
 Fight bits that came on before the death are not in this table. For the Adel Day 1 fight those were the earlier `887000`-`887011` flags.
 
@@ -56,3 +57,5 @@ NR Sandbox's `m18_00_00_00` event sets these when a night-boss HP ratio hits 0. 
 `IncrementTeamBossesKilled(1)` runs in the same event. The `887xxx` and `896xxx` clusters are not written by these scripts.
 
 Confirmed fight noise, removed from the table: `896006`, `896009`, `896010`. They also appeared in the Adel Day 2 window, so those three are not the boss. `7512` did not rise in either Demihuman Queen scan.
+
+Overworld Demihuman Queen, Gladius expedition, 2026-10-01. The before/during line was `+35` and truncated. The after-death line was `+13` and complete. `896002` was on that after line and also on the Adel Ancient Dragon death line, so it is noise.

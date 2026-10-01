@@ -93,3 +93,11 @@ boss = "Demihuman Queen"
 bits = [896007, 896008, 896009, 896010, 896013, 896017]
 sample = "2026-10-01"
 notes = "Second scan. First scan also had 896001, 896006, 896011, 896012. 7512 did not rise."
+
+[[day_boss]]
+nightlord = "Gladius"
+day = 0
+boss = "Overworld Demihuman Queen"
+bits = [5000, 67014, 67043, 67044, 67048, 67050, 67051, 67052, 67057, 67060, 67062, 74018]
+sample = "2026-10-01"
+notes = "After-death scan, complete. Before scan was +35 and truncated. 896002 also rose and is noise."
