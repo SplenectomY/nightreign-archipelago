@@ -296,6 +296,11 @@ fn worker() {
     );
 
     let text = config.as_ref().and_then(|p| fs::read_to_string(p).ok());
+    if let Some(text) = text.as_ref() {
+        let in_pool = text.lines().any(|l| l.trim() == "heolstor_in_pool = true");
+        let count = text.lines().find_map(|l| l.trim().strip_prefix("heolstor_unlock_count = ").and_then(|v| v.parse().ok())).unwrap_or(4);
+        flag_write::configure_heolstor(in_pool, count);
+    }
     let mut watches = text.as_deref().map(parse_watches).unwrap_or_default();
     if watches.is_empty() {
         log_line(&dir, "NRAP no event_flag_id values in flags.toml");
