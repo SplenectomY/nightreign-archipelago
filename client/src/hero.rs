@@ -67,13 +67,14 @@ pub fn init() -> Result<String, String> {
     let rel = aob::find_pattern(span.slice(), GETTER).ok_or_else(|| "hero getter AOB not found".to_string())?;
     let site = span.base + rel;
     let cave = unsafe {
-        VirtualAlloc(std::ptr::null_mut(), 64, 0x1000 | 0x2000, PAGE_EXECUTE_READWRITE)
+        VirtualAlloc(std::ptr::null_mut(), 0x1000, 0x1000 | 0x2000, PAGE_EXECUTE_READWRITE)
     };
     if cave.is_null() {
         return Err("hero cave alloc failed".into());
     }
-    let saved = Box::into_raw(Box::new(0usize)) as usize;
-    // mov [rip+disp], rcx; then the original getter body; ret
+    // Keep the saved rcx in this page so the rip-relative store fits in i32.
+    let saved = cave as usize + 0x100;
+    unsafe { std::ptr::write_unaligned(saved as *mut usize, 0usize); }
     let mut code = Vec::new();
     code.extend_from_slice(&[0x48, 0x89, 0x0D]);
     let disp = saved.wrapping_sub(cave as usize + 7) as i32;
