@@ -125,3 +125,11 @@ boss = "Valiant Gargoyle"
 bits = [88014, 116005]
 sample = "2026-10-01-run2"
 notes = "Repeated from run 1. 887007 and 887008 also rose and are no longer Gaping Dragon specific."
+
+[[day_boss]]
+nightlord = "Adel"
+day = 0
+boss = "Black Knife Assassin"
+bits = [88011, 887000, 887001, 887002, 887003]
+sample = "2026-10-01"
+notes = "Overworld. 670xx rose at fight start, not death."
