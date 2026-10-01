@@ -68,11 +68,18 @@ fn add_murk(amount: i32) -> Result<String, String> {
     Ok(format!("player=0x{player:X} ret={ret}"))
 }
 
-pub fn want(item_id: i64) -> Option<String> {
-    if item_id != MURK_BUNDLE_ID {
-        return None;
+fn murk_amount(item_id: i64) -> Option<i32> {
+    match item_id {
+        839_100_100 | 839_100_101 => Some(if item_id == 839_100_100 { 1000 } else { 2000 }),
+        839_100_102 => Some(4000),
+        839_100_103 => Some(6000),
+        839_100_104 => Some(10000),
+        _ => None,
     }
-    let amt = BUNDLE.load(Ordering::SeqCst);
+}
+
+pub fn want(item_id: i64) -> Option<String> {
+    let amt = murk_amount(item_id)?;
     match add_murk(amt) {
         Ok(detail) => Some(format!("NRAP murk +{amt} {detail}")),
         Err(e) => {
