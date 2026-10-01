@@ -352,13 +352,3 @@ pub fn resolve() -> Result<FlagMan, String> {
         .ok_or_else(|| "no CSEventFlagMan singleton with divisor=1000".to_string())
 }
 
-/// Order: 110,150,67000,67600,67640,67650,67700,67670
-pub fn shop_snapshot_of(mans: &[FlagMan]) -> String {
-    if mans.is_empty() {
-        return "none".into();
-    }
-    mans.iter()
-        .map(|m| m.probe_line())
-        .collect::<Vec<_>>()
-        .join(" | ")
-}
