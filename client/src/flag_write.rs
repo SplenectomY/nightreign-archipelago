@@ -6,6 +6,7 @@ use crate::aob::{self, ModuleSpan};
 use crate::flagman;
 use crate::menu;
 use std::sync::Mutex;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 const BASE_A: &str = "48 89 5C 24 08 44 8B 49 1C 44";
 
@@ -15,6 +16,9 @@ static PENDING: Mutex<Vec<u32>> = Mutex::new(Vec::new());
 static HEOLSTOR_IN_POOL: Mutex<bool> = Mutex::new(false);
 static HEOLSTOR_NEED: Mutex<u32> = Mutex::new(4);
 static UNLOCKS: Mutex<Vec<i64>> = Mutex::new(Vec::new());
+static NIGHTFARER_LOCKED: AtomicBool = AtomicBool::new(false);
+
+const NIGHTFARER_FLAGS: [u32; 10] = [6030, 6031, 6032, 6033, 6034, 6035, 6036, 6037, 6038, 6039];
 
 fn find_setter(span: ModuleSpan) -> Option<usize> {
     let rel = aob::find_pattern(span.slice(), BASE_A)?;
@@ -70,8 +74,27 @@ pub fn set_flag(flag: u32, on: bool) -> Result<String, String> {
     ))
 }
 
+fn nightfarer_flag(item_id: i64) -> Option<u32> {
+    match item_id {
+        839_100_301 => Some(6030),
+        839_100_302 => Some(6031),
+        839_100_303 => Some(6032),
+        839_100_304 => Some(6033),
+        839_100_305 => Some(6034),
+        839_100_306 => Some(6035),
+        839_100_307 => Some(6036),
+        839_100_308 => Some(6037),
+        839_100_309 => Some(6038),
+        839_100_310 => Some(6039),
+        _ => None,
+    }
+}
+
 /// Regulation override flags. 210 and 211 are named, so Everdark starts at 212.
 pub fn flag_for_item(item_id: i64) -> Option<u32> {
+    if let Some(flag) = nightfarer_flag(item_id) {
+        return Some(flag);
+    }
     match item_id {
         839_100_001 => Some(189),
         839_100_002 => Some(190),
@@ -126,6 +149,19 @@ fn note_unlock(item_id: i64) -> Option<String> {
     }
 }
 
+fn lock_nightfarers() -> Option<String> {
+    if NIGHTFARER_LOCKED.swap(true, Ordering::Relaxed) {
+        return None;
+    }
+    let mut off = 0;
+    for flag in NIGHTFARER_FLAGS {
+        if set_flag(flag, false).is_ok() {
+            off += 1;
+        }
+    }
+    Some(format!("NRAP nightfarer flags cleared {off}/10"))
+}
+
 pub fn apply_item(item_id: i64) -> Option<String> {
     menu::grant(item_id);
     let gate = note_unlock(item_id);
@@ -149,16 +185,20 @@ pub fn apply_item(item_id: i64) -> Option<String> {
 }
 
 pub fn retry_pending() -> Option<String> {
+    let locked = lock_nightfarers();
     let mut q = PENDING.lock().unwrap();
     if q.is_empty() {
-        return None;
+        return locked;
     }
     let flag = q[0];
     match set_flag(flag, true) {
         Ok(msg) => {
             q.remove(0);
-            Some(msg)
+            Some(match locked {
+                Some(extra) => format!("{extra}; {msg}"),
+                None => msg,
+            })
         }
-        Err(_) => None,
+        Err(_) => locked,
     }
 }
