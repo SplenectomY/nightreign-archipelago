@@ -106,8 +106,67 @@ fn preview(text: &str) -> String {
     }
 }
 
+fn json_unescape(s: &str) -> String {
+    let mut out = String::new();
+    let mut chars = s.chars().peekable();
+    while let Some(c) = chars.next() {
+        if c == '\\' {
+            match chars.next() {
+                Some('n') => out.push('\n'),
+                Some('r') => out.push('\r'),
+                Some('t') => out.push('\t'),
+                Some('"') => out.push('"'),
+                Some('\\') => out.push('\\'),
+                Some(other) => out.push(other),
+                None => {}
+            }
+        } else {
+            out.push(c);
+        }
+    }
+    out
+}
+
+fn printjson_text(text: &str) -> Option<String> {
+    if !text.contains("PrintJSON") {
+        return None;
+    }
+    let mut parts = Vec::new();
+    let mut from = 0usize;
+    while let Some(rel) = text[from..].find("\"text\":\"") {
+        let at = from + rel + 8;
+        let mut end = at;
+        let bytes = text.as_bytes();
+        while end < bytes.len() {
+            if bytes[end] == b'\\' {
+                end += 2;
+                continue;
+            }
+            if bytes[end] == b'"' {
+                break;
+            }
+            end += 1;
+        }
+        if end > bytes.len() {
+            break;
+        }
+        parts.push(json_unescape(&text[at..end]));
+        from = end + 1;
+    }
+    if parts.is_empty() {
+        return None;
+    }
+    Some(parts.join(""))
+}
+
 fn handle_server_text(text: &str, log: &impl Fn(&str), next_index: &mut i64, drop_goods: i32) {
-    log(&format!("NRAP AP rx {}", preview(text)));
+    if let Some(msg) = printjson_text(text) {
+        for line in msg.split('\n') {
+            log(&format!("NRAP AP | {line}"));
+        }
+    } else {
+        log(&format!("NRAP AP rx {}", preview(text)));
+    }
     if text.contains("ConnectionRefused") {
         log(&format!("NRAP AP server refused: {text}"));
         return;
