@@ -468,6 +468,7 @@ fn worker() {
         if config.as_ref().and_then(|p| fs::read_to_string(p).ok()).is_some_and(|t| t.lines().any(|l| l.trim()=="flag_diff = true")) {
             if let Some(found) = man {
                 static LAST: std::sync::Mutex<Option<std::time::Instant>> = std::sync::Mutex::new(None);
+                static IDLE: std::sync::Mutex<Option<std::time::Instant>> = std::sync::Mutex::new(None);
                 static PREV: std::sync::Mutex<Vec<Vec<u8>>> = std::sync::Mutex::new(Vec::new());
                 let due = LAST.lock().unwrap().map(|t| t.elapsed().as_millis() >= 2000).unwrap_or(true);
                 if due {
@@ -476,6 +477,10 @@ fn worker() {
                     if !rose.is_empty() {
                         let show: Vec<_> = rose.iter().take(24).map(|f| f.to_string()).collect();
                         log_line(&dir, &format!("NRAP flag diff +{} groups={groups} {}", rose.len(), show.join(",")));
+                        *IDLE.lock().unwrap() = Some(std::time::Instant::now());
+                    } else if IDLE.lock().unwrap().map(|t| t.elapsed().as_secs() >= 10).unwrap_or(true) {
+                        *IDLE.lock().unwrap() = Some(std::time::Instant::now());
+                        log_line(&dir, &format!("NRAP flag diff idle groups={groups}"));
                     }
                 }
             }
