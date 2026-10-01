@@ -41,3 +41,15 @@ Fight bits that came on before the death are not in this table. For the Adel Day
 ## Adding a sample
 
 Copy a row. Keep the Nightlord, day, and boss name. If the same pair is run again, add the new bits in the notes column of `data/boss_flags.toml` instead of deleting the first sample.
+
+
+## Script candidate, not yet logged
+
+NR Sandbox's `m18_00_00_00` event sets these when a night-boss HP ratio hits 0. They were not in the Adel death window, so they are candidates until a run logs them.
+
+| What | Flag |
+|---|---:|
+| Night boss HP reached 0 | 7512 |
+| Expedition finalized after that | 6020 |
+
+`IncrementTeamBossesKilled(1)` runs in the same event. The `887xxx` and `896xxx` clusters are not written by these scripts.
