@@ -385,6 +385,10 @@ pub fn bind_seed(seed: &str) -> String {
             write_cache(path, seed, &[]);
         }
         *CACHE_SEED.lock().unwrap() = seed.to_string();
+        *BOSS_KILLS.lock().unwrap() = 0;
+        if let Some(path) = BOSS_PATH.lock().unwrap().as_ref() {
+            let _ = std::fs::write(path, format!("seed={seed}\ncount=0\n"));
+        }
         ARMED.store(true, std::sync::atomic::Ordering::SeqCst);
         return format!("NRAP unlock cache cleared, seed {known} -> {seed}");
     }
