@@ -270,19 +270,10 @@ fn worker() {
                 .unwrap_or_else(|| "<unknown>".into())
         ),
     );
-    match grant::init(dir.as_ref(), 1000) {
-        Ok(msg) => log_line(&dir, &msg),
-        Err(e) => log_line(&dir, &format!("NRAP murk hook failed: {e}")),
-    }
     match drop::init() {
         Ok(msg) => log_line(&dir, &msg),
         Err(e) => log_line(&dir, &format!("NRAP drop init failed: {e}")),
     }
-    match menu::init() {
-        Ok(msg) => log_line(&dir, &msg),
-        Err(e) => log_line(&dir, &format!("NRAP menu gate failed: {e}")),
-    }
-
     let config = find_config(dir.as_ref());
     log_line(
         &dir,
@@ -323,8 +314,6 @@ fn worker() {
 
     let mut man = None;
     let mut fail_logged = false;
-    let mut last_murk_scan = 0i32;
-    let mut last_grant_now = false;
     let mut last_debug_flag = 0u32;
     let mut last_clear_flag = 0u32;
     let mut last_debug_drop = 0i32;
@@ -383,33 +372,13 @@ fn worker() {
                 }
             }
         }
-        if let Some(msg) = grant::retry_pending() {
-            log_line(&dir, &msg);
-        }
         if let Some(msg) = flag_write::retry_pending() {
             log_line(&dir, &msg);
         }
         if let Some(msg) = drop::retry_pending() {
             log_line(&dir, &msg);
         }
-        for msg in menu::drain_logs() {
-            log_line(&dir, &msg);
-        }
         if let Some(text) = config.as_ref().and_then(|p| fs::read_to_string(p).ok()) {
-            if scan::enabled(&text) {
-                if let Some(v) = scan::murk_from_toml(&text) {
-                    if v != 0 && v != last_murk_scan {
-                        last_murk_scan = v;
-                        log_line(&dir, "NRAP murk scan starting");
-                        log_line(&dir, &scan::run(dir.as_ref(), v));
-                    }
-                }
-                let gn = scan::grant_now_from_toml(&text);
-                if gn && !last_grant_now {
-                    log_line(&dir, &grant::force_grant());
-                }
-                last_grant_now = gn;
-            }
             if let Some(flag) = flag_write::debug_flag_from_toml(&text) {
                 if flag != last_debug_flag {
                     last_debug_flag = flag;

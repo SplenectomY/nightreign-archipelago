@@ -204,7 +204,6 @@ fn reapply_nightfarers() -> Option<String> {
 }
 
 pub fn apply_item(item_id: i64) -> Option<String> {
-    menu::grant(item_id);
     let gate = note_unlock(item_id);
     let Some(flag) = flag_for_item(item_id) else {
         return gate.or_else(|| Some(format!("NRAP grant {item_id} (no unlock flag)")));
