@@ -86,3 +86,14 @@ Raw addresses go in `verified_version` notes only. The client must resolve throu
 - Smithbox, Nightreign game directory
 - Optional: fromsoftware-rs Nightreign bindings, DarkScript-style event dumps
 - Do not commit game assets
+
+
+## Expedition sample: Adel / Gaping Jaw
+
+Recorded 2026-10-01. Expedition was Adel. Day 1 boss was Gaping Dragon. Day 2 boss was Ancient Dragon. These clusters are one sample, not yet known to be the boss id versus the day slot.
+
+Day 1 death window, Gaping Dragon: 887007, 887008, 887010, 887012, 887013, 887014. Earlier 887000-887011 bits came on during the fight.
+
+Day 2 death window, Ancient Dragon: 752021, 752025, 752028, 797003, 797007, 797010, 896002, 896003, 896006, 896009, 896010. The 896xxx set matches the shape of the Day 1 887xxx fight flags.
+
+A second expedition with a different Day 1 boss is required before treating 887xxx as Gaping Dragon rather than "night 1 boss died."
