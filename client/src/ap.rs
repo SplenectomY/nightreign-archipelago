@@ -123,6 +123,7 @@ fn handle_server_text(text: &str, log: &impl Fn(&str), next_index: &mut i64, dro
         if let Some(msg) = crate::flag_write::apply_item(id) {
             log(&msg);
         }
+        crate::flag_write::remember_unlock(id);
         if let Some(msg) = crate::hero::want(id) {
             log(&msg);
         }

@@ -295,6 +295,7 @@ fn worker() {
         ),
     );
 
+    log_line(&dir, &flag_write::load_cache(dir.as_ref()));
     let text = config.as_ref().and_then(|p| fs::read_to_string(p).ok());
     if let Some(text) = text.as_ref() {
         let in_pool = text.lines().any(|l| l.trim() == "heolstor_in_pool = true");
@@ -392,6 +393,7 @@ fn worker() {
         if let Some(msg) = flag_write::retry_pending() {
             log_line(&dir, &msg);
         }
+        let _ = flag_write::reapply_cached();
         if let Some(msg) = hero::apply() {
             log_line(&dir, &msg);
         }
@@ -451,6 +453,6 @@ fn worker() {
                 last_debug_drop = 0;
             }
         }
-        thread::sleep(Duration::from_millis(500));
+        thread::sleep(Duration::from_millis(200));
     }
 }

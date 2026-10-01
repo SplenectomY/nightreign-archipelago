@@ -292,6 +292,61 @@ fn shop_flag(item_id: i64) -> Option<u32> {
     }
 }
 
+fn unlock_flag(item_id: i64) -> Option<u32> {
+    if let Some(flag) = shop_release(item_id) {
+        return Some(flag);
+    }
+    if shop_flag(item_id).is_some() {
+        return None;
+    }
+    flag_for_item(item_id)
+}
+
+static CACHED: Mutex<Vec<u32>> = Mutex::new(Vec::new());
+static CACHE_PATH: Mutex<Option<std::path::PathBuf>> = Mutex::new(None);
+
+pub fn load_cache(dir: Option<&std::path::PathBuf>) -> String {
+    let Some(dir) = dir else {
+        return "NRAP unlock cache no dir".into();
+    };
+    let path = dir.join("received_unlocks.txt");
+    let flags = std::fs::read_to_string(&path).ok().map(|s| {
+        s.lines().filter_map(|l| l.trim().parse().ok()).collect::<Vec<u32>>()
+    }).unwrap_or_default();
+    *CACHED.lock().unwrap() = flags.clone();
+    *CACHE_PATH.lock().unwrap() = Some(path);
+    format!("NRAP unlock cache loaded {}", flags.len())
+}
+
+pub fn remember_unlock(item_id: i64) {
+    let Some(flag) = unlock_flag(item_id) else { return };
+    let mut flags = CACHED.lock().unwrap();
+    if !flags.contains(&flag) {
+        flags.push(flag);
+        if let Some(path) = CACHE_PATH.lock().unwrap().as_ref() {
+            let body = flags.iter().map(|f| f.to_string()).collect::<Vec<_>>().join("\n");
+            let _ = std::fs::write(path, body);
+        }
+    }
+}
+
+pub fn reapply_cached() -> Option<String> {
+    let flags = CACHED.lock().unwrap().clone();
+    if flags.is_empty() {
+        return None;
+    }
+    let mut set = 0u32;
+    for flag in flags {
+        if set_flag(flag, true).is_ok() {
+            set += 1;
+        }
+    }
+    if set == 0 {
+        return None;
+    }
+    None
+}
+
 pub fn flag_for_item(item_id: i64) -> Option<u32> {
     if let Some(flag) = nightfarer_flag(item_id) {
         return Some(flag);
