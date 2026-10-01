@@ -1,4 +1,4 @@
-//! Session Nightfarer id. The hold getter reads one byte at object+0xC7.
+//! Session Nightfarer id. The hold getter reads one byte at [object+0x5A0]+0xC7.
 //! Wylder is 1, Duchess is 4: HeroParam row + 1. The model reloads at the bell.
 
 #![cfg(windows)]
@@ -7,7 +7,7 @@ use crate::aob::{self, ModuleSpan};
 use std::ffi::c_void;
 use std::sync::atomic::{AtomicU32, AtomicUsize, Ordering};
 
-const GETTER: &str = "48 8B 81 A0 00 00 00 48 85 C0 74 ?? 0F B6 80 C7 00 00 00 C3";
+const GETTER: &str = "48 8B 81 A0 05 00 00 48 85 C0 74 ?? 0F B6 80 C7 00 00 00 C3";
 const PAGE_EXECUTE_READWRITE: u32 = 0x40;
 
 #[link(name = "kernel32")]
@@ -55,7 +55,7 @@ fn slot_addr(object: usize) -> Option<usize> {
     if object < 0x10000 {
         return None;
     }
-    let inner = unsafe { std::ptr::read_unaligned((object + 0xA0) as *const usize) };
+    let inner = unsafe { std::ptr::read_unaligned((object + 0x5A0) as *const usize) };
     if inner < 0x10000 {
         return None;
     }
@@ -79,7 +79,7 @@ pub fn init() -> Result<String, String> {
     let disp = saved.wrapping_sub(cave as usize + 7) as i32;
     code.extend_from_slice(&disp.to_le_bytes());
     code.extend_from_slice(&[
-        0x48, 0x8B, 0x81, 0xA0, 0x00, 0x00, 0x00, // mov rax, [rcx+A0]
+        0x48, 0x8B, 0x81, 0xA0, 0x05, 0x00, 0x00, // mov rax, [rcx+5A0]
         0x48, 0x85, 0xC0, // test rax, rax
         0x74, 0x08, // jz ret0
         0x0F, 0xB6, 0x80, 0xC7, 0x00, 0x00, 0x00, // movzx eax, byte [rax+C7]
