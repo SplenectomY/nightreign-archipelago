@@ -371,13 +371,6 @@ fn worker() {
                             let _ = tx.send(w.location_id);
                             w.submitted = true;
                         }
-                        if on && w.location.starts_with("Shop - ") && !flag_write::shop_granted(w.flag) {
-                            match flag_write::set_flag(w.flag, false) {
-                                Ok(msg) => log_line(&dir, &format!("{msg} (shop locked until granted)")),
-                                Err(e) => log_line(&dir, &format!("NRAP shop clear {} failed: {e}", w.flag)),
-                            }
-                            w.last = Some(false);
-                        }
                     }
                     None => {
                         if !w.miss_logged {
