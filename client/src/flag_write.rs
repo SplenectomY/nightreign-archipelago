@@ -165,13 +165,21 @@ fn lock_nightfarers() -> Option<String> {
     }
     let keep = GRANTED_NIGHTFARERS.lock().unwrap().clone();
     let mut off = 0;
+    let mut sample = None;
     let mut err = None;
     for flag in NIGHTFARER_FLAGS {
         if keep.contains(&flag) {
             continue;
         }
         match set_flag(flag, false) {
-            Ok(_) => off += 1,
+            Ok(msg) => {
+                if msg.contains("after=Some(false)") {
+                    off += 1;
+                }
+                if sample.is_none() {
+                    sample = Some(msg);
+                }
+            }
             Err(e) if err.is_none() => err = Some(e),
             Err(_) => {}
         }
@@ -179,11 +187,15 @@ fn lock_nightfarers() -> Option<String> {
     if off == 0 {
         return Some(format!(
             "NRAP nightfarer clear waiting ({})",
-            err.unwrap_or_else(|| "no flags".into())
+            sample.or(err).unwrap_or_else(|| "no flags".into())
         ));
     }
     NIGHTFARER_LOCKED.store(true, Ordering::Relaxed);
-    Some(format!("NRAP nightfarer flags cleared {off}, kept {}", keep.len()))
+    Some(format!(
+        "NRAP nightfarer flags cleared {off}, kept {} ({})",
+        keep.len(),
+        sample.unwrap_or_default()
+    ))
 }
 
 pub fn apply_item(item_id: i64) -> Option<String> {
