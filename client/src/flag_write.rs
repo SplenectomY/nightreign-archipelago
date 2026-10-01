@@ -226,10 +226,6 @@ pub fn apply_item(item_id: i64) -> Option<String> {
 }
 
 pub fn retry_pending() -> Option<String> {
-    // Wylder is the default active body. Skip this while clear_flag is holding 222 off.
-    if !SUPPRESSED.lock().unwrap().contains(&222) {
-        remember_nightfarer(222);
-    }
     let reapplied = reapply_nightfarers();
     let mut q = PENDING.lock().unwrap();
     if q.is_empty() {

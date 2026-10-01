@@ -1,6 +1,5 @@
 # Phase 0 world. Victory is locked to the goal. Heolstor is local unless opted into the pool.
 # One base expedition unlock is precollected. Tricephalos is flag 189, not free.
-# Wylder is always precollected: he is the default active body, and a locked body exits on the board.
 
 from typing import Dict, List
 
@@ -114,9 +113,7 @@ class NightreignWorld(World):
         everdark = [item for _loc, item in self._everdark()]
         start = self.random.choice([n for n in unlocks if n != "Expedition Unlock - Heolstor"] or unlocks)
         self.push_precollected(self.create_item(start))
-        # Wylder is the default active body. A locked active body exits on the board.
-        self.push_precollected(self.create_item("Nightfarer - Wylder"))
-        roster = [n for n in self._nightfarers() if n != "Nightfarer - Wylder"]
+        roster = self._nightfarers()
         self.random.shuffle(roster)
         start_count = min(int(self.options.starting_nightfarers), len(roster))
         for name in roster[:start_count]:
