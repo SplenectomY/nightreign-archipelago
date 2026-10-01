@@ -190,12 +190,23 @@ impl FlagMan {
         }
         let mut rose = Vec::new();
         let mut readable_groups = 0usize;
+        // Resolved once. VirtualQuery on every group made a scan take about a minute.
+        static BASES: std::sync::Mutex<Vec<usize>> = std::sync::Mutex::new(Vec::new());
+        let mut bases = BASES.lock().unwrap();
+        if bases.len() != groups {
+            bases.clear();
+            bases.resize(groups, 0);
+        }
         for group in 0..groups {
-            let ptr = read_usize(self.holder.saturating_add(group.saturating_mul(8))).unwrap_or(0);
-            let inline = self.holder.saturating_add(group.saturating_mul(self.entry_size as usize));
-            let base = if ptr > 0x10000 && readable(ptr, bytes) { ptr } else { inline };
-            if !readable(base, bytes) {
-                continue;
+            let mut base = bases[group];
+            if base == 0 {
+                let ptr = read_usize(self.holder.saturating_add(group.saturating_mul(8))).unwrap_or(0);
+                let inline = self.holder.saturating_add(group.saturating_mul(self.entry_size as usize));
+                base = if ptr > 0x10000 && readable(ptr, bytes) { ptr } else { inline };
+                if !readable(base, bytes) {
+                    continue;
+                }
+                bases[group] = base;
             }
             readable_groups += 1;
             let mut now = vec![0u8; bytes];

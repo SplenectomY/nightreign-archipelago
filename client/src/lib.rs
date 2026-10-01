@@ -296,7 +296,7 @@ fn find_config(dll_dir: Option<&PathBuf>) -> Option<PathBuf> {
 fn worker() {
     let dir = dll_dir();
     bind_console();
-    log_line(&dir, "NRAP attached");
+    log_line(&dir, &format!("NRAP attached {}", env!("CARGO_PKG_VERSION")));
     let base = unsafe { GetModuleHandleA(std::ptr::null()) };
     log_line(&dir, &format!("NRAP nightreign.exe base = {base:p}"));
     log_line(
