@@ -177,24 +177,27 @@ impl FlagMan {
     }
 
     /// Copy each group slab and return flag ids that went 0 to 1 since the last call.
-    pub fn diff_rising(&self, prev: &mut Vec<Vec<u8>>) -> Vec<u32> {
+    /// The usize is how many group slabs were readable.
+    pub fn diff_rising(&self, prev: &mut Vec<Vec<u8>>) -> (Vec<u32>, usize) {
         let groups = self.entry_count as usize;
         let bytes = (self.divisor as usize).div_ceil(8);
         if groups == 0 || bytes == 0 || bytes > 4096 || groups > 10_000 {
-            return Vec::new();
+            return (Vec::new(), 0);
         }
         if prev.len() != groups {
             prev.clear();
             prev.resize(groups, Vec::new());
         }
         let mut rose = Vec::new();
+        let mut readable_groups = 0usize;
         for group in 0..groups {
-            let Some(base) = read_usize(self.holder.saturating_add(group.saturating_mul(8))) else {
-                continue;
-            };
-            if base < 0x10000 || !readable(base, bytes) {
+            let ptr = read_usize(self.holder.saturating_add(group.saturating_mul(8))).unwrap_or(0);
+            let inline = self.holder.saturating_add(group.saturating_mul(self.entry_size as usize));
+            let base = if ptr > 0x10000 && readable(ptr, bytes) { ptr } else { inline };
+            if !readable(base, bytes) {
                 continue;
             }
+            readable_groups += 1;
             let mut now = vec![0u8; bytes];
             unsafe {
                 std::ptr::copy_nonoverlapping(base as *const u8, now.as_mut_ptr(), bytes);
@@ -215,7 +218,7 @@ impl FlagMan {
             }
             prev[group] = now;
         }
-        rose
+        (rose, readable_groups)
     }
 
     fn group_base(&self, flag: u32, ptr_table: bool) -> Option<(usize, u32)> {

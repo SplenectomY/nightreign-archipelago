@@ -408,10 +408,12 @@ fn worker() {
                 let due = LAST.lock().unwrap().map(|t| t.elapsed().as_secs() >= 2).unwrap_or(true);
                 if due {
                     *LAST.lock().unwrap() = Some(std::time::Instant::now());
-                    let rose = found.diff_rising(&mut PREV.lock().unwrap());
-                    if !rose.is_empty() {
+                    let (rose, groups) = found.diff_rising(&mut PREV.lock().unwrap());
+                    if rose.is_empty() {
+                        log_line(&dir, &format!("NRAP flag diff scan groups={groups}"));
+                    } else {
                         let show: Vec<_> = rose.iter().take(24).map(|f| f.to_string()).collect();
-                        log_line(&dir, &format!("NRAP flag diff +{} {}", rose.len(), show.join(",")));
+                        log_line(&dir, &format!("NRAP flag diff +{} groups={groups} {}", rose.len(), show.join(",")));
                     }
                 }
             }
