@@ -101,3 +101,11 @@ boss = "Overworld Demihuman Queen"
 bits = [5000, 67014, 67043, 67044, 67048, 67050, 67051, 67052, 67057, 67060, 67062, 74018]
 sample = "2026-10-01"
 notes = "After-death scan, complete. Before scan was +35 and truncated. 896002 also rose and is noise."
+
+[[day_boss]]
+nightlord = "Adel"
+day = 1
+boss = "Duke's Dear Freja"
+bits = [878000, 878001, 878006, 878009, 878010, 878015]
+sample = "2026-10-01"
+notes = "9015 and 9019 rose on the after line and are the shared pair."

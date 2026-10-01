@@ -37,6 +37,7 @@ These are the Hold flags already watched by the client.
 | Adel | 2 | Ancient Dragon | 752021, 752025, 752028, 797003, 797007, 797010, 896002, 896003 | 2026-10-01 |
 | Gladius | 1 | Demihuman Queen | 896007, 896008, 896013, 896017 | 2026-10-01 |
 | Gladius | overworld | Demihuman Queen | 5000, 67014, 67043, 67044, 67048, 67050, 67051, 67052, 67057, 67060, 67062, 74018 | 2026-10-01 |
+| Adel | 1 | Duke's Dear Freja | 878000, 878001, 878006, 878009, 878010, 878015 | 2026-10-01 |
 
 Fight bits that came on before the death are not in this table. For the Adel Day 1 fight those were the earlier `887000`-`887011` flags.
 
@@ -59,3 +60,5 @@ NR Sandbox's `m18_00_00_00` event sets these when a night-boss HP ratio hits 0. 
 Confirmed fight noise, removed from the table: `896006`, `896009`, `896010`. They also appeared in the Adel Day 2 window, so those three are not the boss. `7512` did not rise in either Demihuman Queen scan.
 
 Overworld Demihuman Queen, Gladius expedition, 2026-10-01. The before/during line was `+35` and truncated. The after-death line was `+13` and complete. `896002` was on that after line and also on the Adel Ancient Dragon death line, so it is noise.
+
+Duke's Dear Freja, Adel Night 1, 2026-10-01. Before line: `878001, 878006, 878009, 878010, 878015`. After line: `9015, 9019, 878000`. `9015` and `9019` are the shared pair, not the boss.
