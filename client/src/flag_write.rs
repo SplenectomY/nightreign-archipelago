@@ -70,16 +70,15 @@ pub fn set_flag(flag: u32, on: bool) -> Result<String, String> {
     ))
 }
 
-/// Regulation override gives each secondary Nightlord its own unlock flag.
-/// Flag 110 is never set.
+/// Low unnamed flags. The setter kept 115 and did not keep 900203.
 pub fn flag_for_item(item_id: i64) -> Option<u32> {
     match item_id {
-        839_100_002 => Some(900_201),
-        839_100_003 => Some(900_202),
-        839_100_004 => Some(900_203),
-        839_100_005 => Some(900_204),
-        839_100_006 => Some(900_205),
-        839_100_007 => Some(900_206),
+        839_100_002 => Some(190),
+        839_100_003 => Some(191),
+        839_100_004 => Some(192),
+        839_100_005 => Some(193),
+        839_100_006 => Some(194),
+        839_100_007 => Some(195),
         839_100_008 => Some(115),
         839_100_009 => Some(135),
         839_100_010 => Some(136),
