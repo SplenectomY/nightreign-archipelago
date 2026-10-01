@@ -245,6 +245,7 @@ fn send_goal(socket: &mut Socket) -> Result<bool, String> {
 }
 
 fn send_say(socket: &mut Socket, text: &str) -> Result<(), String> {
+    let text = text.replace('\\', "\\\\").replace('"', "\\\"");
     let pkt = format!("[{{\"cmd\":\"Say\",\"text\":\"{text}\"}}]");
     socket
         .send(Message::Text(pkt.into()))
