@@ -4,6 +4,7 @@
 
 use crate::aob::{self, ModuleSpan};
 use crate::flagman;
+use crate::menu;
 use std::sync::Mutex;
 
 const BASE_A: &str = "48 89 5C 24 08 44 8B 49 1C 44";
@@ -71,7 +72,6 @@ pub fn set_flag(flag: u32, on: bool) -> Result<String, String> {
 
 pub fn flag_for_item(item_id: i64) -> Option<u32> {
     match item_id {
-        839_100_001..=839_100_007 => Some(110),
         839_100_008 => Some(115),
         839_100_009 => Some(135),
         839_100_010 => Some(136),
@@ -111,8 +111,11 @@ fn note_unlock(item_id: i64) -> Option<String> {
 }
 
 pub fn apply_item(item_id: i64) -> Option<String> {
+    menu::grant(item_id);
     let gate = note_unlock(item_id);
-    let flag = flag_for_item(item_id)?;
+    let Some(flag) = flag_for_item(item_id) else {
+        return gate.or_else(|| Some(format!("NRAP menu grant {item_id} (no shared flag)")));
+    };
     let msg = match set_flag(flag, true) {
         Ok(msg) => msg,
         Err(e) => {
