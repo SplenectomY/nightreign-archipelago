@@ -1,3 +1,4 @@
+#![allow(dead_code, unused)]
 //! Expedition menu ownership. The selectability AOB fires once for the menu
 //! panel, not once per Nightlord, so no code patch is installed.
 

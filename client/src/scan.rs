@@ -1,3 +1,4 @@
+#![allow(dead_code, unused)]
 //! In-process 4-byte value scan. Parked: requires [scan] enable = true.
 
 #![cfg(windows)]

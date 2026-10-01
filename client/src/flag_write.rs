@@ -4,7 +4,6 @@
 
 use crate::aob::{self, ModuleSpan};
 use crate::flagman;
-use crate::menu;
 use std::sync::Mutex;
 
 const BASE_A: &str = "48 89 5C 24 08 44 8B 49 1C 44";
@@ -12,7 +11,6 @@ const BASE_A: &str = "48 89 5C 24 08 44 8B 49 1C 44";
 type SetFlagFn = unsafe extern "C" fn(inst: usize, flag: u32, on: u32);
 
 static PENDING: Mutex<Vec<u32>> = Mutex::new(Vec::new());
-static SHOP_GRANTED: Mutex<Vec<u32>> = Mutex::new(Vec::new());
 static HEOLSTOR_IN_POOL: Mutex<bool> = Mutex::new(false);
 static HEOLSTOR_NEED: Mutex<u32> = Mutex::new(4);
 static UNLOCKS: Mutex<Vec<i64>> = Mutex::new(Vec::new());
@@ -391,10 +389,6 @@ fn reapply_nightfarers() -> Option<String> {
     }
 }
 
-
-pub fn shop_granted(flag: u32) -> bool {
-    SHOP_GRANTED.lock().unwrap().contains(&flag)
-}
 
 pub fn apply_item(item_id: i64) -> Option<String> {
     if let Some(release) = shop_release(item_id) {
