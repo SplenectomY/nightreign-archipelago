@@ -1,5 +1,5 @@
-//! Expedition menu probe. Retry the passthrough cave with Mod Engine disable_arxan.
-//! The cave only replays the original test/jz and counts hits.
+//! Expedition menu probe. The cave is allocated far from the DLL, so the hit
+//! counter is incremented through an absolute address, not a rip-relative one.
 
 #![cfg(windows)]
 
@@ -105,10 +105,11 @@ pub fn init() -> Result<String, String> {
     let cave = cave as usize;
     let hits = &HITS as *const AtomicU32 as usize;
     let mut code = Vec::new();
-    code.extend_from_slice(&[0xF0, 0xFF, 0x05, 0, 0, 0, 0]);
-    let inc_next = cave + code.len();
-    let disp = hits.wrapping_sub(inc_next) as i32;
-    code[3..7].copy_from_slice(&disp.to_le_bytes());
+    // push rax; mov rax, imm64; lock inc dword [rax]; pop rax
+    code.push(0x50);
+    code.extend_from_slice(&[0x48, 0xB8]);
+    code.extend_from_slice(&hits.to_le_bytes());
+    code.extend_from_slice(&[0xF0, 0xFF, 0x00, 0x58]);
     code.extend_from_slice(&[0x45, 0x84, 0xFF, 0x74, 0x05]);
     let jz_from = cave + code.len();
     code.extend_from_slice(&[0xE9, 0, 0, 0, 0]);
