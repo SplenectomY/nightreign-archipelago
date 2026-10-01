@@ -1,19 +1,8 @@
-//! Expedition menu gate. Flag 110 opens every secondary Nightlord, so it is not used.
-//! The menu check at `test r15b, r15b / jz` is detoured and r15b is replaced per boss id.
+//! Expedition menu ownership. The code detour crashed on opening the board, so it is not installed.
 
 #![cfg(windows)]
 
-use crate::aob::{self, ModuleSpan};
-use std::ffi::c_void;
 use std::sync::Mutex;
-
-const MENU_AOB: &str = "FF 50 18 49 8B CE 45 84 FF 74 07";
-const PATCH_AT: usize = 6;
-const PAGE_EXECUTE_READWRITE: u32 = 0x40;
-const MEM_COMMIT: u32 = 0x1000;
-const MEM_RESERVE: u32 = 0x2000;
-const PAGE_NOACCESS: u32 = 0x01;
-const PAGE_GUARD: u32 = 0x100;
 
 const ADEL: u32 = 1 << 0;
 const GNOSTER: u32 = 1 << 1;
@@ -27,27 +16,6 @@ const STRAGHESS: u32 = 1 << 8;
 
 static OWNED: Mutex<u32> = Mutex::new(0);
 static LOGS: Mutex<Vec<String>> = Mutex::new(Vec::new());
-static SEEN: Mutex<Vec<u32>> = Mutex::new(Vec::new());
-
-#[repr(C)]
-struct MemoryBasicInformation {
-    base_address: *mut c_void,
-    allocation_base: *mut c_void,
-    allocation_protect: u32,
-    _pad1: u32,
-    region_size: usize,
-    state: u32,
-    protect: u32,
-    type_: u32,
-    _pad2: u32,
-}
-
-#[link(name = "kernel32")]
-extern "system" {
-    fn VirtualAlloc(addr: *mut c_void, size: usize, kind: u32, protect: u32) -> *mut c_void;
-    fn VirtualProtect(addr: *mut c_void, size: usize, protect: u32, old: *mut u32) -> i32;
-    fn VirtualQuery(addr: *const c_void, info: *mut MemoryBasicInformation, len: usize) -> usize;
-}
 
 fn log(msg: impl Into<String>) {
     if let Ok(mut q) = LOGS.lock() {
@@ -80,131 +48,6 @@ pub fn grant(item_id: i64) {
     }
 }
 
-fn readable(ptr: usize, len: usize) -> bool {
-    if ptr < 0x10000 {
-        return false;
-    }
-    unsafe {
-        let mut info = std::mem::zeroed::<MemoryBasicInformation>();
-        if VirtualQuery(ptr as *const c_void, &mut info, std::mem::size_of::<MemoryBasicInformation>()) == 0 {
-            return false;
-        }
-        if info.state != MEM_COMMIT || info.protect & (PAGE_NOACCESS | PAGE_GUARD) != 0 {
-            return false;
-        }
-        let start = info.base_address as usize;
-        start.saturating_add(info.region_size) >= ptr.saturating_add(len)
-    }
-}
-
-fn read_u32(ptr: usize) -> Option<u32> {
-    if !readable(ptr, 4) {
-        return None;
-    }
-    Some(unsafe { std::ptr::read_unaligned(ptr as *const u32) })
-}
-
-fn boss_id(entry: usize) -> Option<u32> {
-    // 2 is Gladius and also a very common dword. Gladius stays on the vanilla bit.
-    const IDS: &[u32] = &[12, 22, 23, 32, 43, 53, 61, 73, 1080, 1090];
-    if !readable(entry, 0x40) {
-        return None;
-    }
-    for off in (0..0x80).step_by(4) {
-        let v = read_u32(entry + off)?;
-        if IDS.contains(&v) {
-            return Some(v);
-        }
-    }
-    None
-}
-
-fn allowed(id: u32) -> bool {
-    let owned = OWNED.lock().map(|g| *g).unwrap_or(0);
-    match id {
-        12 => owned & ADEL != 0,
-        22 | 23 => owned & GNOSTER != 0,
-        32 => owned & MARIS != 0,
-        43 => owned & LIBRA != 0,
-        53 => owned & FULGHOR != 0,
-        61 => owned & CALIGO != 0,
-        73 => owned & HEOLSTOR != 0,
-        1080 => owned & HARMONIA != 0,
-        1090 => owned & STRAGHESS != 0,
-        _ => false,
-    }
-}
-
-/// Called from the trampoline. r14 is the menu entry, vanilla is the game boolean.
-pub extern "C" fn decide(entry: usize, vanilla: u32) -> u32 {
-    let Some(id) = boss_id(entry) else {
-        return vanilla;
-    };
-    if let Ok(mut seen) = SEEN.lock() {
-        if !seen.contains(&id) {
-            seen.push(id);
-            log(format!("NRAP menu boss id={id} vanilla={vanilla} entry=0x{entry:X}"));
-        }
-    }
-    u32::from(allowed(id))
-}
-
-fn write_jmp(at: usize, to: usize) -> bool {
-    let rel = to.wrapping_sub(at.wrapping_add(5)) as i32;
-    let bytes = [
-        0xE9,
-        rel as u8,
-        (rel >> 8) as u8,
-        (rel >> 16) as u8,
-        (rel >> 24) as u8,
-    ];
-    unsafe {
-        let mut old = 0u32;
-        if VirtualProtect(at as *mut c_void, 5, PAGE_EXECUTE_READWRITE, &mut old) == 0 {
-            return false;
-        }
-        std::ptr::copy_nonoverlapping(bytes.as_ptr(), at as *mut u8, 5);
-        VirtualProtect(at as *mut c_void, 5, old, &mut old);
-    }
-    true
-}
-
 pub fn init() -> Result<String, String> {
-    let span = ModuleSpan::nightreign().ok_or_else(|| "no nightreign module".to_string())?;
-    let rel = aob::find_pattern(span.slice(), MENU_AOB).ok_or_else(|| "menu AOB not found".to_string())?;
-    let site = span.base + rel + PATCH_AT;
-    let fallthrough = site + 5;
-    let taken = site + 12;
-    let cave = unsafe { VirtualAlloc(std::ptr::null_mut(), 0x100, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE) };
-    if cave.is_null() {
-        return Err("menu cave alloc failed".into());
-    }
-    let cave = cave as usize;
-    let decide_addr = decide as usize;
-    let mut code = Vec::new();
-    code.extend_from_slice(&[0x50, 0x51, 0x52, 0x41, 0x50, 0x41, 0x51, 0x41, 0x52, 0x41, 0x53]);
-    code.extend_from_slice(&[0x48, 0x83, 0xEC, 0x28]);
-    code.extend_from_slice(&[0x4C, 0x89, 0xF1]);
-    code.extend_from_slice(&[0x41, 0x0F, 0xB6, 0xD7]);
-    code.extend_from_slice(&[0x48, 0xB8]);
-    code.extend_from_slice(&decide_addr.to_le_bytes());
-    code.extend_from_slice(&[0xFF, 0xD0, 0x41, 0x88, 0xC7]);
-    code.extend_from_slice(&[0x48, 0x83, 0xC4, 0x28]);
-    code.extend_from_slice(&[0x41, 0x5B, 0x41, 0x5A, 0x41, 0x59, 0x41, 0x58, 0x5A, 0x59, 0x58]);
-    code.extend_from_slice(&[0x45, 0x84, 0xFF, 0x74, 0x05]);
-    let jz_from = cave + code.len();
-    code.extend_from_slice(&[0xE9, 0, 0, 0, 0]);
-    let taken_from = cave + code.len();
-    code.extend_from_slice(&[0xE9, 0, 0, 0, 0]);
-    let rel_fall = fallthrough.wrapping_sub(jz_from.wrapping_add(5)) as i32;
-    let rel_taken = taken.wrapping_sub(taken_from.wrapping_add(5)) as i32;
-    code[jz_from - cave + 1..jz_from - cave + 5].copy_from_slice(&rel_fall.to_le_bytes());
-    code[taken_from - cave + 1..taken_from - cave + 5].copy_from_slice(&rel_taken.to_le_bytes());
-    unsafe {
-        std::ptr::copy_nonoverlapping(code.as_ptr(), cave as *mut u8, code.len());
-    }
-    if !write_jmp(site, cave) {
-        return Err("menu jmp protect failed".into());
-    }
-    Ok(format!("NRAP menu gate site=0x{site:X} cave=0x{cave:X}"))
+    Ok("NRAP menu gate disabled (detour crashed on the expedition board)".into())
 }
