@@ -116,9 +116,6 @@ fn handle_server_text(text: &str, log: &impl Fn(&str), next_index: &mut i64, dro
             "NRAP received {} ({id}) index {ap_index}",
             item_name(id)
         ));
-        if let Some(msg) = crate::grant::apply_received(id, ap_index) {
-            log(&msg);
-        }
         if let Some(msg) = crate::flag_write::apply_item(id) {
             log(&msg);
         }
