@@ -1,0 +1,87 @@
+# Nightlord and day-boss flag samples. Append a [[day_boss]] block per run.
+
+[[nightlord]]
+name = "Gladius"
+flag = 150
+
+[[nightlord]]
+name = "Adel"
+flag = 151
+
+[[nightlord]]
+name = "Gnoster"
+flag = 152
+
+[[nightlord]]
+name = "Maris"
+flag = 153
+
+[[nightlord]]
+name = "Libra"
+flag = 154
+
+[[nightlord]]
+name = "Fulghor"
+flag = 155
+
+[[nightlord]]
+name = "Caligo"
+flag = 156
+
+[[nightlord]]
+name = "Heolstor"
+flag = 160
+
+[[nightlord]]
+name = "Harmonia"
+flag = 161
+
+[[nightlord]]
+name = "Straghess"
+flag = 162
+
+[[nightlord]]
+name = "Everdark Gladius"
+flag = 170
+
+[[nightlord]]
+name = "Everdark Adel"
+flag = 171
+
+[[nightlord]]
+name = "Everdark Gnoster"
+flag = 172
+
+[[nightlord]]
+name = "Everdark Maris"
+flag = 173
+
+[[nightlord]]
+name = "Everdark Libra"
+flag = 174
+
+[[nightlord]]
+name = "Everdark Fulghor"
+flag = 175
+
+[[nightlord]]
+name = "Everdark Caligo"
+flag = 176
+
+[[nightlord]]
+name = "Everdark Harmonia"
+flag = 181
+
+[[day_boss]]
+nightlord = "Adel"
+day = 1
+boss = "Gaping Dragon"
+bits = [887007, 887008, 887010, 887012, 887013, 887014]
+sample = "2026-10-01"
+
+[[day_boss]]
+nightlord = "Adel"
+day = 2
+boss = "Ancient Dragon"
+bits = [752021, 752025, 752028, 797003, 797007, 797010, 896002, 896003, 896006, 896009, 896010]
+sample = "2026-10-01"
