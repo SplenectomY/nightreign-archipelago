@@ -70,7 +70,8 @@ fn add_murk(amount: i32) -> Result<String, String> {
 
 fn murk_amount(item_id: i64) -> Option<i32> {
     match item_id {
-        839_100_100 | 839_100_101 => Some(if item_id == 839_100_100 { 1000 } else { 2000 }),
+        839_100_105 => Some(1000),
+        839_100_101 => Some(2000),
         839_100_102 => Some(4000),
         839_100_103 => Some(6000),
         839_100_104 => Some(10000),
