@@ -141,3 +141,11 @@ boss = "Night's Cavalry"
 bits = [905000, 905007, 905008, 905011, 905012, 905013]
 sample = "2026-10-01"
 notes = "Before: 905001, 905006, 905015, 905016. Later lines mixed with day 2. 88014 and 116005 repeated."
+
+[[day_boss]]
+nightlord = "Adel"
+day = 0
+boss = "Fell Omen"
+bits = [878002, 1022002, 1076002, 1085002, 1094002, 1103002, 1112002, 1121002]
+sample = "2026-10-01"
+notes = "Start line truncated +119. 878000 rose at fight start. 51201-51203 rose across the fight."

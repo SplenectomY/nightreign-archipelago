@@ -43,7 +43,8 @@ Death bits are the after line. Before/during bits are the scan that preceded it.
 | Adel | 1 | Night's Cavalry | 905001, 905006, 905015, 905016 | 905000, 905007, 905008, 905011, 905012, 905013 |
 | Gladius | 1 | Demihuman Queen | 1102, 1108, 9015, 9019, 623900, 896001, 896011, 896012, 920900 | 896007, 896008, 896013, 896017 |
 | Gladius | overworld | Demihuman Queen | 531, 74000-74019, 779011-779023, truncated +35 | 5000, 74018 |
-| Adel | overworld | Black Knife Assassin | 60002, 60003, 60006, 60009, 60012, 60015, 60017, 60018, 86200 | 88011, 887000, 887001, 887002, 887003 |
+| Adel | overworld | Black Knife Assassin | 60002, 60003, 60006, 60009, 60012, 60015, 60017, 60018, 86200 | 88011, 887002, 887003 |
+| Adel | overworld | Fell Omen | 51201, 51202, 51203 | 51203, 878002, 1022002, 1076002, 1085002, 1094002, 1103002, 1112002, 1121002 |
 
 
 Valiant Gargoyle, Adel Night 1, 2026-10-01. After line also had 1108, 1113, 1181, 1301, 1302, 67045, 74012, 95004, 95007, 116005, 878000. Those repeat an earlier Adel post-fight scan or the Freja death bit, so they are not in the After column.
@@ -53,6 +54,8 @@ Gargoyle run 2 after line also had 530, 5000, 53004, 81003, 81005, 81006, 779006
 Black Knife Assassin, Adel overworld, 2026-10-01. The 67014-67062 cluster rose at fight start, and it was the previous overworld after line, so it is not a death bit.
 
 Night's Cavalry, Adel Night 1, 2026-10-01. Two bosses, and the later lines include day 2 starting. `88014` and `116005` rose here, so they are not Gargoyle. The `xxx006` set rose again.
+
+Fell Omen, Adel overworld, 2026-10-01, 19:20 to 19:21. The start line was +119 and truncated. `878000` and `878001` rose at the start, so they are not death bits. The end line is the `xxx002` cluster.
 ## Adding a sample
 
 Copy a row. Keep the Nightlord, day, and boss name. If the same pair is run again, add the new bits in the notes column of `data/boss_flags.toml` instead of deleting the first sample.
