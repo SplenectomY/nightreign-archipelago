@@ -1,6 +1,7 @@
 //! Blocking AP client. Own thread. Flag thread only pushes location ids.
 
 use std::net::TcpStream;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{Receiver, RecvTimeoutError};
 use std::time::Duration;
 use tungstenite::protocol::WebSocket;
