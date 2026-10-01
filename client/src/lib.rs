@@ -69,6 +69,14 @@ extern "system" {
         flags: DWORD,
         template: HANDLE,
     ) -> HANDLE;
+    fn ReadFile(
+        file: HANDLE,
+        buf: *mut u8,
+        len: DWORD,
+        read: *mut DWORD,
+        overlapped: LPVOID,
+    ) -> BOOL;
+    fn SetConsoleMode(handle: HANDLE, mode: DWORD) -> BOOL;
     fn WriteFile(
         file: HANDLE,
         buf: *const u8,
@@ -129,6 +137,34 @@ fn bind_console() {
             SetStdHandle(STD_OUTPUT_HANDLE, con);
             SetStdHandle(STD_ERROR_HANDLE, con);
         }
+        let input = CreateFileA(
+            b"CONIN$\0".as_ptr(),
+            GENERIC_READ | GENERIC_WRITE,
+            FILE_SHARE_READ | FILE_SHARE_WRITE,
+            std::ptr::null_mut(),
+            OPEN_EXISTING,
+            0,
+            std::ptr::null_mut(),
+        );
+        if input != INVALID_HANDLE_VALUE && !input.is_null() {
+            SetStdHandle(-10i32 as DWORD, input);
+            SetConsoleMode(input, 0x1 | 0x2 | 0x4);
+        }
+    }
+}
+
+fn read_console_line() -> Option<String> {
+    unsafe {
+        let h = GetStdHandle(-10i32 as DWORD);
+        if h.is_null() || h == INVALID_HANDLE_VALUE {
+            return None;
+        }
+        let mut buf = [0u8; 512];
+        let mut n = 0u32;
+        if ReadFile(h, buf.as_mut_ptr(), buf.len() as DWORD, &mut n, std::ptr::null_mut()) == 0 {
+            return None;
+        }
+        Some(String::from_utf8_lossy(&buf[..n as usize]).trim().to_string())
     }
 }
 
@@ -329,16 +365,11 @@ fn worker() {
         });
     }
     thread::spawn(move || {
-        let stdin = std::io::stdin();
         loop {
-            let mut line = String::new();
-            if stdin.read_line(&mut line).is_err() {
-                break;
-            }
-            let line = line.trim().to_string();
-            if line.is_empty() {
+            let Some(line) = read_console_line() else {
+                thread::sleep(Duration::from_millis(200));
                 continue;
-            }
+            };
             if line.starts_with('!') {
                 let _ = say_tx.send(line);
             }
