@@ -89,3 +89,20 @@ Confirmed fight noise, removed from the table: `896006`, `896009`, `896010`. The
 Overworld Demihuman Queen, Gladius expedition, 2026-10-01. The before/during line was `+35` and truncated. The after-death line was `+13` and complete. `896002` was on that after line and also on the Adel Ancient Dragon death line, so it is noise.
 
 Duke's Dear Freja, Adel Night 1, 2026-10-01. Before line: `878001, 878006, 878009, 878010, 878015`. After line: `9015, 9019, 878000`. `9015` and `9019` are the shared pair, not the boss.
+
+## Named flags
+
+From the Nightreign event-flag list. These are the day checks, not a boss id.
+
+| Flag | Name |
+|---:|---|
+| 7502 | Day 1 night boss defeated |
+| 7504 | Day 1 night boss battle started |
+| 7507 | Day 2 night boss defeated |
+| 7509 | Day 2 night boss battle started |
+| 7511 | Day 3 night boss battle started |
+| 7512 | Day 3 night boss defeated |
+| 7513 | Day 3 night boss HP 0 |
+| 9100 | Boss defeat flag |
+
+`150` through `160` are the table-mode Nightlord defeats, which we already watch. The per-map boss flags are around `46260800` and are outside the slab the diff walks.
