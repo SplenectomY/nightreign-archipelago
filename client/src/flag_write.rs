@@ -16,6 +16,7 @@ static HEOLSTOR_IN_POOL: Mutex<bool> = Mutex::new(false);
 static HEOLSTOR_NEED: Mutex<u32> = Mutex::new(4);
 static UNLOCKS: Mutex<Vec<i64>> = Mutex::new(Vec::new());
 static GRANTED_NIGHTFARERS: Mutex<Vec<u32>> = Mutex::new(Vec::new());
+static SUPPRESSED: Mutex<Vec<u32>> = Mutex::new(Vec::new());
 
 fn find_setter(span: ModuleSpan) -> Option<usize> {
     let rel = aob::find_pattern(span.slice(), BASE_A)?;
@@ -27,7 +28,7 @@ pub fn configure_heolstor(in_pool: bool, count: u32) {
     *HEOLSTOR_NEED.lock().unwrap() = count.max(1);
 }
 
-pub fn debug_flag_from_toml(text: &str) -> Option<u32> {
+fn debug_value(text: &str, key: &str) -> Option<u32> {
     let mut in_debug = false;
     for line in text.lines() {
         let line = line.trim();
@@ -39,7 +40,7 @@ pub fn debug_flag_from_toml(text: &str) -> Option<u32> {
             continue;
         }
         if let Some((k, v)) = line.split_once('=') {
-            if k.trim() == "set_flag" {
+            if k.trim() == key {
                 let n: u32 = v.trim().parse().ok()?;
                 if n == 0 {
                     return None;
@@ -49,6 +50,22 @@ pub fn debug_flag_from_toml(text: &str) -> Option<u32> {
         }
     }
     None
+}
+
+pub fn debug_flag_from_toml(text: &str) -> Option<u32> {
+    debug_value(text, "set_flag")
+}
+
+pub fn debug_clear_flag_from_toml(text: &str) -> Option<u32> {
+    debug_value(text, "clear_flag")
+}
+
+pub fn suppress_flag(flag: u32) {
+    let mut held = SUPPRESSED.lock().unwrap();
+    if !held.contains(&flag) {
+        held.push(flag);
+    }
+    GRANTED_NIGHTFARERS.lock().unwrap().retain(|f| *f != flag);
 }
 
 pub fn set_flag(flag: u32, on: bool) -> Result<String, String> {
@@ -153,6 +170,9 @@ fn note_unlock(item_id: i64) -> Option<String> {
 }
 
 fn remember_nightfarer(flag: u32) {
+    if SUPPRESSED.lock().unwrap().contains(&flag) {
+        return;
+    }
     if is_nightfarer(flag) {
         let mut got = GRANTED_NIGHTFARERS.lock().unwrap();
         if !got.contains(&flag) {
@@ -207,8 +227,10 @@ pub fn apply_item(item_id: i64) -> Option<String> {
 }
 
 pub fn retry_pending() -> Option<String> {
-    // Wylder is the default active body. The board exits if flag 222 is off.
-    remember_nightfarer(222);
+    // Wylder is the default active body. Skip this while clear_flag is holding 222 off.
+    if !SUPPRESSED.lock().unwrap().contains(&222) {
+        remember_nightfarer(222);
+    }
     let reapplied = reapply_nightfarers();
     let mut q = PENDING.lock().unwrap();
     if q.is_empty() {

@@ -22,6 +22,7 @@ drop_item_id = 0
 
 [debug]
 set_flag = 0
+clear_flag = 0
 drop_item = 0
 
 [[flag]]

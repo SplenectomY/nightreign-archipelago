@@ -326,6 +326,7 @@ fn worker() {
     let mut last_murk_scan = 0i32;
     let mut last_grant_now = false;
     let mut last_debug_flag = 0u32;
+    let mut last_clear_flag = 0u32;
     let mut last_debug_drop = 0i32;
     let mut shop_mans: Vec<flagman::FlagMan> = Vec::new();
     let mut last_shop = String::new();
@@ -434,6 +435,18 @@ fn worker() {
                 }
             } else {
                 last_debug_flag = 0;
+            }
+            if let Some(flag) = flag_write::debug_clear_flag_from_toml(&text) {
+                if flag != last_clear_flag {
+                    last_clear_flag = flag;
+                    flag_write::suppress_flag(flag);
+                    match flag_write::set_flag(flag, false) {
+                        Ok(msg) => log_line(&dir, &msg),
+                        Err(e) => log_line(&dir, &format!("NRAP clear_flag failed: {e}")),
+                    }
+                }
+            } else {
+                last_clear_flag = 0;
             }
             if let Some(id) = drop::debug_drop_from_toml(&text) {
                 if id != last_debug_drop {
