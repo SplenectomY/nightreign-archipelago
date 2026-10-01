@@ -1,4 +1,5 @@
 # Phase 0 world. Victory is locked to the goal. Heolstor is local unless opted into the pool.
+# Tricephalos is always available, so no starting expedition is precollected.
 
 from typing import Dict, List
 
@@ -96,9 +97,7 @@ class NightreignWorld(World):
     def create_items(self) -> None:
         unlocks = self._unlocks()
         everdark = [item for _loc, item in self._everdark()]
-        start = self.random.choice([n for n in unlocks if n != "Expedition Unlock - Heolstor"] or unlocks)
-        self.push_precollected(self.create_item(start))
-        pool: List[Item] = [self.create_item(name) for name in unlocks if name != start]
+        pool: List[Item] = [self.create_item(name) for name in unlocks]
         pool += [self.create_item(name) for name in everdark]
         unfilled = sum(1 for loc in self.multiworld.get_locations(self.player) if not loc.item)
         # Victory is locked in set_rules, so leave one location empty.
@@ -122,6 +121,8 @@ class NightreignWorld(World):
             return sum(state.has(name, player) for name in unlocks) >= need
 
         for loc_name, item_name in self._nightlords() + self._everdark():
+            if loc_name == "Nightlord - Gladius":
+                continue
             set_rule(
                 self.get_location(loc_name),
                 lambda state, item_name=item_name: state.has(item_name, player),
