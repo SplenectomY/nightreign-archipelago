@@ -10,6 +10,8 @@ from .Items import BASE_UNLOCKS, DLC_UNLOCKS, ITEM_NAME_TO_ID, item_table
 from .Locations import (
     BASE_NIGHTLORDS,
     DLC_NIGHTLORDS,
+    EVERDARK_DLC,
+    EVERDARK_NIGHTLORDS,
     LOCATION_NAME_TO_ID,
     SHOP_LOCATIONS,
     SPECIFIC_LOCATION,
@@ -51,6 +53,14 @@ class NightreignWorld(World):
             rows += DLC_NIGHTLORDS
         return rows
 
+    def _everdark(self):
+        if not self.options.include_everdark:
+            return []
+        rows = list(EVERDARK_NIGHTLORDS)
+        if self.options.include_dlc:
+            rows += EVERDARK_DLC
+        return rows
+
     def _unlocks(self) -> List[str]:
         names = list(BASE_UNLOCKS)
         if self.options.include_dlc:
@@ -75,7 +85,7 @@ class NightreignWorld(World):
         if self.options.shop_checks.current_key != "none":
             for name in SHOP_LOCATIONS:
                 hold_locs[name] = LOCATION_NAME_TO_ID[name]
-        for loc_name, _item in self._nightlords():
+        for loc_name, _item in self._nightlords() + self._everdark():
             hold_locs[loc_name] = LOCATION_NAME_TO_ID[loc_name]
         hold.add_locations(hold_locs, NightreignLocation)
 
@@ -85,9 +95,11 @@ class NightreignWorld(World):
 
     def create_items(self) -> None:
         unlocks = self._unlocks()
+        everdark = [item for _loc, item in self._everdark()]
         start = self.random.choice([n for n in unlocks if n != "Expedition Unlock - Heolstor"] or unlocks)
         self.push_precollected(self.create_item(start))
         pool: List[Item] = [self.create_item(name) for name in unlocks if name != start]
+        pool += [self.create_item(name) for name in everdark]
         unfilled = sum(1 for loc in self.multiworld.get_locations(self.player) if not loc.item)
         # Victory is locked in set_rules, so leave one location empty.
         while len(pool) < unfilled - 1:
@@ -109,7 +121,7 @@ class NightreignWorld(World):
                 return state.has("Expedition Unlock - Heolstor", player)
             return sum(state.has(name, player) for name in unlocks) >= need
 
-        for loc_name, item_name in self._nightlords():
+        for loc_name, item_name in self._nightlords() + self._everdark():
             set_rule(
                 self.get_location(loc_name),
                 lambda state, item_name=item_name: state.has(item_name, player),
