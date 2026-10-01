@@ -7,7 +7,6 @@
 use crate::aob::{self, ModuleSpan};
 use std::sync::atomic::{AtomicI32, AtomicUsize, Ordering};
 
-const MURK_BUNDLE_ID: i64 = 839_100_100;
 const DEFAULT_BUNDLE: i32 = 1000;
 const GAMEDATA_AOB: &str = "48 8B 0D ?? ?? ?? ?? F3 48 0F 2C C0";
 const MURK_AOB: &str = "?? 8B 81 D0 00 00 00 ?? 8B D1 B9";
