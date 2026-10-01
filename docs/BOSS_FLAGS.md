@@ -38,12 +38,15 @@ Death bits are the after line. Before/during bits are the scan that preceded it.
 | Adel | 1 | Gaping Dragon | 1102, 1108, 9015, 9019, 67020, 887000, 887001, 887006, 887009, 887011 | 887007, 887008, 887010, 887012, 887013, 887014 |
 | Adel | 1 | Duke's Dear Freja | 878001, 878006, 878009, 878010, 878015 | 878000 |
 | Adel | 1 | Valiant Gargoyle | 1102, 88016, 623900, 878001, 878006, 878009, 878010 | 88014, 878007, 878008, 878011, 878012, 893900, 893901, 893902, 893903 |
+| Adel | 1 | Valiant Gargoyle run 2 | 53022, 81019, 623900, 749800, 752000, 752001, 752002, 752003, 752004, 920900 | 88014, 116005 |
 | Adel | 2 | Ancient Dragon | 1105, 1314, 9015, 9018, 9019, 200010, 200011, 200099 | 752021, 752025, 752028, 797003, 797007, 797010, 896003 |
 | Gladius | 1 | Demihuman Queen | 1102, 1108, 9015, 9019, 623900, 896001, 896011, 896012, 920900 | 896007, 896008, 896013, 896017 |
 | Gladius | overworld | Demihuman Queen | 531, 74000-74019, 779011-779023, truncated +35 | 5000, 67014, 67043, 67044, 67048, 67050, 67051, 67052, 67057, 67060, 67062, 74018 |
 
 
 Valiant Gargoyle, Adel Night 1, 2026-10-01. After line also had 1108, 1113, 1181, 1301, 1302, 67045, 74012, 95004, 95007, 116005, 878000. Those repeat an earlier Adel post-fight scan or the Freja death bit, so they are not in the After column.
+
+Gargoyle run 2 after line also had 530, 5000, 53004, 81003, 81005, 81006, 779006, 788006, 824006, 833006, 860006, 887007, 887008, 887011, 887012, 1004038-1004046. `887007` and `887008` were on the Gaping Dragon death line, so that pair is not the boss. `88014` and `116005` repeated from Gargoyle run 1.
 ## Adding a sample
 
 Copy a row. Keep the Nightlord, day, and boss name. If the same pair is run again, add the new bits in the notes column of `data/boss_flags.toml` instead of deleting the first sample.
