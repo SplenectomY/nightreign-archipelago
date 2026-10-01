@@ -12,6 +12,8 @@ const PATCH_AT: usize = 6;
 const PAGE_EXECUTE_READWRITE: u32 = 0x40;
 const MEM_COMMIT: u32 = 0x1000;
 const MEM_RESERVE: u32 = 0x2000;
+const PAGE_NOACCESS: u32 = 0x01;
+const PAGE_GUARD: u32 = 0x100;
 
 const ADEL: u32 = 1 << 0;
 const GNOSTER: u32 = 1 << 1;
@@ -27,10 +29,24 @@ static OWNED: Mutex<u32> = Mutex::new(0);
 static LOGS: Mutex<Vec<String>> = Mutex::new(Vec::new());
 static SEEN: Mutex<Vec<u32>> = Mutex::new(Vec::new());
 
+#[repr(C)]
+struct MemoryBasicInformation {
+    base_address: *mut c_void,
+    allocation_base: *mut c_void,
+    allocation_protect: u32,
+    _pad1: u32,
+    region_size: usize,
+    state: u32,
+    protect: u32,
+    type_: u32,
+    _pad2: u32,
+}
+
 #[link(name = "kernel32")]
 extern "system" {
     fn VirtualAlloc(addr: *mut c_void, size: usize, kind: u32, protect: u32) -> *mut c_void;
     fn VirtualProtect(addr: *mut c_void, size: usize, protect: u32, old: *mut u32) -> i32;
+    fn VirtualQuery(addr: *const c_void, info: *mut MemoryBasicInformation, len: usize) -> usize;
 }
 
 fn log(msg: impl Into<String>) {
@@ -64,36 +80,40 @@ pub fn grant(item_id: i64) {
     }
 }
 
-fn read_u32(ptr: usize) -> Option<u32> {
+fn readable(ptr: usize, len: usize) -> bool {
     if ptr < 0x10000 {
+        return false;
+    }
+    unsafe {
+        let mut info = std::mem::zeroed::<MemoryBasicInformation>();
+        if VirtualQuery(ptr as *const c_void, &mut info, std::mem::size_of::<MemoryBasicInformation>()) == 0 {
+            return false;
+        }
+        if info.state != MEM_COMMIT || info.protect & (PAGE_NOACCESS | PAGE_GUARD) != 0 {
+            return false;
+        }
+        let start = info.base_address as usize;
+        start.saturating_add(info.region_size) >= ptr.saturating_add(len)
+    }
+}
+
+fn read_u32(ptr: usize) -> Option<u32> {
+    if !readable(ptr, 4) {
         return None;
     }
     Some(unsafe { std::ptr::read_unaligned(ptr as *const u32) })
 }
 
 fn boss_id(entry: usize) -> Option<u32> {
-    const IDS: &[u32] = &[2, 12, 22, 23, 32, 43, 53, 61, 73, 1080, 1090];
-    if entry < 0x10000 {
+    // 2 is Gladius and also a very common dword. Gladius stays on the vanilla bit.
+    const IDS: &[u32] = &[12, 22, 23, 32, 43, 53, 61, 73, 1080, 1090];
+    if !readable(entry, 0x40) {
         return None;
     }
-    for off in (0..0x180).step_by(4) {
+    for off in (0..0x80).step_by(4) {
         let v = read_u32(entry + off)?;
         if IDS.contains(&v) {
             return Some(v);
-        }
-        if off % 8 == 0 {
-            if let Some(p) = read_u32(entry + off).and_then(|_| {
-                let ptr = unsafe { std::ptr::read_unaligned((entry + off) as *const usize) };
-                if ptr > 0x10000 {
-                    read_u32(ptr)
-                } else {
-                    None
-                }
-            }) {
-                if IDS.contains(&p) {
-                    return Some(p);
-                }
-            }
         }
     }
     None
@@ -102,7 +122,6 @@ fn boss_id(entry: usize) -> Option<u32> {
 fn allowed(id: u32) -> bool {
     let owned = OWNED.lock().map(|g| *g).unwrap_or(0);
     match id {
-        2 => true,
         12 => owned & ADEL != 0,
         22 | 23 => owned & GNOSTER != 0,
         32 => owned & MARIS != 0,
@@ -119,15 +138,6 @@ fn allowed(id: u32) -> bool {
 /// Called from the trampoline. r14 is the menu entry, vanilla is the game boolean.
 pub extern "C" fn decide(entry: usize, vanilla: u32) -> u32 {
     let Some(id) = boss_id(entry) else {
-        if let Ok(mut seen) = SEEN.lock() {
-            let mark = read_u32(entry).unwrap_or(0);
-            if seen.len() < 8 && !seen.contains(&mark) {
-                seen.push(mark);
-                log(format!(
-                    "NRAP menu unknown entry=0x{entry:X} vanilla={vanilla} head={mark}"
-                ));
-            }
-        }
         return vanilla;
     };
     if let Ok(mut seen) = SEEN.lock() {
