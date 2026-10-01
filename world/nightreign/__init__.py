@@ -7,7 +7,14 @@ from BaseClasses import Item, ItemClassification, Location, Region, Tutorial
 from worlds.AutoWorld import WebWorld, World
 from worlds.generic.Rules import set_rule
 
-from .Items import BASE_UNLOCKS, DLC_UNLOCKS, ITEM_NAME_TO_ID, item_table
+from .Items import (
+    BASE_NIGHTFARERS,
+    BASE_UNLOCKS,
+    DLC_NIGHTFARERS,
+    DLC_UNLOCKS,
+    ITEM_NAME_TO_ID,
+    item_table,
+)
 from .Locations import (
     BASE_NIGHTLORDS,
     DLC_NIGHTLORDS,
@@ -70,6 +77,12 @@ class NightreignWorld(World):
             names.append("Expedition Unlock - Heolstor")
         return names
 
+    def _nightfarers(self) -> List[str]:
+        names = list(BASE_NIGHTFARERS)
+        if self.options.include_dlc:
+            names += DLC_NIGHTFARERS
+        return names
+
     def create_regions(self) -> None:
         menu = Region("Menu", self.player, self.multiworld)
         hold = Region("Roundtable Hold", self.player, self.multiworld)
@@ -99,8 +112,14 @@ class NightreignWorld(World):
         everdark = [item for _loc, item in self._everdark()]
         start = self.random.choice([n for n in unlocks if n != "Expedition Unlock - Heolstor"] or unlocks)
         self.push_precollected(self.create_item(start))
+        roster = self._nightfarers()
+        self.random.shuffle(roster)
+        start_count = min(int(self.options.starting_nightfarers), len(roster))
+        for name in roster[:start_count]:
+            self.push_precollected(self.create_item(name))
         pool: List[Item] = [self.create_item(name) for name in unlocks if name != start]
         pool += [self.create_item(name) for name in everdark]
+        pool += [self.create_item(name) for name in roster[start_count:]]
         unfilled = sum(1 for loc in self.multiworld.get_locations(self.player) if not loc.item)
         # Victory is locked in set_rules, so leave one location empty.
         while len(pool) < unfilled - 1:
