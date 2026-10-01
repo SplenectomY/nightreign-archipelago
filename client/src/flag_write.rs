@@ -271,6 +271,11 @@ fn reapply_nightfarers() -> Option<String> {
     }
 }
 
+
+pub fn shop_granted(flag: u32) -> bool {
+    SHOP_GRANTED.lock().unwrap().contains(&flag)
+}
+
 pub fn apply_item(item_id: i64) -> Option<String> {
     let gate = None;
     let Some(flag) = flag_for_item(item_id) else {
