@@ -270,15 +270,15 @@ pub fn run(cfg: ApConfig, rx: Receiver<i64>, drop_goods: i32, log: impl Fn(&str)
                                 break;
                             }
                             log(&format!("NRAP AP LocationChecks {id}"));
-                            match send_goal(&mut socket) {
-                                Ok(true) => log("NRAP AP goal sent"),
-                                Ok(false) => {}
-                                Err(e) => log(&format!("NRAP AP goal failed: {e}")),
-                            }
                             if drain_server(&mut socket, &log, &mut next_index, drop_goods).is_err()
                             {
                                 log("NRAP AP server closed");
                                 break;
+                            }
+                            match send_goal(&mut socket) {
+                                Ok(true) => log("NRAP AP goal sent"),
+                                Ok(false) => {}
+                                Err(e) => log(&format!("NRAP AP goal failed: {e}")),
                             }
                         }
                         Err(RecvTimeoutError::Timeout) => {
@@ -286,6 +286,11 @@ pub fn run(cfg: ApConfig, rx: Receiver<i64>, drop_goods: i32, log: impl Fn(&str)
                             {
                                 log("NRAP AP server closed");
                                 break;
+                            }
+                            match send_goal(&mut socket) {
+                                Ok(true) => log("NRAP AP goal sent"),
+                                Ok(false) => {}
+                                Err(e) => log(&format!("NRAP AP goal failed: {e}")),
                             }
                         }
                         Err(RecvTimeoutError::Disconnected) => return,
