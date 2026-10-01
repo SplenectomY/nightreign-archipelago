@@ -1,4 +1,4 @@
-//! Expedition menu probe. Logs the board entry and the two pointers it holds.
+//! Expedition menu probe. r14 is the menu panel, so this also logs r13 and rsi.
 //! The vanilla unlock bit is left unchanged.
 
 #![cfg(windows)]
@@ -17,17 +17,6 @@ const MEM_RELEASE: u32 = 0x8000;
 const PAGE_NOACCESS: u32 = 0x01;
 const PAGE_GUARD: u32 = 0x100;
 
-const ADEL: u32 = 1 << 0;
-const GNOSTER: u32 = 1 << 1;
-const MARIS: u32 = 1 << 2;
-const LIBRA: u32 = 1 << 3;
-const FULGHOR: u32 = 1 << 4;
-const CALIGO: u32 = 1 << 5;
-const HEOLSTOR: u32 = 1 << 6;
-const HARMONIA: u32 = 1 << 7;
-const STRAGHESS: u32 = 1 << 8;
-
-static OWNED: Mutex<u32> = Mutex::new(0);
 static LOGS: Mutex<Vec<String>> = Mutex::new(Vec::new());
 static HITS: AtomicU32 = AtomicU32::new(0);
 static LOGGED_HITS: AtomicU32 = AtomicU32::new(0);
@@ -72,24 +61,7 @@ pub fn drain_logs() -> Vec<String> {
     out
 }
 
-pub fn grant(item_id: i64) {
-    let bit = match item_id {
-        839_100_002 => ADEL,
-        839_100_003 => GNOSTER,
-        839_100_004 => MARIS,
-        839_100_005 => LIBRA,
-        839_100_006 => FULGHOR,
-        839_100_007 => CALIGO,
-        839_100_008 => HEOLSTOR,
-        839_100_009 => HARMONIA,
-        839_100_010 => STRAGHESS,
-        _ => return,
-    };
-    if let Ok(mut owned) = OWNED.lock() {
-        *owned |= bit;
-        log(format!("NRAP menu owned bit=0x{bit:X} mask=0x{:X}", *owned));
-    }
-}
+pub fn grant(_item_id: i64) {}
 
 fn readable(ptr: usize, len: usize) -> bool {
     if ptr < 0x10000 {
@@ -108,9 +80,9 @@ fn readable(ptr: usize, len: usize) -> bool {
 
 fn words(ptr: usize, len: usize) -> String {
     if !readable(ptr, len) {
-        return " unreadable".into();
+        return format!(" 0x{ptr:X}");
     }
-    let mut out = String::new();
+    let mut out = format!(" 0x{ptr:X}");
     for off in (0..len).step_by(4) {
         let v = unsafe { std::ptr::read_unaligned((ptr + off) as *const u32) };
         out.push_str(&format!(" {v:08X}"));
@@ -118,30 +90,20 @@ fn words(ptr: usize, len: usize) -> String {
     out
 }
 
-fn qword(ptr: usize) -> Option<usize> {
-    if !readable(ptr, 8) {
-        return None;
-    }
-    Some(unsafe { std::ptr::read_unaligned(ptr as *const usize) })
-}
-
-/// Logs the menu entry. Does not change the unlock bit.
-pub extern "C" fn peek(entry: usize, vanilla: u32) {
+/// Logs the menu registers. Does not change the unlock bit.
+pub extern "C" fn peek(entry: usize, vanilla: u32, r13: usize, rsi: usize) {
     let mut seen = match SEEN.try_lock() {
         Ok(guard) => guard,
         Err(_) => return,
     };
-    if seen.contains(&entry) || seen.len() >= 8 {
+    if seen.contains(&entry) || seen.len() >= 4 {
         return;
     }
     seen.push(entry);
     drop(seen);
-    log(format!("NRAP menu entry=0x{entry:X} vanilla={vanilla}{}", words(entry, 0x40)));
-    for off in [0usize, 0x18] {
-        if let Some(p) = qword(entry + off) {
-            log(format!("NRAP menu ptr+{off:X}=0x{p:X}{}", words(p, 0x20)));
-        }
-    }
+    log(format!("NRAP menu vanilla={vanilla} r14{}", words(entry, 0x20)));
+    log(format!("NRAP menu r13{}", words(r13, 0x20)));
+    log(format!("NRAP menu rsi{}", words(rsi, 0x20)));
 }
 
 fn alloc_near(site: usize) -> *mut c_void {
@@ -208,6 +170,8 @@ pub fn init() -> Result<String, String> {
     code.extend_from_slice(&[0x48, 0x83, 0xEC, 0x28]);
     code.extend_from_slice(&[0x4C, 0x89, 0xF1]);
     code.extend_from_slice(&[0x41, 0x0F, 0xB6, 0xD7]);
+    code.extend_from_slice(&[0x4D, 0x89, 0xE8]);
+    code.extend_from_slice(&[0x4C, 0x89, 0xCE]);
     code.extend_from_slice(&[0x48, 0xB8]);
     code.extend_from_slice(&peek_addr.to_le_bytes());
     code.extend_from_slice(&[0xFF, 0xD0]);
