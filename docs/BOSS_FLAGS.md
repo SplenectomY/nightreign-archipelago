@@ -42,7 +42,8 @@ Death bits are the after line. Before/during bits are the scan that preceded it.
 | Adel | 2 | Ancient Dragon | 1105, 1314, 9018, 200010, 200011, 200099 | 752021, 752025, 752028, 797003, 797007, 797010, 896003 |
 | Adel | 1 | Night's Cavalry | 905001, 905006, 905015, 905016 | 905000, 905007, 905008, 905011, 905012, 905013 |
 | Gladius | 1 | Demihuman Queen | 1102, 1108, 9015, 9019, 623900, 896001, 896011, 896012, 920900 | 896007, 896008, 896013, 896017 |
-| Gladius | overworld | Demihuman Queen | 531, 74000-74019, 779011-779023, truncated +35 | 5000, 74018 |
+| Gladius | overworld | Demihuman Queen | 531, 74000-74019, 779011-779023, truncated +35 | 74018 |
+| Adel | overworld | Demihuman Queen run 2 | 74000, 74001, 74007-74011, 74013, 74014, 74017, 74019, 797011-797024, truncated +40 | 869000, 869001, 869002, 869003 |
 | Adel | overworld | Black Knife Assassin | 60002, 60003, 60006, 60009, 60012, 60015, 60017, 60018, 86200 | 88011, 887002, 887003 |
 | Adel | overworld | Fell Omen | 51201, 51202, 51203 | 51203, 878002, 1022002, 1076002, 1085002, 1094002, 1103002, 1112002, 1121002 |
 | Adel | overworld | Tree Sentinel | 9132, 650830, 653045, 653046, 653047, 653048, 653049, 653052 | 761000, 761001, 761002, 761003, 761004, 761005 |
@@ -59,6 +60,8 @@ Night's Cavalry, Adel Night 1, 2026-10-01. Two bosses, and the later lines inclu
 Fell Omen, Adel overworld, 2026-10-01, 19:20 to 19:21. The start line was +119 and truncated. `878000` and `878001` rose at the start, so they are not death bits. The end line is the `xxx002` cluster.
 
 Tree Sentinel, Adel overworld, 2026-10-01, 19:25 to 19:27. `5000` rose mid-fight. End line also had 532, 9130, 758800. `51201`-`51203` did not rise.
+
+Overworld Demihuman Queen, Adel, 2026-10-01. The 740xx cluster repeated from the Gladius overworld Demihuman Queen. `5000` rose again at the start.
 ## Adding a sample
 
 Copy a row. Keep the Nightlord, day, and boss name. If the same pair is run again, add the new bits in the notes column of `data/boss_flags.toml` instead of deleting the first sample.

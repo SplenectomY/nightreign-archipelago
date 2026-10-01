@@ -157,3 +157,11 @@ boss = "Tree Sentinel"
 bits = [761000, 761001, 761002, 761003, 761004, 761005]
 sample = "2026-10-01"
 notes = "Start: 9132, 650830, 653045-653052. 5000 rose mid-fight."
+
+[[day_boss]]
+nightlord = "Adel"
+day = 0
+boss = "Demihuman Queen"
+bits = [74000, 74001, 74007, 74008, 74009, 74010, 74011, 74013, 74014, 74017, 74019]
+sample = "2026-10-01-run2"
+notes = "Repeated from the Gladius overworld sample. Second line was 869000-869003."
