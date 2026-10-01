@@ -8,7 +8,7 @@ on:
       tag:
         description: Release tag to create or reuse
         required: true
-        default: v0.1.0-phase0
+        default: v0.2.0-phase0
       prerelease:
         description: Mark as prerelease
         type: boolean
@@ -45,16 +45,20 @@ jobs:
           cp nightreign.apworld dist/nightreign-ap/
           cp players/Nightreign.yaml dist/nightreign-ap/
           cp docs/PHASE0_TESTER.md dist/nightreign-ap/
+          cp README.md dist/nightreign-ap/
           cat > dist/nightreign-ap/README.txt << 'EOF'
           Nightreign Archipelago — tester pack
 
           1. Install Seamless Coop for Nightreign and me3.
-          2. Edit nightreign-ap.me3: set the nrsc.dll path and point the second native at THIS folder's nightreign_ap.dll.
-          3. Keep flags.toml next to the DLL.
-          4. Launch via me3 with that profile. A console should print "NRAP attached".
-          5. You do not need Rust or Visual Studio.
+          2. Unzip this folder to C:/Mods/nightreign-ap/. Keep nightreign_ap.dll and flags.toml together.
+          3. Copy nightreign-ap.me3 to the me3 profiles folder. Paths must use forward slashes.
+          4. Copy nightreign.apworld to %USERPROFILE%\Archipelago\custom_worlds\ and Nightreign.yaml to the Players folder.
+          5. Generate, host MultiServer, then launch with me3. Do not also launch nrsc_launcher.exe.
+          6. The console must print NRAP attached and NRAP AP connected.
 
-          Optional: drop nightreign.apworld into Archipelago/custom_worlds/ and use Nightreign.yaml to generate.
+          The regulation package is not in this zip. Without it the board is vanilla. With it, do not open the expedition board unless the Nightfarer you are controlling has been granted. A locked active Nightfarer exits the game and Windows writes no crash dump.
+
+          You do not need Rust or Visual Studio.
           EOF
           powershell -Command "Compress-Archive -Path dist/nightreign-ap/* -DestinationPath dist/nightreign-ap-windows.zip -Force"
 
@@ -69,4 +73,6 @@ jobs:
           body: |
             Tester pack. No Rust or MSVC required.
 
-            Zip contains `nightreign_ap.dll`, `flags.toml`, me3 profile, apworld, and the Phase 0 tester brief.
+            Zip contains `nightreign_ap.dll`, `flags.toml`, me3 profile, apworld, player yaml, and the install notes.
+
+            The regulation package is not included. Board gating crashes are only reproducible with that package, supplied separately.
