@@ -133,3 +133,11 @@ boss = "Black Knife Assassin"
 bits = [88011, 887000, 887001, 887002, 887003]
 sample = "2026-10-01"
 notes = "Overworld. 670xx rose at fight start, not death."
+
+[[day_boss]]
+nightlord = "Adel"
+day = 1
+boss = "Night's Cavalry"
+bits = [905000, 905007, 905008, 905011, 905012, 905013]
+sample = "2026-10-01"
+notes = "Before: 905001, 905006, 905015, 905016. Later lines mixed with day 2. 88014 and 116005 repeated."

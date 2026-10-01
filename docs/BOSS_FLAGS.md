@@ -31,7 +31,7 @@ These are the Hold flags already watched by the client.
 
 ## Day bosses
 
-Death bits are the after line. Before/during bits are the scan that preceded it. Noise already removed from the after column: `896002`, `896006`, `896009`, `896010`. `9015` and `9019` are the shared pair and are left in the column where they rose.
+Death bits are the after line. Before/during bits are the scan that preceded it. Noise already removed from the after column: `896002`, `896006`, `896009`, `896010`. `9015` and `9019` are the day circle closing, confirmed 2026-10-01. They are not a boss bit.
 
 | Nightlord | Day | Boss | Before / during | After |
 |---|---:|---|---|---|
@@ -39,7 +39,8 @@ Death bits are the after line. Before/during bits are the scan that preceded it.
 | Adel | 1 | Duke's Dear Freja | 878001, 878006, 878009, 878010, 878015 | 878000 |
 | Adel | 1 | Valiant Gargoyle | 1102, 88016, 623900, 878001, 878006, 878009, 878010 | 88014, 878007, 878008, 878011, 878012, 893900, 893901, 893902, 893903 |
 | Adel | 1 | Valiant Gargoyle run 2 | 53022, 81019, 623900, 749800, 752000, 752001, 752002, 752003, 752004, 920900 | 88014, 116005 |
-| Adel | 2 | Ancient Dragon | 1105, 1314, 9015, 9018, 9019, 200010, 200011, 200099 | 752021, 752025, 752028, 797003, 797007, 797010, 896003 |
+| Adel | 2 | Ancient Dragon | 1105, 1314, 9018, 200010, 200011, 200099 | 752021, 752025, 752028, 797003, 797007, 797010, 896003 |
+| Adel | 1 | Night's Cavalry | 905001, 905006, 905015, 905016 | 905000, 905007, 905008, 905011, 905012, 905013 |
 | Gladius | 1 | Demihuman Queen | 1102, 1108, 9015, 9019, 623900, 896001, 896011, 896012, 920900 | 896007, 896008, 896013, 896017 |
 | Gladius | overworld | Demihuman Queen | 531, 74000-74019, 779011-779023, truncated +35 | 5000, 74018 |
 | Adel | overworld | Black Knife Assassin | 60002, 60003, 60006, 60009, 60012, 60015, 60017, 60018, 86200 | 88011, 887000, 887001, 887002, 887003 |
@@ -50,6 +51,8 @@ Valiant Gargoyle, Adel Night 1, 2026-10-01. After line also had 1108, 1113, 1181
 Gargoyle run 2 after line also had 530, 5000, 53004, 81003, 81005, 81006, 779006, 788006, 824006, 833006, 860006, 887007, 887008, 887011, 887012, 1004038-1004046. `887007` and `887008` were on the Gaping Dragon death line, so that pair is not the boss. `88014` and `116005` repeated from Gargoyle run 1.
 
 Black Knife Assassin, Adel overworld, 2026-10-01. The 67014-67062 cluster rose at fight start, and it was the previous overworld after line, so it is not a death bit.
+
+Night's Cavalry, Adel Night 1, 2026-10-01. Two bosses, and the later lines include day 2 starting. `88014` and `116005` rose here, so they are not Gargoyle. The `xxx006` set rose again.
 ## Adding a sample
 
 Copy a row. Keep the Nightlord, day, and boss name. If the same pair is run again, add the new bits in the notes column of `data/boss_flags.toml` instead of deleting the first sample.
