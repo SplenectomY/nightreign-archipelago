@@ -133,14 +133,14 @@ class NightreignWorld(World):
 
     def set_rules(self) -> None:
         player = self.player
-        unlocks = [n for n in self._unlocks() if n != "Expedition Unlock - Heolstor"]
+        defeats = [loc for loc, _item in self._nightlords() if loc != "Nightlord - Heolstor"]
         need = int(self.options.heolstor_unlock_count)
         in_pool = bool(self.options.heolstor_in_pool)
 
         def heolstor_gate(state) -> bool:
             if in_pool:
                 return state.has("Expedition Unlock - Heolstor", player)
-            return sum(state.has(name, player) for name in unlocks) >= need
+            return sum(state.can_reach(name, "Location", player) for name in defeats) >= need
 
         for loc_name, item_name in self._nightlords() + self._everdark():
             set_rule(

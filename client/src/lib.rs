@@ -342,6 +342,9 @@ fn worker() {
                                     &dir,
                                     &format!("NRAP check: {} (flag {} 0->1)", w.location, w.flag),
                                 );
+                                if let Some(msg) = flag_write::note_defeat(w.flag) {
+                                    log_line(&dir, &msg);
+                                }
                             } else {
                                 log_line(
                                     &dir,

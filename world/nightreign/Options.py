@@ -37,13 +37,13 @@ class SpecificNightlord(Choice):
 
 
 class HeolstorInPool(Toggle):
-    """If false, Heolstor is not a shuffled unlock. The slot opens him after heolstor_unlock_count other Nightlord unlocks."""
+    """If false, Heolstor is not a shuffled unlock. The slot opens him after heolstor_unlock_count other Nightlord defeats."""
     display_name = "Heolstor In Pool"
     default = False
 
 
 class HeolstorUnlockCount(Range):
-    """Other Nightlord expedition unlocks required before this slot can open Heolstor. Ignored when Heolstor is in the pool."""
+    """Other Nightlord defeats required before this slot can open Heolstor. Ignored when Heolstor is in the pool."""
     display_name = "Heolstor Unlock Count"
     range_start = 1
     range_end = 9

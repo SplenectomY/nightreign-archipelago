@@ -138,27 +138,29 @@ pub fn flag_for_item(item_id: i64) -> Option<u32> {
     }
 }
 
-fn note_unlock(item_id: i64) -> Option<String> {
-    if !(839_100_001..=839_100_007).contains(&item_id) && item_id != 839_100_009 && item_id != 839_100_010 {
-        return None;
-    }
-    if *HEOLSTOR_IN_POOL.lock().unwrap() {
+fn is_defeat_flag(flag: u32) -> bool {
+    matches!(flag, 150..=156 | 161 | 162)
+}
+
+pub fn note_defeat(flag: u32) -> Option<String> {
+    if !is_defeat_flag(flag) || *HEOLSTOR_IN_POOL.lock().unwrap() {
         return None;
     }
     let mut got = UNLOCKS.lock().unwrap();
-    if !got.contains(&item_id) {
-        got.push(item_id);
+    let id = flag as i64;
+    if !got.contains(&id) {
+        got.push(id);
     }
     let need = *HEOLSTOR_NEED.lock().unwrap();
     if got.len() < need as usize {
         return Some(format!(
-            "NRAP Heolstor gate {}/{} (local, not in pool)",
+            "NRAP Heolstor gate {}/{} defeats (local, not in pool)",
             got.len(),
             need
         ));
     }
     match set_flag(115, true) {
-        Ok(msg) => Some(format!("{msg} after {} Nightlord unlocks", got.len())),
+        Ok(msg) => Some(format!("{msg} after {} Nightlord defeats", got.len())),
         Err(e) => {
             let mut q = PENDING.lock().unwrap();
             if !q.contains(&115) {
@@ -204,7 +206,7 @@ fn reapply_nightfarers() -> Option<String> {
 }
 
 pub fn apply_item(item_id: i64) -> Option<String> {
-    let gate = note_unlock(item_id);
+    let gate = None;
     let Some(flag) = flag_for_item(item_id) else {
         return gate.or_else(|| Some(format!("NRAP grant {item_id} (no unlock flag)")));
     };
