@@ -35,6 +35,7 @@ These are the Hold flags already watched by the client.
 |---|---:|---|---|---|
 | Adel | 1 | Gaping Dragon | 887007, 887008, 887010, 887012, 887013, 887014 | 2026-10-01 |
 | Adel | 2 | Ancient Dragon | 752021, 752025, 752028, 797003, 797007, 797010, 896002, 896003, 896006, 896009, 896010 | 2026-10-01 |
+| Gladius | 1 | Demihuman Queen | 896007, 896008, 896009, 896010, 896013, 896017 | 2026-10-01 |
 
 Fight bits that came on before the death are not in this table. For the Adel Day 1 fight those were the earlier `887000`-`887011` flags.
 
@@ -53,3 +54,5 @@ NR Sandbox's `m18_00_00_00` event sets these when a night-boss HP ratio hits 0. 
 | Expedition finalized after that | 6020 |
 
 `IncrementTeamBossesKilled(1)` runs in the same event. The `887xxx` and `896xxx` clusters are not written by these scripts.
+
+`896006`, `896009`, and `896010` also appeared in the Adel Day 2 window, so those three are not the boss. `7512` did not rise in either Demihuman Queen scan.
