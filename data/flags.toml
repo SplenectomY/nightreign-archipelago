@@ -143,588 +143,588 @@ kind = "event_flag"
 event_flag_id = 181
 
 [[flag]]
-location = "Shop - Delicate Burning Scene (10000)"
+location = "Shop - Delicate Burning Scene"
 location_id = 839000600
 kind = "shop"
 event_flag_id = 67000
 release_flag = 68800
 
 [[flag]]
-location = "Shop - Delicate Drizzly Scene (10001)"
+location = "Shop - Delicate Drizzly Scene"
 location_id = 839000601
 kind = "shop"
 event_flag_id = 67010
 release_flag = 68801
 
 [[flag]]
-location = "Shop - Delicate Luminous Scene (10002)"
+location = "Shop - Delicate Luminous Scene 1"
 location_id = 839000602
 kind = "shop"
 event_flag_id = 67020
 release_flag = 68802
 
 [[flag]]
-location = "Shop - Delicate Tranquil Scene (10003)"
+location = "Shop - Delicate Tranquil Scene"
 location_id = 839000603
 kind = "shop"
 event_flag_id = 67030
 release_flag = 68803
 
 [[flag]]
-location = "Shop - Polished Burning Scene (10004)"
+location = "Shop - Polished Burning Scene 1"
 location_id = 839000604
 kind = "shop"
 event_flag_id = 67040
 release_flag = 68804
 
 [[flag]]
-location = "Shop - Delicate Luminous Scene (10005)"
+location = "Shop - Delicate Luminous Scene 2"
 location_id = 839000605
 kind = "shop"
 event_flag_id = 67050
 release_flag = 68805
 
 [[flag]]
-location = "Shop - Polished Tranquil Scene (10010)"
+location = "Shop - Polished Tranquil Scene 1"
 location_id = 839000606
 kind = "shop"
 event_flag_id = 67060
 release_flag = 68806
 
 [[flag]]
-location = "Shop - Polished Drizzly Scene (10011)"
+location = "Shop - Polished Drizzly Scene 1"
 location_id = 839000607
 kind = "shop"
 event_flag_id = 67070
 release_flag = 68807
 
 [[flag]]
-location = "Shop - Polished Burning Scene (10012)"
+location = "Shop - Polished Burning Scene 2"
 location_id = 839000608
 kind = "shop"
 event_flag_id = 67080
 release_flag = 68808
 
 [[flag]]
-location = "Shop - Polished Tranquil Scene (10013)"
+location = "Shop - Polished Tranquil Scene 2"
 location_id = 839000609
 kind = "shop"
 event_flag_id = 67090
 release_flag = 68809
 
 [[flag]]
-location = "Shop - Polished Tranquil Scene (10014)"
+location = "Shop - Polished Tranquil Scene 3"
 location_id = 839000610
 kind = "shop"
 event_flag_id = 67100
 release_flag = 68810
 
 [[flag]]
-location = "Shop - Polished Burning Scene (10015)"
+location = "Shop - Polished Burning Scene 3"
 location_id = 839000611
 kind = "shop"
 event_flag_id = 67110
 release_flag = 68811
 
 [[flag]]
-location = "Shop - Polished Burning Scene (10020)"
+location = "Shop - Polished Burning Scene 4"
 location_id = 839000612
 kind = "shop"
 event_flag_id = 67120
 release_flag = 68812
 
 [[flag]]
-location = "Shop - Polished Tranquil Scene (10021)"
+location = "Shop - Polished Tranquil Scene 4"
 location_id = 839000613
 kind = "shop"
 event_flag_id = 67130
 release_flag = 68813
 
 [[flag]]
-location = "Shop - Polished Luminous Scene (10022)"
+location = "Shop - Polished Luminous Scene 1"
 location_id = 839000614
 kind = "shop"
 event_flag_id = 67140
 release_flag = 68814
 
 [[flag]]
-location = "Shop - Polished Luminous Scene (10023)"
+location = "Shop - Polished Luminous Scene 2"
 location_id = 839000615
 kind = "shop"
 event_flag_id = 67150
 release_flag = 68815
 
 [[flag]]
-location = "Shop - Polished Drizzly Scene (10024)"
+location = "Shop - Polished Drizzly Scene 2"
 location_id = 839000616
 kind = "shop"
 event_flag_id = 67160
 release_flag = 68816
 
 [[flag]]
-location = "Shop - Polished Drizzly Scene (10025)"
+location = "Shop - Polished Drizzly Scene 3"
 location_id = 839000617
 kind = "shop"
 event_flag_id = 67170
 release_flag = 68817
 
 [[flag]]
-location = "Shop - Grand Burning Scene (10030)"
+location = "Shop - Grand Burning Scene 1"
 location_id = 839000618
 kind = "shop"
 event_flag_id = 67180
 release_flag = 68818
 
 [[flag]]
-location = "Shop - Grand Drizzly Scene (10031)"
+location = "Shop - Grand Drizzly Scene 1"
 location_id = 839000619
 kind = "shop"
 event_flag_id = 67190
 release_flag = 68819
 
 [[flag]]
-location = "Shop - Grand Tranquil Scene (10032)"
+location = "Shop - Grand Tranquil Scene 1"
 location_id = 839000620
 kind = "shop"
 event_flag_id = 67200
 release_flag = 68820
 
 [[flag]]
-location = "Shop - Grand Tranquil Scene (10033)"
+location = "Shop - Grand Tranquil Scene 2"
 location_id = 839000621
 kind = "shop"
 event_flag_id = 67210
 release_flag = 68821
 
 [[flag]]
-location = "Shop - Grand Luminous Scene (10034)"
+location = "Shop - Grand Luminous Scene"
 location_id = 839000622
 kind = "shop"
 event_flag_id = 67220
 release_flag = 68822
 
 [[flag]]
-location = "Shop - Grand Drizzly Scene (10035)"
+location = "Shop - Grand Drizzly Scene 2"
 location_id = 839000623
 kind = "shop"
 event_flag_id = 67230
 release_flag = 68823
 
 [[flag]]
-location = "Shop - Grand Drizzly Scene (10036)"
+location = "Shop - Grand Drizzly Scene 3"
 location_id = 839000624
 kind = "shop"
 event_flag_id = 67240
 release_flag = 68824
 
 [[flag]]
-location = "Shop - Grand Burning Scene (10037)"
+location = "Shop - Grand Burning Scene 2"
 location_id = 839000625
 kind = "shop"
 event_flag_id = 67250
 release_flag = 68825
 
 [[flag]]
-location = "Shop - Grand Burning Scene (10040)"
+location = "Shop - Grand Burning Scene 3"
 location_id = 839000626
 kind = "shop"
 event_flag_id = 67260
 release_flag = 68826
 
 [[flag]]
-location = "Shop - Grand Tranquil Scene (10041)"
+location = "Shop - Grand Tranquil Scene 3"
 location_id = 839000627
 kind = "shop"
 event_flag_id = 67270
 release_flag = 68827
 
 [[flag]]
-location = "Shop - Besmirched Frame (10100)"
+location = "Shop - Besmirched Frame"
 location_id = 839000628
 kind = "shop"
 event_flag_id = 68500
 release_flag = 68828
 
 [[flag]]
-location = "Shop - Wylder's Goblet (10121)"
+location = "Shop - Wylder's Goblet"
 location_id = 839000629
 kind = "shop"
 event_flag_id = 60010
 release_flag = 68829
 
 [[flag]]
-location = "Shop - Guardian's Goblet (10123)"
+location = "Shop - Guardian's Goblet"
 location_id = 839000630
 kind = "shop"
 event_flag_id = 60060
 release_flag = 68830
 
 [[flag]]
-location = "Shop - Ironeye's Goblet (10125)"
+location = "Shop - Ironeye's Goblet"
 location_id = 839000631
 kind = "shop"
 event_flag_id = 60110
 release_flag = 68831
 
 [[flag]]
-location = "Shop - Duchess' Goblet (10127)"
+location = "Shop - Duchess' Goblet"
 location_id = 839000632
 kind = "shop"
 event_flag_id = 60160
 release_flag = 68832
 
 [[flag]]
-location = "Shop - Raider's Goblet (10129)"
+location = "Shop - Raider's Goblet"
 location_id = 839000633
 kind = "shop"
 event_flag_id = 60210
 release_flag = 68833
 
 [[flag]]
-location = "Shop - Revenant's Goblet (10131)"
+location = "Shop - Revenant's Goblet"
 location_id = 839000634
 kind = "shop"
 event_flag_id = 60260
 release_flag = 68834
 
 [[flag]]
-location = "Shop - Recluse's Goblet (10133)"
+location = "Shop - Recluse's Goblet"
 location_id = 839000635
 kind = "shop"
 event_flag_id = 60310
 release_flag = 68835
 
 [[flag]]
-location = "Shop - Executor's Goblet (10135)"
+location = "Shop - Executor's Goblet"
 location_id = 839000636
 kind = "shop"
 event_flag_id = 60360
 release_flag = 68836
 
 [[flag]]
-location = "Shop - Sacred Erdtree Grail (10140)"
+location = "Shop - Sacred Erdtree Grail"
 location_id = 839000637
 kind = "shop"
 event_flag_id = 60400
 release_flag = 68837
 
 [[flag]]
-location = "Shop - Spirit Shelter Grail (10141)"
+location = "Shop - Spirit Shelter Grail"
 location_id = 839000638
 kind = "shop"
 event_flag_id = 60410
 release_flag = 68838
 
 [[flag]]
-location = "Shop - Giant's Cradle Grail (10142)"
+location = "Shop - Giant's Cradle Grail"
 location_id = 839000639
 kind = "shop"
 event_flag_id = 60420
 release_flag = 68839
 
 [[flag]]
-location = "Shop - Polite Bow (10150)"
+location = "Shop - Polite Bow"
 location_id = 839000640
 kind = "shop"
 event_flag_id = 67600
 release_flag = 68840
 
 [[flag]]
-location = "Shop - Strength (10151)"
+location = "Shop - Strength"
 location_id = 839000641
 kind = "shop"
 event_flag_id = 67650
 release_flag = 68841
 
 [[flag]]
-location = "Shop - Warm Welcome (10152)"
+location = "Shop - Warm Welcome"
 location_id = 839000642
 kind = "shop"
 event_flag_id = 67640
 release_flag = 68842
 
 [[flag]]
-location = "Shop - Fancy Spin (10153)"
+location = "Shop - Fancy Spin"
 location_id = 839000643
 kind = "shop"
 event_flag_id = 67730
 release_flag = 68843
 
 [[flag]]
-location = "Shop - Crossed Legs (10154)"
+location = "Shop - Crossed Legs"
 location_id = 839000644
 kind = "shop"
 event_flag_id = 67770
 release_flag = 68844
 
 [[flag]]
-location = "Shop - Rest (10155)"
+location = "Shop - Rest"
 location_id = 839000645
 kind = "shop"
 event_flag_id = 67780
 release_flag = 68845
 
 [[flag]]
-location = "Shop - Sitting Sideways (10156)"
+location = "Shop - Sitting Sideways"
 location_id = 839000646
 kind = "shop"
 event_flag_id = 67790
 release_flag = 68846
 
 [[flag]]
-location = "Shop - Fire Spur Me (10157)"
+location = "Shop - Fire Spur Me"
 location_id = 839000647
 kind = "shop"
 event_flag_id = 67720
 release_flag = 68847
 
 [[flag]]
-location = "Shop - As You Wish (10160)"
+location = "Shop - As You Wish"
 location_id = 839000648
 kind = "shop"
 event_flag_id = 67660
 release_flag = 68848
 
 [[flag]]
-location = "Shop - Heartening Cry (10161)"
+location = "Shop - Heartening Cry"
 location_id = 839000649
 kind = "shop"
 event_flag_id = 67700
 release_flag = 68849
 
 [[flag]]
-location = "Shop - Calm Down (10162)"
+location = "Shop - Calm Down"
 location_id = 839000650
 kind = "shop"
 event_flag_id = 67670
 release_flag = 68850
 
 [[flag]]
-location = "Shop - Finger Snap (10163)"
+location = "Shop - Finger Snap"
 location_id = 839000651
 kind = "shop"
 event_flag_id = 67740
 release_flag = 68851
 
 [[flag]]
-location = "Shop - Prayer (10164)"
+location = "Shop - Prayer"
 location_id = 839000652
 kind = "shop"
 event_flag_id = 67840
 release_flag = 68852
 
 [[flag]]
-location = "Shop - Rapture (10165)"
+location = "Shop - Rapture"
 location_id = 839000653
 kind = "shop"
 event_flag_id = 67860
 release_flag = 68853
 
 [[flag]]
-location = "Shop - Erudition (10166)"
+location = "Shop - Erudition"
 location_id = 839000654
 kind = "shop"
 event_flag_id = 67870
 release_flag = 68854
 
 [[flag]]
-location = "Shop - Outer Order (10167)"
+location = "Shop - Outer Order"
 location_id = 839000655
 kind = "shop"
 event_flag_id = 67880
 release_flag = 68855
 
 [[flag]]
-location = "Shop - Curtsy (10170)"
+location = "Shop - Curtsy"
 location_id = 839000656
 kind = "shop"
 event_flag_id = 67610
 release_flag = 68856
 
 [[flag]]
-location = "Shop - Reverential Bow (10171)"
+location = "Shop - Reverential Bow"
 location_id = 839000657
 kind = "shop"
 event_flag_id = 67620
 release_flag = 68857
 
 [[flag]]
-location = "Shop - Dejection (10172)"
+location = "Shop - Dejection"
 location_id = 839000658
 kind = "shop"
 event_flag_id = 67750
 release_flag = 68858
 
 [[flag]]
-location = "Shop - Extreme Repentance (10173)"
+location = "Shop - Extreme Repentance"
 location_id = 839000659
 kind = "shop"
 event_flag_id = 67680
 release_flag = 68859
 
 [[flag]]
-location = "Shop - Patches' Crouch (10174)"
+location = "Shop - Patches' Crouch"
 location_id = 839000660
 kind = "shop"
 event_flag_id = 67760
 release_flag = 68860
 
 [[flag]]
-location = "Shop - Dozing Cross-Legged (10175)"
+location = "Shop - Dozing Cross-Legged"
 location_id = 839000661
 kind = "shop"
 event_flag_id = 67800
 release_flag = 68861
 
 [[flag]]
-location = "Shop - Desperate Prayer (10176)"
+location = "Shop - Desperate Prayer"
 location_id = 839000662
 kind = "shop"
 event_flag_id = 67850
 release_flag = 68862
 
 [[flag]]
-location = "Shop - Hoslow's Oath (10177)"
+location = "Shop - Hoslow's Oath"
 location_id = 839000663
 kind = "shop"
 event_flag_id = 67710
 release_flag = 68863
 
 [[flag]]
-location = "Shop - Inner Order (10178)"
+location = "Shop - Inner Order"
 location_id = 839000664
 kind = "shop"
 event_flag_id = 67890
 release_flag = 68864
 
 [[flag]]
-location = "Shop - What Do You Want? (10180)"
+location = "Shop - What Do You Want?"
 location_id = 839000665
 kind = "shop"
 event_flag_id = 67830
 release_flag = 68865
 
 [[flag]]
-location = "Shop - My Lord (10181)"
+location = "Shop - My Lord"
 location_id = 839000666
 kind = "shop"
 event_flag_id = 67630
 release_flag = 68866
 
 [[flag]]
-location = "Shop - Grovel For Mercy (10182)"
+location = "Shop - Grovel For Mercy"
 location_id = 839000667
 kind = "shop"
 event_flag_id = 67690
 release_flag = 68867
 
 [[flag]]
-location = "Shop - Spread Out (10183)"
+location = "Shop - Spread Out"
 location_id = 839000668
 kind = "shop"
 event_flag_id = 67810
 release_flag = 68868
 
 [[flag]]
-location = "Shop - Balled Up (10184)"
+location = "Shop - Balled Up"
 location_id = 839000669
 kind = "shop"
 event_flag_id = 67820
 release_flag = 68869
 
 [[flag]]
-location = "Shop - Golden Order Totality (10185)"
+location = "Shop - Golden Order Totality"
 location_id = 839000670
 kind = "shop"
 event_flag_id = 67900
 release_flag = 68870
 
 [[flag]]
-location = "Shop - Prattling Pate Hello (10190)"
+location = "Shop - Prattling Pate "Hello""
 location_id = 839000671
 kind = "shop"
 event_flag_id = 67910
 release_flag = 68871
 
 [[flag]]
-location = "Shop - Prattling Pate Thank you (10191)"
+location = "Shop - Prattling Pate "Thank you""
 location_id = 839000672
 kind = "shop"
 event_flag_id = 67920
 release_flag = 68872
 
 [[flag]]
-location = "Shop - Prattling Pate Wonderful (10192)"
+location = "Shop - Prattling Pate "Wonderful""
 location_id = 839000673
 kind = "shop"
 event_flag_id = 67940
 release_flag = 68873
 
 [[flag]]
-location = "Shop - Prattling Pate Please help (10193)"
+location = "Shop - Prattling Pate "Please help""
 location_id = 839000674
 kind = "shop"
 event_flag_id = 67950
 release_flag = 68874
 
 [[flag]]
-location = "Shop - Prattling Pate My beloved (10194)"
+location = "Shop - Prattling Pate "My beloved""
 location_id = 839000675
 kind = "shop"
 event_flag_id = 67960
 release_flag = 68875
 
 [[flag]]
-location = "Shop - Prattling Pate Apologies (10195)"
+location = "Shop - Prattling Pate "Apologies""
 location_id = 839000676
 kind = "shop"
 event_flag_id = 67930
 release_flag = 68876
 
 [[flag]]
-location = "Shop - Prattling Pate Let's get to it (10196)"
+location = "Shop - Prattling Pate "Let's get to it""
 location_id = 839000677
 kind = "shop"
 event_flag_id = 67970
 release_flag = 68877
 
 [[flag]]
-location = "Shop - Prattling Pate You're beautiful (10197)"
+location = "Shop - Prattling Pate "You're beautiful""
 location_id = 839000678
 kind = "shop"
 event_flag_id = 67980
 release_flag = 68878
 
 [[flag]]
-location = "Shop - Scholar's Goblet (10281)"
+location = "Shop - Scholar's Goblet"
 location_id = 839000679
 kind = "shop"
 event_flag_id = 60510
 release_flag = 68879
 
 [[flag]]
-location = "Shop - Undertaker's Goblet (10291)"
+location = "Shop - Undertaker's Goblet"
 location_id = 839000680
 kind = "shop"
 event_flag_id = 60560
 release_flag = 68880
 
 [[flag]]
-location = "Shop - Scadutree Grail (10299)"
+location = "Shop - Scadutree Grail"
 location_id = 839000681
 kind = "shop"
 event_flag_id = 60430
 release_flag = 68881
 
 [[flag]]
-location = "Shop - Grand Burning Scene (10310)"
+location = "Shop - Grand Burning Scene 4"
 location_id = 839000682
 kind = "shop"
 event_flag_id = 67280
 release_flag = 68882
 
 [[flag]]
-location = "Shop - Grand Tranquil Scene (10311)"
+location = "Shop - Grand Tranquil Scene 4"
 location_id = 839000683
 kind = "shop"
 event_flag_id = 67290

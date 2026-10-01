@@ -101,36 +101,8 @@ class NightreignWorld(World):
         if self.options.shop_checks.current_key != "none":
             for name in SHOP_LOCATIONS:
                 hold_locs[name] = LOCATION_NAME_TO_ID[name]
-        for name in [
-            "Murk Purse 1",
-            "Murk Purse 2",
-            "Murk Purse 3",
-            "Murk Purse 4",
-            "Murk Purse 5",
-            "Murk Purse 6",
-            "Murk Purse 7",
-            "Murk Purse 8",
-            "Murk Bundle 1",
-            "Murk Bundle 2",
-            "Murk Bundle 3",
-            "Murk Bundle 4",
-            "Murk Bundle 5",
-            "Murk Bundle 6",
-            "Murk Bundle 7",
-            "Murk Bundle 8",
-            "Murk Coffer 1",
-            "Murk Coffer 2",
-            "Murk Coffer 3",
-            "Murk Coffer 4",
-            "Murk Coffer 5",
-            "Murk Coffer 6",
-            "Murk Chest 1",
-            "Murk Chest 2",
-            "Murk Chest 3",
-            "Murk Hoard 1",
-            "Murk Hoard 2",
-        ]:
-            hold_locs[name] = LOCATION_NAME_TO_ID[name]
+        for i in range(1, 28):
+            hold_locs[f"Murk {i}"] = LOCATION_NAME_TO_ID[f"Murk {i}"]
         for loc_name, _item in self._nightlords() + self._everdark():
             hold_locs[loc_name] = LOCATION_NAME_TO_ID[loc_name]
         hold.add_locations(hold_locs, NightreignLocation)
@@ -156,39 +128,11 @@ class NightreignWorld(World):
             pool += [self.create_item(name) for name in SHOP_ITEMS]
         unfilled = sum(1 for loc in self.multiworld.get_locations(self.player) if not loc.item)
         # Victory is locked in set_rules, so leave one location empty.
-        murk = [
-            "Murk Purse 1",
-            "Murk Purse 2",
-            "Murk Purse 3",
-            "Murk Purse 4",
-            "Murk Purse 5",
-            "Murk Purse 6",
-            "Murk Purse 7",
-            "Murk Purse 8",
-            "Murk Bundle 1",
-            "Murk Bundle 2",
-            "Murk Bundle 3",
-            "Murk Bundle 4",
-            "Murk Bundle 5",
-            "Murk Bundle 6",
-            "Murk Bundle 7",
-            "Murk Bundle 8",
-            "Murk Coffer 1",
-            "Murk Coffer 2",
-            "Murk Coffer 3",
-            "Murk Coffer 4",
-            "Murk Coffer 5",
-            "Murk Coffer 6",
-            "Murk Chest 1",
-            "Murk Chest 2",
-            "Murk Chest 3",
-            "Murk Hoard 1",
-            "Murk Hoard 2",
-        ]
+        murk = ["Murk Purse"] * 8 + ["Murk Bundle"] * 8 + ["Murk Coffer"] * 6 + ["Murk Chest"] * 3 + ["Murk Hoard"] * 2
         for name in murk:
             pool.append(self.create_item(name))
         while len(pool) < unfilled - 1:
-            pool.append(self.create_item("Murk Purse 1"))
+            pool.append(self.create_item("Murk Purse"))
         self.multiworld.itempool += pool
 
     def create_item(self, name: str) -> Item:
