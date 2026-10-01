@@ -1,5 +1,5 @@
-//! Expedition menu probe. The cave is allocated far from the DLL, so the hit
-//! counter is incremented through an absolute address, not a rip-relative one.
+//! Expedition menu probe. The 5-byte jmp can only reach +/-2GB, so the cave
+//! must be allocated beside the game module.
 
 #![cfg(windows)]
 
@@ -13,6 +13,7 @@ const PATCH_AT: usize = 6;
 const PAGE_EXECUTE_READWRITE: u32 = 0x40;
 const MEM_COMMIT: u32 = 0x1000;
 const MEM_RESERVE: u32 = 0x2000;
+const MEM_RELEASE: u32 = 0x8000;
 
 const ADEL: u32 = 1 << 0;
 const GNOSTER: u32 = 1 << 1;
@@ -32,6 +33,7 @@ static LOGGED_HITS: AtomicU32 = AtomicU32::new(0);
 #[link(name = "kernel32")]
 extern "system" {
     fn VirtualAlloc(addr: *mut c_void, size: usize, kind: u32, protect: u32) -> *mut c_void;
+    fn VirtualFree(addr: *mut c_void, size: usize, kind: u32) -> i32;
     fn VirtualProtect(addr: *mut c_void, size: usize, protect: u32, old: *mut u32) -> i32;
 }
 
@@ -72,8 +74,33 @@ pub fn grant(item_id: i64) {
     }
 }
 
+fn alloc_near(site: usize) -> *mut c_void {
+    let page = site & !0xFFFF;
+    for i in 1..2048 {
+        for sign in [-1isize, 1] {
+            let hint = page.wrapping_add((i * 0x10000).wrapping_mul(sign as usize));
+            let p = unsafe {
+                VirtualAlloc(hint as *mut c_void, 0x1000, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE)
+            };
+            if p.is_null() {
+                continue;
+            }
+            let dist = (p as isize).wrapping_sub(site as isize);
+            if dist.abs() < 0x7000_0000 {
+                return p;
+            }
+            unsafe { VirtualFree(p, 0, MEM_RELEASE); }
+        }
+    }
+    std::ptr::null_mut()
+}
+
 fn write_jmp(at: usize, to: usize) -> bool {
-    let rel = to.wrapping_sub(at.wrapping_add(5)) as i32;
+    let rel = to.wrapping_sub(at.wrapping_add(5)) as isize;
+    if rel < i32::MIN as isize || rel > i32::MAX as isize {
+        return false;
+    }
+    let rel = rel as i32;
     let bytes = [
         0xE9,
         rel as u8,
@@ -98,14 +125,13 @@ pub fn init() -> Result<String, String> {
     let site = span.base + rel + PATCH_AT;
     let fallthrough = site + 5;
     let taken = site + 12;
-    let cave = unsafe { VirtualAlloc(std::ptr::null_mut(), 0x100, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE) };
-    if cave.is_null() {
-        return Err("menu cave alloc failed".into());
+    let cave_ptr = alloc_near(site);
+    if cave_ptr.is_null() {
+        return Err("menu cave not allocated within jmp range".into());
     }
-    let cave = cave as usize;
+    let cave = cave_ptr as usize;
     let hits = &HITS as *const AtomicU32 as usize;
     let mut code = Vec::new();
-    // push rax; mov rax, imm64; lock inc dword [rax]; pop rax
     code.push(0x50);
     code.extend_from_slice(&[0x48, 0xB8]);
     code.extend_from_slice(&hits.to_le_bytes());
@@ -123,7 +149,7 @@ pub fn init() -> Result<String, String> {
         std::ptr::copy_nonoverlapping(code.as_ptr(), cave as *mut u8, code.len());
     }
     if !write_jmp(site, cave) {
-        return Err("menu jmp protect failed".into());
+        return Err(format!("menu jmp out of range site=0x{site:X} cave=0x{cave:X}"));
     }
     Ok(format!("NRAP menu probe site=0x{site:X} cave=0x{cave:X}"))
 }
