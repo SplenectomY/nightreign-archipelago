@@ -176,6 +176,48 @@ impl FlagMan {
         game_get(self.instance, flag).or_else(|| self.read_flag(flag, true, false))
     }
 
+    /// Copy each group slab and return flag ids that went 0 to 1 since the last call.
+    pub fn diff_rising(&self, prev: &mut Vec<Vec<u8>>) -> Vec<u32> {
+        let groups = self.entry_count as usize;
+        let bytes = (self.divisor as usize).div_ceil(8);
+        if groups == 0 || bytes == 0 || bytes > 4096 || groups > 10_000 {
+            return Vec::new();
+        }
+        if prev.len() != groups {
+            prev.clear();
+            prev.resize(groups, Vec::new());
+        }
+        let mut rose = Vec::new();
+        for group in 0..groups {
+            let Some(base) = read_usize(self.holder.saturating_add(group.saturating_mul(8))) else {
+                continue;
+            };
+            if base < 0x10000 || !readable(base, bytes) {
+                continue;
+            }
+            let mut now = vec![0u8; bytes];
+            unsafe {
+                std::ptr::copy_nonoverlapping(base as *const u8, now.as_mut_ptr(), bytes);
+            }
+            let old = &prev[group];
+            if old.len() == bytes {
+                for i in 0..bytes {
+                    let up = now[i] & !old[i];
+                    if up == 0 {
+                        continue;
+                    }
+                    for bit in 0..8 {
+                        if up & (1 << (7 - bit)) != 0 {
+                            rose.push((group as u32) * self.divisor + (i as u32) * 8 + bit as u32);
+                        }
+                    }
+                }
+            }
+            prev[group] = now;
+        }
+        rose
+    }
+
     fn group_base(&self, flag: u32, ptr_table: bool) -> Option<(usize, u32)> {
         if self.divisor == 0 {
             return None;

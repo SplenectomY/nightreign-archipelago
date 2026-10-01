@@ -401,6 +401,21 @@ fn worker() {
         if let Some(msg) = drop::retry_pending() {
             log_line(&dir, &msg);
         }
+        if config.as_ref().and_then(|p| fs::read_to_string(p).ok()).is_some_and(|t| t.lines().any(|l| l.trim()=="flag_diff = true")) {
+            if let Some(found) = man {
+                static LAST: std::sync::Mutex<Option<std::time::Instant>> = std::sync::Mutex::new(None);
+                static PREV: std::sync::Mutex<Vec<Vec<u8>>> = std::sync::Mutex::new(Vec::new());
+                let due = LAST.lock().unwrap().map(|t| t.elapsed().as_secs() >= 2).unwrap_or(true);
+                if due {
+                    *LAST.lock().unwrap() = Some(std::time::Instant::now());
+                    let rose = found.diff_rising(&mut PREV.lock().unwrap());
+                    if !rose.is_empty() {
+                        let show: Vec<_> = rose.iter().take(24).map(|f| f.to_string()).collect();
+                        log_line(&dir, &format!("NRAP flag diff +{} {}", rose.len(), show.join(",")));
+                    }
+                }
+            }
+        }
         if let Some(text) = config.as_ref().and_then(|p| fs::read_to_string(p).ok()) {
             if let Some(flag) = flag_write::debug_flag_from_toml(&text) {
                 if flag != last_debug_flag {
