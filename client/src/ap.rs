@@ -104,6 +104,11 @@ fn handle_server_text(text: &str, log: &impl Fn(&str), next_index: &mut i64, dro
         log(&format!("NRAP AP server refused: {text}"));
         return;
     }
+    if text.contains("RoomInfo") {
+        if let Some(seed) = parse_seed(&text) {
+            log(&crate::flag_write::bind_seed(&seed));
+        }
+    }
     if !text.contains("ReceivedItems") {
         return;
     }

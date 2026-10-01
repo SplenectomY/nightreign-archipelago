@@ -304,18 +304,53 @@ fn unlock_flag(item_id: i64) -> Option<u32> {
 
 static CACHED: Mutex<Vec<u32>> = Mutex::new(Vec::new());
 static CACHE_PATH: Mutex<Option<std::path::PathBuf>> = Mutex::new(None);
+static CACHE_SEED: Mutex<String> = Mutex::new(String::new());
+static ARMED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+fn write_cache(path: &std::path::PathBuf, seed: &str, flags: &[u32]) {
+    let mut body = format!("seed={seed}\n");
+    for flag in flags {
+        body.push_str(&flag.to_string());
+        body.push('\n');
+    }
+    let _ = std::fs::write(path, body);
+}
 
 pub fn load_cache(dir: Option<&std::path::PathBuf>) -> String {
     let Some(dir) = dir else {
         return "NRAP unlock cache no dir".into();
     };
     let path = dir.join("received_unlocks.txt");
-    let flags = std::fs::read_to_string(&path).ok().map(|s| {
-        s.lines().filter_map(|l| l.trim().parse().ok()).collect::<Vec<u32>>()
-    }).unwrap_or_default();
+    let text = std::fs::read_to_string(&path).unwrap_or_default();
+    let mut seed = String::new();
+    let mut flags = Vec::new();
+    for line in text.lines() {
+        if let Some(rest) = line.trim().strip_prefix("seed=") {
+            seed = rest.to_string();
+        } else if let Ok(flag) = line.trim().parse() {
+            flags.push(flag);
+        }
+    }
+    *CACHE_SEED.lock().unwrap() = seed.clone();
     *CACHED.lock().unwrap() = flags.clone();
     *CACHE_PATH.lock().unwrap() = Some(path);
-    format!("NRAP unlock cache loaded {}", flags.len())
+    format!("NRAP unlock cache loaded {} seed={seed}", flags.len())
+}
+
+pub fn bind_seed(seed: &str) -> String {
+    let known = CACHE_SEED.lock().unwrap().clone();
+    if !known.is_empty() && known != seed {
+        CACHED.lock().unwrap().clear();
+        if let Some(path) = CACHE_PATH.lock().unwrap().as_ref() {
+            write_cache(path, seed, &[]);
+        }
+        *CACHE_SEED.lock().unwrap() = seed.to_string();
+        ARMED.store(true, std::sync::atomic::Ordering::SeqCst);
+        return format!("NRAP unlock cache cleared, seed {known} -> {seed}");
+    }
+    *CACHE_SEED.lock().unwrap() = seed.to_string();
+    ARMED.store(true, std::sync::atomic::Ordering::SeqCst);
+    format!("NRAP unlock cache armed seed={seed} flags={}", CACHED.lock().unwrap().len())
 }
 
 pub fn remember_unlock(item_id: i64) {
@@ -324,13 +359,15 @@ pub fn remember_unlock(item_id: i64) {
     if !flags.contains(&flag) {
         flags.push(flag);
         if let Some(path) = CACHE_PATH.lock().unwrap().as_ref() {
-            let body = flags.iter().map(|f| f.to_string()).collect::<Vec<_>>().join("\n");
-            let _ = std::fs::write(path, body);
+            write_cache(path, &CACHE_SEED.lock().unwrap(), &flags);
         }
     }
 }
 
 pub fn reapply_cached() -> Option<String> {
+    if !ARMED.load(std::sync::atomic::Ordering::SeqCst) {
+        return None;
+    }
     let flags = CACHED.lock().unwrap().clone();
     if flags.is_empty() {
         return None;
