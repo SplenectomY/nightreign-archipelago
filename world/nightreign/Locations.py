@@ -15,6 +15,14 @@ LOCATION_NAME_TO_ID: Dict[str, int] = {
     "Nightlord - Harmonia": LOCATION_ID_BASE + 9,
     "Nightlord - Straghess": LOCATION_ID_BASE + 10,
     "Board unlock after first Nightlord": LOCATION_ID_BASE + 100,
+    "Everdark - Gladius": LOCATION_ID_BASE + 101,
+    "Everdark - Adel": LOCATION_ID_BASE + 102,
+    "Everdark - Gnoster": LOCATION_ID_BASE + 103,
+    "Everdark - Maris": LOCATION_ID_BASE + 104,
+    "Everdark - Libra": LOCATION_ID_BASE + 105,
+    "Everdark - Fulghor": LOCATION_ID_BASE + 106,
+    "Everdark - Caligo": LOCATION_ID_BASE + 107,
+    "Everdark - Harmonia": LOCATION_ID_BASE + 108,
     "Goal - Nightlord Count": LOCATION_ID_BASE + 200,
     "Shop - Polite Bow": LOCATION_ID_BASE + 501,
     "Shop - Strength": LOCATION_ID_BASE + 503,
@@ -47,6 +55,21 @@ BASE_NIGHTLORDS: List[Tuple[str, str]] = [
 DLC_NIGHTLORDS: List[Tuple[str, str]] = [
     ("Nightlord - Harmonia", "Expedition Unlock - Harmonia"),
     ("Nightlord - Straghess", "Expedition Unlock - Straghess"),
+]
+
+# Defeat location, Everdark unlock item. These do not count toward the Heolstor gate.
+EVERDARK_NIGHTLORDS: List[Tuple[str, str]] = [
+    ("Everdark - Gladius", "Everdark Unlock - Gladius"),
+    ("Everdark - Adel", "Everdark Unlock - Adel"),
+    ("Everdark - Gnoster", "Everdark Unlock - Gnoster"),
+    ("Everdark - Maris", "Everdark Unlock - Maris"),
+    ("Everdark - Libra", "Everdark Unlock - Libra"),
+    ("Everdark - Fulghor", "Everdark Unlock - Fulghor"),
+    ("Everdark - Caligo", "Everdark Unlock - Caligo"),
+]
+
+EVERDARK_DLC: List[Tuple[str, str]] = [
+    ("Everdark - Harmonia", "Everdark Unlock - Harmonia"),
 ]
 
 SPECIFIC_LOCATION = {
