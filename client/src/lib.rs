@@ -8,6 +8,7 @@ mod drop;
 mod flag_write;
 mod flagman;
 mod grant;
+mod menu;
 mod scan;
 
 use std::ffi::c_void;
@@ -277,6 +278,10 @@ fn worker() {
         Ok(msg) => log_line(&dir, &msg),
         Err(e) => log_line(&dir, &format!("NRAP drop init failed: {e}")),
     }
+    match menu::init() {
+        Ok(msg) => log_line(&dir, &msg),
+        Err(e) => log_line(&dir, &format!("NRAP menu gate failed: {e}")),
+    }
 
     let config = find_config(dir.as_ref());
     log_line(
@@ -395,6 +400,9 @@ fn worker() {
             log_line(&dir, &msg);
         }
         if let Some(msg) = drop::retry_pending() {
+            log_line(&dir, &msg);
+        }
+        for msg in menu::drain_logs() {
             log_line(&dir, &msg);
         }
         if let Some(text) = config.as_ref().and_then(|p| fs::read_to_string(p).ok()) {
