@@ -640,56 +640,56 @@ event_flag_id = 67900
 release_flag = 68870
 
 [[flag]]
-location = "Shop - Prattling Pate "Hello""
+location = "Shop - Prattling Pate Hello""
 location_id = 839000671
 kind = "shop"
 event_flag_id = 67910
 release_flag = 68871
 
 [[flag]]
-location = "Shop - Prattling Pate "Thank you""
+location = "Shop - Prattling Pate Thank you""
 location_id = 839000672
 kind = "shop"
 event_flag_id = 67920
 release_flag = 68872
 
 [[flag]]
-location = "Shop - Prattling Pate "Wonderful""
+location = "Shop - Prattling Pate Wonderful""
 location_id = 839000673
 kind = "shop"
 event_flag_id = 67940
 release_flag = 68873
 
 [[flag]]
-location = "Shop - Prattling Pate "Please help""
+location = "Shop - Prattling Pate Please help""
 location_id = 839000674
 kind = "shop"
 event_flag_id = 67950
 release_flag = 68874
 
 [[flag]]
-location = "Shop - Prattling Pate "My beloved""
+location = "Shop - Prattling Pate My beloved""
 location_id = 839000675
 kind = "shop"
 event_flag_id = 67960
 release_flag = 68875
 
 [[flag]]
-location = "Shop - Prattling Pate "Apologies""
+location = "Shop - Prattling Pate Apologies""
 location_id = 839000676
 kind = "shop"
 event_flag_id = 67930
 release_flag = 68876
 
 [[flag]]
-location = "Shop - Prattling Pate "Let's get to it""
+location = "Shop - Prattling Pate Let's get to it"
 location_id = 839000677
 kind = "shop"
 event_flag_id = 67970
 release_flag = 68877
 
 [[flag]]
-location = "Shop - Prattling Pate "You're beautiful""
+location = "Shop - Prattling Pate You're beautiful"
 location_id = 839000678
 kind = "shop"
 event_flag_id = 67980
