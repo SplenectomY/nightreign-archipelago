@@ -29,6 +29,16 @@ item_table: Dict[str, ItemSpec] = {
     "Everdark Unlock - Fulghor": ItemSpec(ITEM_ID_BASE + 116, ItemClassification.progression),
     "Everdark Unlock - Caligo": ItemSpec(ITEM_ID_BASE + 117, ItemClassification.progression),
     "Everdark Unlock - Harmonia": ItemSpec(ITEM_ID_BASE + 118, ItemClassification.progression),
+    "Nightfarer - Wylder": ItemSpec(ITEM_ID_BASE + 301, ItemClassification.progression),
+    "Nightfarer - Duchess": ItemSpec(ITEM_ID_BASE + 302, ItemClassification.progression),
+    "Nightfarer - Raider": ItemSpec(ITEM_ID_BASE + 303, ItemClassification.progression),
+    "Nightfarer - Executor": ItemSpec(ITEM_ID_BASE + 304, ItemClassification.progression),
+    "Nightfarer - Recluse": ItemSpec(ITEM_ID_BASE + 305, ItemClassification.progression),
+    "Nightfarer - Ironeye": ItemSpec(ITEM_ID_BASE + 306, ItemClassification.progression),
+    "Nightfarer - Guardian": ItemSpec(ITEM_ID_BASE + 307, ItemClassification.progression),
+    "Nightfarer - Revenant": ItemSpec(ITEM_ID_BASE + 308, ItemClassification.progression),
+    "Nightfarer - Scholar": ItemSpec(ITEM_ID_BASE + 309, ItemClassification.progression),
+    "Nightfarer - Undertaker": ItemSpec(ITEM_ID_BASE + 310, ItemClassification.progression),
     "Murk Bundle": ItemSpec(ITEM_ID_BASE + 100, ItemClassification.filler),
     "Victory": ItemSpec(ITEM_ID_BASE + 900, ItemClassification.progression),
 }
@@ -61,4 +71,20 @@ EVERDARK_UNLOCKS = [
     "Everdark Unlock - Fulghor",
     "Everdark Unlock - Caligo",
     "Everdark Unlock - Harmonia",
+]
+
+BASE_NIGHTFARERS = [
+    "Nightfarer - Wylder",
+    "Nightfarer - Duchess",
+    "Nightfarer - Raider",
+    "Nightfarer - Executor",
+    "Nightfarer - Recluse",
+    "Nightfarer - Ironeye",
+    "Nightfarer - Guardian",
+    "Nightfarer - Revenant",
+]
+
+DLC_NIGHTFARERS = [
+    "Nightfarer - Scholar",
+    "Nightfarer - Undertaker",
 ]
