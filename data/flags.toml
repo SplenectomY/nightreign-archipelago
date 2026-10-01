@@ -470,3 +470,109 @@ location = "Shop - Scadutree Grail"
 location_id = 839000558
 kind = "shop"
 event_flag_id = 60430
+
+[[flag]]
+location = "Gesture - Bow"
+location_id = 839000560
+kind = "gesture"
+event_flag_id = 0
+goods_id = 9000
+
+[[flag]]
+location = "Gesture - My Thanks"
+location_id = 839000561
+kind = "gesture"
+event_flag_id = 0
+goods_id = 9002
+
+[[flag]]
+location = "Gesture - Wave"
+location_id = 839000562
+kind = "gesture"
+event_flag_id = 0
+goods_id = 9007
+
+[[flag]]
+location = "Gesture - Casual Greeting"
+location_id = 839000563
+kind = "gesture"
+event_flag_id = 0
+goods_id = 9008
+
+[[flag]]
+location = "Gesture - Point Forwards"
+location_id = 839000564
+kind = "gesture"
+event_flag_id = 0
+goods_id = 9011
+
+[[flag]]
+location = "Gesture - Point Upwards"
+location_id = 839000565
+kind = "gesture"
+event_flag_id = 0
+goods_id = 9012
+
+[[flag]]
+location = "Gesture - Point Downwards"
+location_id = 839000566
+kind = "gesture"
+event_flag_id = 0
+goods_id = 9013
+
+[[flag]]
+location = "Gesture - Beckon"
+location_id = 839000567
+kind = "gesture"
+event_flag_id = 0
+goods_id = 9014
+
+[[flag]]
+location = "Gesture - Wait"
+location_id = 839000568
+kind = "gesture"
+event_flag_id = 0
+goods_id = 9015
+
+[[flag]]
+location = "Gesture - Nod In Thought"
+location_id = 839000569
+kind = "gesture"
+event_flag_id = 0
+goods_id = 9017
+
+[[flag]]
+location = "Gesture - Rallying Cry"
+location_id = 839000570
+kind = "gesture"
+event_flag_id = 0
+goods_id = 9020
+
+[[flag]]
+location = "Gesture - By My Sword"
+location_id = 839000571
+kind = "gesture"
+event_flag_id = 0
+goods_id = 9022
+
+[[flag]]
+location = "Gesture - Bravo"
+location_id = 839000572
+kind = "gesture"
+event_flag_id = 0
+goods_id = 9026
+
+[[flag]]
+location = "Gesture - Jump for Joy"
+location_id = 839000573
+kind = "gesture"
+event_flag_id = 0
+goods_id = 9027
+
+[[flag]]
+location = "Gesture - Triumphant Delight"
+location_id = 839000574
+kind = "gesture"
+event_flag_id = 0
+goods_id = 9028
+
