@@ -1,4 +1,4 @@
-//! Expedition menu probe. Logs the menu entry when the board is built.
+//! Expedition menu probe. Logs the board entry and the two pointers it holds.
 //! The vanilla unlock bit is left unchanged.
 
 #![cfg(windows)]
@@ -106,6 +106,25 @@ fn readable(ptr: usize, len: usize) -> bool {
     }
 }
 
+fn words(ptr: usize, len: usize) -> String {
+    if !readable(ptr, len) {
+        return " unreadable".into();
+    }
+    let mut out = String::new();
+    for off in (0..len).step_by(4) {
+        let v = unsafe { std::ptr::read_unaligned((ptr + off) as *const u32) };
+        out.push_str(&format!(" {v:08X}"));
+    }
+    out
+}
+
+fn qword(ptr: usize) -> Option<usize> {
+    if !readable(ptr, 8) {
+        return None;
+    }
+    Some(unsafe { std::ptr::read_unaligned(ptr as *const usize) })
+}
+
 /// Logs the menu entry. Does not change the unlock bit.
 pub extern "C" fn peek(entry: usize, vanilla: u32) {
     let mut seen = match SEEN.try_lock() {
@@ -117,14 +136,12 @@ pub extern "C" fn peek(entry: usize, vanilla: u32) {
     }
     seen.push(entry);
     drop(seen);
-    let mut words = String::new();
-    if readable(entry, 0x20) {
-        for off in (0..0x20).step_by(4) {
-            let v = unsafe { std::ptr::read_unaligned((entry + off) as *const u32) };
-            words.push_str(&format!(" {v:08X}"));
+    log(format!("NRAP menu entry=0x{entry:X} vanilla={vanilla}{}", words(entry, 0x40)));
+    for off in [0usize, 0x18] {
+        if let Some(p) = qword(entry + off) {
+            log(format!("NRAP menu ptr+{off:X}=0x{p:X}{}", words(p, 0x20)));
         }
     }
-    log(format!("NRAP menu entry=0x{entry:X} vanilla={vanilla}{words}"));
 }
 
 fn alloc_near(site: usize) -> *mut c_void {
