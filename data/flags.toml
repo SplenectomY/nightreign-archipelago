@@ -176,3 +176,297 @@ location = "Shop - Calm Down"
 location_id = 839000507
 kind = "shop"
 event_flag_id = 67670
+
+[[flag]]
+location = "Shop - Besmirched Frame"
+location_id = 839000510
+kind = "shop"
+event_flag_id = 68500
+
+[[flag]]
+location = "Shop - Wylder's Goblet"
+location_id = 839000511
+kind = "shop"
+event_flag_id = 60010
+
+[[flag]]
+location = "Shop - Guardian's Goblet"
+location_id = 839000512
+kind = "shop"
+event_flag_id = 60060
+
+[[flag]]
+location = "Shop - Ironeye's Goblet"
+location_id = 839000513
+kind = "shop"
+event_flag_id = 60110
+
+[[flag]]
+location = "Shop - Duchess' Goblet"
+location_id = 839000514
+kind = "shop"
+event_flag_id = 60160
+
+[[flag]]
+location = "Shop - Raider's Goblet"
+location_id = 839000515
+kind = "shop"
+event_flag_id = 60210
+
+[[flag]]
+location = "Shop - Revenant's Goblet"
+location_id = 839000516
+kind = "shop"
+event_flag_id = 60260
+
+[[flag]]
+location = "Shop - Recluse's Goblet"
+location_id = 839000517
+kind = "shop"
+event_flag_id = 60310
+
+[[flag]]
+location = "Shop - Executor's Goblet"
+location_id = 839000518
+kind = "shop"
+event_flag_id = 60360
+
+[[flag]]
+location = "Shop - Sacred Erdtree Grail"
+location_id = 839000519
+kind = "shop"
+event_flag_id = 60400
+
+[[flag]]
+location = "Shop - Spirit Shelter Grail"
+location_id = 839000520
+kind = "shop"
+event_flag_id = 60410
+
+[[flag]]
+location = "Shop - Giant's Cradle Grail"
+location_id = 839000521
+kind = "shop"
+event_flag_id = 60420
+
+[[flag]]
+location = "Shop - Fancy Spin"
+location_id = 839000522
+kind = "shop"
+event_flag_id = 67730
+
+[[flag]]
+location = "Shop - Crossed Legs"
+location_id = 839000523
+kind = "shop"
+event_flag_id = 67770
+
+[[flag]]
+location = "Shop - Rest"
+location_id = 839000524
+kind = "shop"
+event_flag_id = 67780
+
+[[flag]]
+location = "Shop - Sitting Sideways"
+location_id = 839000525
+kind = "shop"
+event_flag_id = 67790
+
+[[flag]]
+location = "Shop - Fire Spur Me"
+location_id = 839000526
+kind = "shop"
+event_flag_id = 67720
+
+[[flag]]
+location = "Shop - As You Wish"
+location_id = 839000527
+kind = "shop"
+event_flag_id = 67660
+
+[[flag]]
+location = "Shop - Finger Snap"
+location_id = 839000528
+kind = "shop"
+event_flag_id = 67740
+
+[[flag]]
+location = "Shop - Prayer"
+location_id = 839000529
+kind = "shop"
+event_flag_id = 67840
+
+[[flag]]
+location = "Shop - Rapture"
+location_id = 839000530
+kind = "shop"
+event_flag_id = 67860
+
+[[flag]]
+location = "Shop - Erudition"
+location_id = 839000531
+kind = "shop"
+event_flag_id = 67870
+
+[[flag]]
+location = "Shop - Outer Order"
+location_id = 839000532
+kind = "shop"
+event_flag_id = 67880
+
+[[flag]]
+location = "Shop - Curtsy"
+location_id = 839000533
+kind = "shop"
+event_flag_id = 67610
+
+[[flag]]
+location = "Shop - Reverential Bow"
+location_id = 839000534
+kind = "shop"
+event_flag_id = 67620
+
+[[flag]]
+location = "Shop - Dejection"
+location_id = 839000535
+kind = "shop"
+event_flag_id = 67750
+
+[[flag]]
+location = "Shop - Extreme Repentance"
+location_id = 839000536
+kind = "shop"
+event_flag_id = 67680
+
+[[flag]]
+location = "Shop - Patches' Crouch"
+location_id = 839000537
+kind = "shop"
+event_flag_id = 67760
+
+[[flag]]
+location = "Shop - Dozing Cross-Legged"
+location_id = 839000538
+kind = "shop"
+event_flag_id = 67800
+
+[[flag]]
+location = "Shop - Desperate Prayer"
+location_id = 839000539
+kind = "shop"
+event_flag_id = 67850
+
+[[flag]]
+location = "Shop - Hoslow's Oath"
+location_id = 839000540
+kind = "shop"
+event_flag_id = 67710
+
+[[flag]]
+location = "Shop - Inner Order"
+location_id = 839000541
+kind = "shop"
+event_flag_id = 67890
+
+[[flag]]
+location = "Shop - What Do You Want?"
+location_id = 839000542
+kind = "shop"
+event_flag_id = 67830
+
+[[flag]]
+location = "Shop - My Lord"
+location_id = 839000543
+kind = "shop"
+event_flag_id = 67630
+
+[[flag]]
+location = "Shop - Grovel For Mercy"
+location_id = 839000544
+kind = "shop"
+event_flag_id = 67690
+
+[[flag]]
+location = "Shop - Spread Out"
+location_id = 839000545
+kind = "shop"
+event_flag_id = 67810
+
+[[flag]]
+location = "Shop - Balled Up"
+location_id = 839000546
+kind = "shop"
+event_flag_id = 67820
+
+[[flag]]
+location = "Shop - Golden Order Totality"
+location_id = 839000547
+kind = "shop"
+event_flag_id = 67900
+
+[[flag]]
+location = "Shop - Prattling Pate "Hello""
+location_id = 839000548
+kind = "shop"
+event_flag_id = 67910
+
+[[flag]]
+location = "Shop - Prattling Pate "Thank you""
+location_id = 839000549
+kind = "shop"
+event_flag_id = 67920
+
+[[flag]]
+location = "Shop - Prattling Pate "Wonderful""
+location_id = 839000550
+kind = "shop"
+event_flag_id = 67940
+
+[[flag]]
+location = "Shop - Prattling Pate "Please help""
+location_id = 839000551
+kind = "shop"
+event_flag_id = 67950
+
+[[flag]]
+location = "Shop - Prattling Pate "My beloved""
+location_id = 839000552
+kind = "shop"
+event_flag_id = 67960
+
+[[flag]]
+location = "Shop - Prattling Pate "Apologies""
+location_id = 839000553
+kind = "shop"
+event_flag_id = 67930
+
+[[flag]]
+location = "Shop - Prattling Pate "Let's get to it""
+location_id = 839000554
+kind = "shop"
+event_flag_id = 67970
+
+[[flag]]
+location = "Shop - Prattling Pate "You're beautiful""
+location_id = 839000555
+kind = "shop"
+event_flag_id = 67980
+
+[[flag]]
+location = "Shop - Scholar's Goblet"
+location_id = 839000556
+kind = "shop"
+event_flag_id = 60510
+
+[[flag]]
+location = "Shop - Undertaker's Goblet"
+location_id = 839000557
+kind = "shop"
+event_flag_id = 60560
+
+[[flag]]
+location = "Shop - Scadutree Grail"
+location_id = 839000558
+kind = "shop"
+event_flag_id = 60430

@@ -8,6 +8,7 @@ from worlds.AutoWorld import WebWorld, World
 from worlds.generic.Rules import set_rule
 
 from .Items import (
+    SHOP_ITEMS,
     BASE_NIGHTFARERS,
     BASE_UNLOCKS,
     DLC_NIGHTFARERS,
@@ -121,6 +122,8 @@ class NightreignWorld(World):
         pool: List[Item] = [self.create_item(name) for name in unlocks if name != start]
         pool += [self.create_item(name) for name in everdark]
         pool += [self.create_item(name) for name in roster[start_count:]]
+        if self.options.shop_checks.current_key != "none":
+            pool += [self.create_item(name) for name in SHOP_ITEMS]
         unfilled = sum(1 for loc in self.multiworld.get_locations(self.player) if not loc.item)
         # Victory is locked in set_rules, so leave one location empty.
         while len(pool) < unfilled - 1:
