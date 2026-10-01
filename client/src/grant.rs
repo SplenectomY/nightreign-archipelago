@@ -1,140 +1,96 @@
-//! Apply Murk Bundle to addresses discovered by the value scan.
+//! Murk Bundle via the game AddSoul function. Target 1 is Murk.
+//! GameDataMan: 48 8B 0D ?? ?? ?? ?? F3 48 0F 2C C0
+//! Function:    ?? 8B 81 D0 00 00 00 ?? 8B D1 B9
 
 #![cfg(windows)]
 
-use std::fs;
-use std::path::PathBuf;
+use crate::aob::{self, ModuleSpan};
 use std::sync::atomic::{AtomicI32, AtomicUsize, Ordering};
-use std::sync::Mutex;
 
 const MURK_BUNDLE_ID: i64 = 839_100_100;
 const DEFAULT_BUNDLE: i32 = 1000;
+const GAMEDATA_AOB: &str = "48 8B 0D ?? ?? ?? ?? F3 48 0F 2C C0";
+const MURK_AOB: &str = "?? 8B 81 D0 00 00 00 ?? 8B D1 B9";
 
-static BUNDLE_AMOUNT: AtomicI32 = AtomicI32::new(DEFAULT_BUNDLE);
-static PENDING_MURK: AtomicI32 = AtomicI32::new(0);
-static NEXT_GRANT: AtomicUsize = AtomicUsize::new(0);
-static STATE_PATH: Mutex<Option<PathBuf>> = Mutex::new(None);
-static CAND_PATH: Mutex<Option<PathBuf>> = Mutex::new(None);
+static BUNDLE: AtomicI32 = AtomicI32::new(DEFAULT_BUNDLE);
+static PENDING: AtomicI32 = AtomicI32::new(0);
+static SLOT: AtomicUsize = AtomicUsize::new(0);
+static FUNC: AtomicUsize = AtomicUsize::new(0);
 
-fn load_next(path: &PathBuf) -> usize {
-    fs::read_to_string(path)
-        .ok()
-        .and_then(|s| s.trim().parse().ok())
-        .unwrap_or(0)
+type AddFn = unsafe extern "C" fn(player: usize, amount: i32) -> i32;
+
+fn rip_slot(span: ModuleSpan, at: usize) -> Option<usize> {
+    let hay = span.slice();
+    if at + 7 > hay.len() {
+        return None;
+    }
+    let disp = i32::from_le_bytes(hay[at + 3..at + 7].try_into().ok()?);
+    Some(span.base + at + 7 + disp as isize as usize)
 }
 
-fn save_next(path: &PathBuf, n: usize) {
-    let _ = fs::write(path, n.to_string());
-}
-
-fn load_addrs() -> Vec<usize> {
-    let guard = CAND_PATH.lock().unwrap();
-    let Some(path) = guard.as_ref() else {
-        return Vec::new();
-    };
-    fs::read_to_string(path)
-        .ok()
-        .map(|s| {
-            s.lines()
-                .filter_map(|l| usize::from_str_radix(l.trim().trim_start_matches("0x"), 16).ok())
-                .collect()
-        })
-        .unwrap_or_default()
-}
-
-fn add_murk(amount: i32) -> Result<(i32, String), String> {
-    let addrs = load_addrs();
-    if addrs.is_empty() {
-        return Err("no murk_cands.txt addresses".into());
-    }
-    let mut last = 0i32;
-    let mut wrote = 0usize;
-    let mut detail = Vec::new();
-    for p in addrs {
-        if p < 0x10000 {
-            continue;
-        }
-        unsafe {
-            let old = std::ptr::read_unaligned(p as *const i32);
-            let new = old.saturating_add(amount);
-            std::ptr::write_unaligned(p as *mut i32, new);
-            let check = std::ptr::read_unaligned(p as *const i32);
-            detail.push(format!("{p:X}:{old}->{check}"));
-            last = check;
-            wrote += 1;
-        }
-    }
-    if wrote == 0 {
-        return Err("wallet addresses not writable".into());
-    }
-    Ok((last, detail.join(" ")))
-}
-
-pub fn init(dir: Option<&PathBuf>, bundle_amount: i32) -> Result<String, String> {
-    BUNDLE_AMOUNT.store(bundle_amount.max(1), Ordering::SeqCst);
-    if let Some(dir) = dir {
-        let path = dir.join("granted_index.txt");
-        NEXT_GRANT.store(load_next(&path), Ordering::SeqCst);
-        *STATE_PATH.lock().unwrap() = Some(path);
-        *CAND_PATH.lock().unwrap() = Some(dir.join("murk_cands.txt"));
-    }
-    let n = load_addrs().len();
+pub fn init() -> Result<String, String> {
+    let span = ModuleSpan::nightreign().ok_or_else(|| "no module".to_string())?;
+    let data_rel = aob::find_pattern(span.slice(), GAMEDATA_AOB)
+        .ok_or_else(|| "GameDataMan AOB not found".to_string())?;
+    let fn_rel = aob::find_pattern(span.slice(), MURK_AOB)
+        .ok_or_else(|| "murk function AOB not found".to_string())?;
+    let slot = rip_slot(span, data_rel).ok_or_else(|| "GameDataMan slot unresolved".to_string())?;
+    SLOT.store(slot, Ordering::SeqCst);
+    FUNC.store(span.base + fn_rel, Ordering::SeqCst);
     Ok(format!(
-        "NRAP murk grant ready cands={n} bundle={}",
-        BUNDLE_AMOUNT.load(Ordering::SeqCst)
+        "NRAP murk fn=0x{:X} gamedata=0x{slot:X} bundle={}",
+        span.base + fn_rel,
+        BUNDLE.load(Ordering::SeqCst)
     ))
 }
 
-pub fn force_grant() -> String {
-    let amt = BUNDLE_AMOUNT.load(Ordering::SeqCst);
-    match add_murk(amt) {
-        Ok((new, detail)) => format!("NRAP force grant +{amt} wallet={new} {detail}"),
-        Err(e) => format!("NRAP force grant failed: {e}"),
-    }
-}
-
-pub fn apply_received(item_id: i64, index: i64) -> Option<String> {
-    let next = NEXT_GRANT.load(Ordering::SeqCst) as i64;
-    if index < next {
+fn player_data() -> Option<usize> {
+    let slot = SLOT.load(Ordering::SeqCst);
+    if slot < 0x10000 {
         return None;
     }
-    NEXT_GRANT.store((index + 1) as usize, Ordering::SeqCst);
-    if let Some(path) = STATE_PATH.lock().unwrap().as_ref() {
-        save_next(path, (index + 1) as usize);
+    let man = unsafe { std::ptr::read_unaligned(slot as *const usize) };
+    if man < 0x10000 {
+        return None;
     }
+    let player = unsafe { std::ptr::read_unaligned((man + 8) as *const usize) };
+    if player < 0x10000 { None } else { Some(player) }
+}
+
+fn add_murk(amount: i32) -> Result<String, String> {
+    let func = FUNC.load(Ordering::SeqCst);
+    let player = player_data().ok_or_else(|| "GameDataMan+8 not live".to_string())?;
+    if func < 0x10000 || amount <= 0 {
+        return Err("murk function missing".into());
+    }
+    let f: AddFn = unsafe { std::mem::transmute(func) };
+    let ret = unsafe { f(player, amount) };
+    Ok(format!("player=0x{player:X} ret={ret}"))
+}
+
+pub fn want(item_id: i64) -> Option<String> {
     if item_id != MURK_BUNDLE_ID {
-        return Some(format!("NRAP grant skipped {item_id} (no handler)"));
+        return None;
     }
-    let amt = BUNDLE_AMOUNT.load(Ordering::SeqCst);
-    let addrs = load_addrs();
-    if addrs.len() != 3 {
-        PENDING_MURK.fetch_add(amt, Ordering::SeqCst);
-        return Some(format!(
-            "NRAP grant queued +{amt} Murk (waiting for 3 wallet addrs, have {})",
-            addrs.len()
-        ));
-    }
+    let amt = BUNDLE.load(Ordering::SeqCst);
     match add_murk(amt) {
-        Ok((new, detail)) => Some(format!("NRAP granted Murk +{amt} wallet={new} {detail}")),
+        Ok(detail) => Some(format!("NRAP murk +{amt} {detail}")),
         Err(e) => {
-            PENDING_MURK.fetch_add(amt, Ordering::SeqCst);
-            Some(format!("NRAP grant queued +{amt} Murk ({e})"))
+            PENDING.fetch_add(amt, Ordering::SeqCst);
+            Some(format!("NRAP murk queued +{amt} ({e})"))
         }
     }
 }
 
-pub fn retry_pending() -> Option<String> {
-    let amt = PENDING_MURK.load(Ordering::SeqCst);
+pub fn retry() -> Option<String> {
+    let amt = PENDING.load(Ordering::SeqCst);
     if amt <= 0 {
         return None;
     }
-    if load_addrs().len() != 3 {
-        return None;
-    }
     match add_murk(amt) {
-        Ok((new, detail)) => {
-            PENDING_MURK.store(0, Ordering::SeqCst);
-            Some(format!("NRAP granted queued Murk +{amt} wallet={new} {detail}"))
+        Ok(detail) => {
+            PENDING.store(0, Ordering::SeqCst);
+            Some(format!("NRAP murk granted queued +{amt} {detail}"))
         }
         Err(_) => None,
     }

@@ -275,6 +275,10 @@ fn worker() {
         Ok(msg) => log_line(&dir, &msg),
         Err(e) => log_line(&dir, &format!("NRAP drop init failed: {e}")),
     }
+    match grant::init() {
+        Ok(msg) => log_line(&dir, &msg),
+        Err(e) => log_line(&dir, &format!("NRAP murk init failed: {e}")),
+    }
     match hero::init() {
         Ok(msg) => log_line(&dir, &msg),
         Err(e) => log_line(&dir, &format!("NRAP hero hook failed: {e}")),
@@ -384,6 +388,9 @@ fn worker() {
             log_line(&dir, &msg);
         }
         if let Some(msg) = hero::apply() {
+            log_line(&dir, &msg);
+        }
+        if let Some(msg) = grant::retry() {
             log_line(&dir, &msg);
         }
         if let Some(msg) = drop::retry_pending() {
