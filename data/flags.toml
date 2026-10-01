@@ -1,5 +1,5 @@
 # Nightreign 1.3.3.0
-# Shop stock flags from Smithbox ShopLineUpParam eventFlag_forStock (2026-09-30).
+# Keep [goal] in sync with Player1.yaml. Client opens Heolstor (flag 115) locally.
 
 game_version = "1.3.3.0"
 
@@ -7,6 +7,10 @@ game_version = "1.3.3.0"
 host = "127.0.0.1:38281"
 slot = "Player1"
 password = ""
+
+[goal]
+heolstor_in_pool = false
+heolstor_unlock_count = 4
 
 [scan]
 enable = false
