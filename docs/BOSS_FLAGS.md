@@ -42,6 +42,7 @@ Death bits are the after line. Before/during bits are the scan that preceded it.
 | Adel | 2 | Ancient Dragon | 1105, 1314, 200010, 200011, 200099 | 797003, 797007, 797010 |
 | Adel | 1 | Night's Cavalry | 905001, 905006, 905015, 905016 | 905000, 905007, 905008, 905011, 905012, 905013 |
 | Adel | 2 | Outland Commander | 9015, 9018, 9019, 752021, 752025, 752028, 842021, 842025, 842028, 896003, 896013, 896014, 896015 | 896007, 896008, 896011, 896012, 896016 |
+| Fulghor | 1 | Royal Revenant | 9015, 9019, 851001, 851006, 851009, 851010 | 851000, 851007, 851008, 851011, 851012 |
 | Gladius | 1 | Demihuman Queen | 1102, 1108, 9015, 9019, 623900, 896001, 896011, 896012, 920900 | 896007, 896008, 896013, 896017 |
 | Gladius | overworld | Demihuman Queen | 531, 74000-74019, 779011-779023, truncated +35 | 74018 |
 | Adel | overworld | Demihuman Queen run 2 | 74000, 74001, 74007-74011, 74013, 74014, 74017, 74019, 797011-797024, truncated +40 | 869000, 869001, 869002, 869003 |
@@ -65,6 +66,8 @@ Tree Sentinel, Adel overworld, 2026-10-01, 19:25 to 19:27. `5000` rose mid-fight
 Overworld Demihuman Queen, Adel, 2026-10-01. The 740xx cluster repeated from the Gladius overworld Demihuman Queen. `5000` rose again at the start.
 
 Outland Commander, Adel Night 2, 2026-10-01. `752021`, `752025`, `752028`, and `896003` rose at the start, so they are not Ancient Dragon. `896002` rose mid-fight and is already noise.
+
+Royal Revenant, Fulghor Night 1, 2026-10-01. `88014` and the `xxx006` set rose on the death line again. `86203` rose a minute later.
 ## Adding a sample
 
 Copy a row. Keep the Nightlord, day, and boss name. If the same pair is run again, add the new bits in the notes column of `data/boss_flags.toml` instead of deleting the first sample.

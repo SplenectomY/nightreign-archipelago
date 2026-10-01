@@ -173,3 +173,11 @@ boss = "Outland Commander"
 bits = [896007, 896008, 896011, 896012, 896016]
 sample = "2026-10-01"
 notes = "Start included 752021, 752025, 752028, 896003. Those are no longer Ancient Dragon."
+
+[[day_boss]]
+nightlord = "Fulghor"
+day = 1
+boss = "Royal Revenant"
+bits = [851000, 851007, 851008, 851011, 851012]
+sample = "2026-10-01"
+notes = "Before: 851001, 851006, 851009, 851010. Circle flags 9015 and 9019 on the start line."
