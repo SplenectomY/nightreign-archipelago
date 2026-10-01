@@ -85,6 +85,9 @@ fn parse_i64_after(hay: &str, key: &str) -> Option<i64> {
     num.parse().ok()
 }
 
+static GOAL: AtomicBool = AtomicBool::new(false);
+static GOAL_SENT: AtomicBool = AtomicBool::new(false);
+
 fn preview(text: &str) -> String {
     let t = text.replace('\n', " ");
     if t.len() <= 240 {
@@ -124,6 +127,10 @@ fn handle_server_text(text: &str, log: &impl Fn(&str), next_index: &mut i64, dro
         }
         if let Some(msg) = crate::drop::apply_item(id, drop_goods) {
             log(&msg);
+        }
+        if id == 839_100_900 {
+            GOAL.store(true, Ordering::SeqCst);
+            log("NRAP goal met");
         }
         count += 1;
         from = at + 8;
@@ -206,6 +213,17 @@ fn connect_and_handshake(
     Ok(socket)
 }
 
+fn send_goal(socket: &mut Socket) -> Result<bool, String> {
+    if !GOAL.load(Ordering::SeqCst) || GOAL_SENT.load(Ordering::SeqCst) {
+        return Ok(false);
+    }
+    socket
+        .send(Message::Text("[{\"cmd\":\"StatusUpdate\",\"status\":30}]".into()))
+        .map_err(|e| format!("StatusUpdate: {e}"))?;
+    GOAL_SENT.store(true, Ordering::SeqCst);
+    Ok(true)
+}
+
 fn send_checks(socket: &mut Socket, ids: &[i64]) -> Result<(), String> {
     if ids.is_empty() {
         return Ok(());
@@ -252,6 +270,11 @@ pub fn run(cfg: ApConfig, rx: Receiver<i64>, drop_goods: i32, log: impl Fn(&str)
                                 break;
                             }
                             log(&format!("NRAP AP LocationChecks {id}"));
+                            match send_goal(&mut socket) {
+                                Ok(true) => log("NRAP AP goal sent"),
+                                Ok(false) => {}
+                                Err(e) => log(&format!("NRAP AP goal failed: {e}")),
+                            }
                             if drain_server(&mut socket, &log, &mut next_index, drop_goods).is_err()
                             {
                                 log("NRAP AP server closed");
