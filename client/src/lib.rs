@@ -8,6 +8,7 @@ mod drop;
 mod flag_write;
 mod flagman;
 mod grant;
+mod hero;
 mod menu;
 mod scan;
 
@@ -274,6 +275,10 @@ fn worker() {
         Ok(msg) => log_line(&dir, &msg),
         Err(e) => log_line(&dir, &format!("NRAP drop init failed: {e}")),
     }
+    match hero::init() {
+        Ok(msg) => log_line(&dir, &msg),
+        Err(e) => log_line(&dir, &format!("NRAP hero hook failed: {e}")),
+    }
     let config = find_config(dir.as_ref());
     log_line(
         &dir,
@@ -377,6 +382,10 @@ fn worker() {
         }
         if let Some(msg) = flag_write::retry_pending() {
             log_line(&dir, &msg);
+        }
+        let hero_msg = hero::apply();
+        if hero_msg.contains("->") {
+            log_line(&dir, &hero_msg);
         }
         if let Some(msg) = drop::retry_pending() {
             log_line(&dir, &msg);

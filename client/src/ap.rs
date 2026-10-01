@@ -119,6 +119,9 @@ fn handle_server_text(text: &str, log: &impl Fn(&str), next_index: &mut i64, dro
         if let Some(msg) = crate::flag_write::apply_item(id) {
             log(&msg);
         }
+        if let Some(msg) = crate::hero::want(id) {
+            log(&msg);
+        }
         if let Some(msg) = crate::drop::apply_item(id, drop_goods) {
             log(&msg);
         }
