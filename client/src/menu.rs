@@ -171,7 +171,7 @@ pub fn init() -> Result<String, String> {
     code.extend_from_slice(&[0x4C, 0x89, 0xF1]);
     code.extend_from_slice(&[0x41, 0x0F, 0xB6, 0xD7]);
     code.extend_from_slice(&[0x4D, 0x89, 0xE8]);
-    code.extend_from_slice(&[0x4C, 0x89, 0xCE]);
+    code.extend_from_slice(&[0x4C, 0x8B, 0xCE]);
     code.extend_from_slice(&[0x48, 0xB8]);
     code.extend_from_slice(&peek_addr.to_le_bytes());
     code.extend_from_slice(&[0xFF, 0xD0]);
