@@ -2,7 +2,7 @@
 
 Runtime Archipelago world for *Elden Ring Nightreign*. Vanilla game files stay on disk. A me3/Seamless-loaded DLL talks to an Archipelago server. Progression lives on the Hold, not on Limveld floor loot.
 
-**Status: Phase 0 (attach + one check).** Not playable as a multiworld yet.
+**Status: Phase 0.** Checks, expedition unlocks, and Nightfarer grants work. The regulation package that hides default Nightfarers can crash the expedition board. That package is not in the tester zip.
 
 Repo: https://github.com/SplenectomY/nightreign-archipelago
 
@@ -10,70 +10,48 @@ Repo: https://github.com/SplenectomY/nightreign-archipelago
 
 Download the latest zip from [Releases](https://github.com/SplenectomY/nightreign-archipelago/releases). It already contains `nightreign_ap.dll`.
 
-If there is no release yet, someone with repo access runs Actions → **Release** → Run workflow. Details in [`docs/RELEASING.md`](docs/RELEASING.md).
-
 You still need Nightreign, Seamless Coop, and me3. You do not need Visual Studio or `cargo`.
+
+## Install
+
+1. Install [Seamless Coop for Nightreign](https://www.nexusmods.com/eldenringnightreign) and [me3](https://github.com/garyttierney/me3).
+2. Unzip the release into `C:/Mods/nightreign-ap/`. `nightreign_ap.dll` and `flags.toml` must stay in that same folder.
+3. Copy `nightreign-ap.me3` to the me3 profiles folder. Edit the two paths if your install is not the default. Paths must use forward slashes. A backslash is an escape character and the profile will not load.
+4. Launch with me3 using that profile. Do not use `nrsc_launcher.exe` at the same time, and do not use Steam's Play button.
+5. The console must print `NRAP attached` and `NRAP AP connected`.
+6. Copy `nightreign.apworld` to `%USERPROFILE%\Archipelago\custom_worlds\` and `Nightreign.yaml` to the Archipelago Players folder. Generate, then host the output with MultiServer before launching the game.
+
+The regulation package that gates the expedition board and the default Nightfarers is a separate folder, `regulation/regulation.bin`, loaded by the me3 profile. It is not in the zip. Without it the board is vanilla and the board-crash test cannot be run. With it, do not open the expedition board unless the Nightfarer you are walking around as has been granted. A locked active Nightfarer exits the game without a Windows crash dump.
 
 ## Locked design
 
 - **Offline first.** Generate locally, host `MultiServer` on localhost. Official From matchmaking is never used.
-- **Launch path is Seamless Coop.** `nrsc_launcher.exe` disables EAC and writes `.co2` saves. That is the supported way to run the client. me3-only is a fallback attach test, not the product path.
-- **One AP slot** when a Seamless party exists. Host client submits checks. Friends in BK in other worlds can join the Seamless session and help. Same model as Minecraft AP co-op on one slot.
-- **Named boss checks = Nightlords (and optional Everdark / DLC Nightlords) only.** Everything else is a tiered pool or a counter (`Gladius Night 1 Boss`, `World Bosses (3)`, `Church Bosses (1)`, …).
-- **Checks fire on the kill / the purchase**, including mid-expedition. A wipe after a Night 1 kill still keeps that check.
-- **Start with N random Nightfarers** (default 1). Remembrance quest items go in the item pool; the quests themselves are not checks.
-- **Everdark Sovereigns unlocked offline** by this mod unless that turns out to be server-authoritative in a way we cannot fake. YAML toggle still exists so offline seeds can exclude them.
+- **Launch path is Seamless Coop.** `nrsc.dll` loads from the me3 profile and writes `.co2` saves.
+- **One AP slot** when a Seamless party exists. Host client submits checks. Friends in BK in other worlds can join the Seamless session and help.
+- **Named boss checks = Nightlords (and optional Everdark / DLC Nightlords) only.**
+- **Checks fire on the kill / the purchase.** A wipe after a Night 1 kill still keeps that check.
+- **Start with 1 random Nightfarer.** Revenant is excluded from that pick until the active-character slot can be set. Remembrance quest items go in the item pool; the quests themselves are not checks.
+- **Heolstor stays out of the pool** unless `heolstor_in_pool` is set. He unlocks locally after `heolstor_unlock_count` expedition unlocks.
 
 ## Layout
 
 ```
-world/nightreign/     apworld source (Phase 0 generates)
+world/nightreign/     apworld source
 client/               Rust cdylib loaded into nightreign.exe
 profiles/             me3 profile
 players/              template YAML
-docs/                 design + tester briefs
+docs/                 design + tester brief
 data/                 flag table the client reads
 ```
 
-Planned check list for feedback: [`docs/LOCATIONS_AND_UNLOCKS.md`](docs/LOCATIONS_AND_UNLOCKS.md).
+Planned check list: [`docs/LOCATIONS_AND_UNLOCKS.md`](docs/LOCATIONS_AND_UNLOCKS.md).
 
-## Phase 0 goal
+## Requirements
 
-One end-to-end loop:
-
-1. DLL attaches under Seamless (or me3) and logs it.
-2. You defeat **Gladius**.
-3. Client sees the kill flag and sends `LocationChecks`.
-4. Local AP server accepts it.
-5. Client applies one incoming item (Phase 0: log + optional Murk poke once we have an address).
-
-Tester work is in [`docs/PHASE0_TESTER.md`](docs/PHASE0_TESTER.md). Flag hunt is in [`docs/FLAG_DISCOVERY.md`](docs/FLAG_DISCOVERY.md).
-
-## Requirements (Phase 0 testers)
-
-- Nightreign PC (Steam)
-- [Seamless Coop for Nightreign](https://www.nexusmods.com/eldenringnightreign)
-- [me3](https://github.com/garyttierney/me3)
+- Nightreign PC (Steam), 1.03.3.0
+- Seamless Coop for Nightreign
+- me3
 - The zip from Releases
-- Cheat Engine 7.5+ and Smithbox for flag work
-- Archipelago 0.6.7+ only if you are doing the server half
+- Archipelago 0.6.7+ for the server half
 
 Developers who want to change the DLL still use Rust + MSVC. That is optional.
-
-## Quick generate (apworld skeleton)
-
-```text
-python tools/pack_apworld.py
-# drops nightreign.apworld
-# copy into Archipelago/custom_worlds/
-# put players/Nightreign.yaml in Archipelago/Players/
-# Generate, then host the output zip with MultiServer
-```
-
-The same apworld is inside the Release zip.
-
-## References
-
-- ER AP (pattern, not a port): https://github.com/4laric/er-archipelago
-- Nightreign map / seed notes: https://thefifthmatt.github.io/nightreign/
-- AP world docs: https://github.com/ArchipelagoMW/Archipelago/blob/main/docs/adding%20games.md
