@@ -1,5 +1,5 @@
-//! Expedition menu probe. The near cave is safe. This version calls Rust only to
-//! log the menu entry, and leaves the vanilla unlock bit unchanged.
+//! Expedition menu probe. Logs the menu entry when the board is built.
+//! The vanilla unlock bit is left unchanged.
 
 #![cfg(windows)]
 
@@ -185,6 +185,7 @@ pub fn init() -> Result<String, String> {
     }
     let cave = cave_ptr as usize;
     let peek_addr = peek as usize;
+    let hits = &HITS as *const AtomicU32 as usize;
     let mut code = Vec::new();
     code.extend_from_slice(&[0x50, 0x51, 0x52, 0x41, 0x50, 0x41, 0x51, 0x41, 0x52, 0x41, 0x53]);
     code.extend_from_slice(&[0x48, 0x83, 0xEC, 0x28]);
@@ -195,12 +196,10 @@ pub fn init() -> Result<String, String> {
     code.extend_from_slice(&[0xFF, 0xD0]);
     code.extend_from_slice(&[0x48, 0x83, 0xC4, 0x28]);
     code.extend_from_slice(&[0x41, 0x5B, 0x41, 0x5A, 0x41, 0x59, 0x41, 0x58, 0x5A, 0x59, 0x58]);
-    code.extend_from_slice(&[0xF0, 0xFF, 0x05, 0, 0, 0, 0]);
-    let inc_at = code.len() - 7;
-    let inc_next = cave + code.len();
-    let hits = &HITS as *const AtomicU32 as usize;
-    let disp = hits.wrapping_sub(inc_next) as i32;
-    code[inc_at + 3..inc_at + 7].copy_from_slice(&disp.to_le_bytes());
+    code.push(0x50);
+    code.extend_from_slice(&[0x48, 0xB8]);
+    code.extend_from_slice(&hits.to_le_bytes());
+    code.extend_from_slice(&[0xF0, 0xFF, 0x00, 0x58]);
     code.extend_from_slice(&[0x45, 0x84, 0xFF, 0x74, 0x05]);
     let jz_from = cave + code.len();
     code.extend_from_slice(&[0xE9, 0, 0, 0, 0]);
