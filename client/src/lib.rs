@@ -469,13 +469,11 @@ fn worker() {
             if let Some(found) = man {
                 static LAST: std::sync::Mutex<Option<std::time::Instant>> = std::sync::Mutex::new(None);
                 static PREV: std::sync::Mutex<Vec<Vec<u8>>> = std::sync::Mutex::new(Vec::new());
-                let due = LAST.lock().unwrap().map(|t| t.elapsed().as_secs() >= 2).unwrap_or(true);
+                let due = LAST.lock().unwrap().map(|t| t.elapsed().as_millis() >= 2000).unwrap_or(true);
                 if due {
                     *LAST.lock().unwrap() = Some(std::time::Instant::now());
                     let (rose, groups) = found.diff_rising(&mut PREV.lock().unwrap());
-                    if rose.is_empty() {
-                        log_line(&dir, &format!("NRAP flag diff scan groups={groups}"));
-                    } else {
+                    if !rose.is_empty() {
                         let show: Vec<_> = rose.iter().take(24).map(|f| f.to_string()).collect();
                         log_line(&dir, &format!("NRAP flag diff +{} groups={groups} {}", rose.len(), show.join(",")));
                     }
