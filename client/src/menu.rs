@@ -78,7 +78,8 @@ fn alloc_near(site: usize) -> *mut c_void {
     let page = site & !0xFFFF;
     for i in 1..2048 {
         for sign in [-1isize, 1] {
-            let hint = page.wrapping_add((i * 0x10000).wrapping_mul(sign as usize));
+            let step = (i * 0x10000) as usize;
+            let hint = page.wrapping_add(step.wrapping_mul(sign as usize));
             let p = unsafe {
                 VirtualAlloc(hint as *mut c_void, 0x1000, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE)
             };
