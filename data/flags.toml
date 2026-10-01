@@ -406,49 +406,49 @@ kind = "shop"
 event_flag_id = 67900
 
 [[flag]]
-location = "Shop - Prattling Pate "Hello""
+location = "Shop - Prattling Pate 'Hello""
 location_id = 839000548
 kind = "shop"
 event_flag_id = 67910
 
 [[flag]]
-location = "Shop - Prattling Pate "Thank you""
+location = "Shop - Prattling Pate 'Thank you""
 location_id = 839000549
 kind = "shop"
 event_flag_id = 67920
 
 [[flag]]
-location = "Shop - Prattling Pate "Wonderful""
+location = "Shop - Prattling Pate 'Wonderful""
 location_id = 839000550
 kind = "shop"
 event_flag_id = 67940
 
 [[flag]]
-location = "Shop - Prattling Pate "Please help""
+location = "Shop - Prattling Pate 'Please help""
 location_id = 839000551
 kind = "shop"
 event_flag_id = 67950
 
 [[flag]]
-location = "Shop - Prattling Pate "My beloved""
+location = "Shop - Prattling Pate 'My beloved""
 location_id = 839000552
 kind = "shop"
 event_flag_id = 67960
 
 [[flag]]
-location = "Shop - Prattling Pate "Apologies""
+location = "Shop - Prattling Pate 'Apologies""
 location_id = 839000553
 kind = "shop"
 event_flag_id = 67930
 
 [[flag]]
-location = "Shop - Prattling Pate "Let's get to it""
+location = "Shop - Prattling Pate 'Let's get to it""
 location_id = 839000554
 kind = "shop"
 event_flag_id = 67970
 
 [[flag]]
-location = "Shop - Prattling Pate "You're beautiful""
+location = "Shop - Prattling Pate 'You're beautiful""
 location_id = 839000555
 kind = "shop"
 event_flag_id = 67980
