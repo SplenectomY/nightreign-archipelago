@@ -417,8 +417,8 @@ fn worker() {
             }
         }
         if let Some(found) = man {
-            static DAY: std::sync::Mutex<[(u32, Option<bool>); 8]> = std::sync::Mutex::new([
-                (7502, None), (7507, None), (8140, None), (8145, None), (7001, None), (2000, None), (7512, None), (9100, None),
+            static DAY: std::sync::Mutex<[(u32, Option<bool>); 9]> = std::sync::Mutex::new([
+                (7502, None), (7507, None), (8140, None), (8145, None), (7001, None), (2000, None), (7512, None), (9100, None), (8155, None),
             ]);
             let mut day = DAY.lock().unwrap();
             for (flag, last) in day.iter_mut() {
