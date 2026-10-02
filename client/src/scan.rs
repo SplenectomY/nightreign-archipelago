@@ -20,7 +20,7 @@ struct Mbi {
 
 #[link(name = "kernel32")]
 extern "system" {
-    fn ScanScanVirtualQuery(addr: *const u8, info: *mut Mbi, len: usize) -> usize;
+    fn ScanVirtualQuery(addr: *const u8, info: *mut Mbi, len: usize) -> usize;
 }
 
 const MEM_COMMIT: u32 = 0x1000;
