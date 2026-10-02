@@ -398,6 +398,7 @@ fn worker() {
 
     let watch_tx = tx.clone();
     let watch_dir = dir.clone();
+    log_line(&dir, "NRAP watch thread started");
     thread::spawn(move || {
         let mut watches = watches;
         let mut man = None;
@@ -461,7 +462,7 @@ fn worker() {
                         if w.last != Some(on) {
                             if w.last == Some(false) && on {
                                 log_line(
-                                    &dir,
+                                    &watch_dir,
                                     &format!("NRAP check: {} (flag {} 0->1)", w.location, w.flag),
                                 );
                                 if let Some(msg) = flag_write::note_defeat(w.flag) {
@@ -469,7 +470,7 @@ fn worker() {
                                 }
                             } else {
                                 log_line(
-                                    &dir,
+                                    &watch_dir,
                                     &format!(
                                         "NRAP {} flag {} = {}",
                                         w.location,
@@ -488,7 +489,7 @@ fn worker() {
                     None => {
                         if !w.miss_logged {
                             log_line(
-                                &dir,
+                                &watch_dir,
                                 &format!("NRAP {} flag {} not in holder", w.location, w.flag),
                             );
                             w.miss_logged = true;
@@ -533,8 +534,6 @@ fn worker() {
             thread::sleep(Duration::from_millis(200));
         }
     });
-    log_line(&dir, "NRAP watch thread started");
-
     let mut last_debug_flag = 0u32;
     let mut last_clear_flag = 0u32;
     let mut last_debug_drop = 0i32;
