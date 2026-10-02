@@ -575,7 +575,7 @@ fn worker() {
                                 }
                             }
                         }
-                        if on && !w.submitted && !w.ignored && w.location_id != 0 {
+                        if on && !w.submitted && !w.ignored && w.location_id != 0 && (w.flag != 5901 || crate::ap::tutorial_margit()) {
                             let _ = watch_tx.send(w.location_id);
                             w.submitted = true;
                         }
