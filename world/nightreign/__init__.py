@@ -187,10 +187,17 @@ class NightreignWorld(World):
             quests["Unlock Scholar"] = "Nightfarer - Scholar"
             quests["Unlock Undertaker"] = "Nightfarer - Undertaker"
         for loc_name, item_name in quests.items():
-            set_rule(
-                self.get_location(loc_name),
-                lambda state, item_name=item_name: state.has(item_name, player),
-            )
+            if loc_name == "Unlock Revenant" and self.options.shop_checks.current_key != "none":
+                set_rule(
+                    self.get_location(loc_name),
+                    lambda state, item_name=item_name: state.has(item_name, player)
+                    and state.has("Shop - Besmirched Frame", player),
+                )
+            else:
+                set_rule(
+                    self.get_location(loc_name),
+                    lambda state, item_name=item_name: state.has(item_name, player),
+                )
         set_rule(self.get_location("Nightlord - Heolstor"), heolstor_gate)
 
         goal = self.options.goal.current_key

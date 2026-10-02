@@ -72,7 +72,7 @@ item_table: Dict[str, ItemSpec] = {
     "Shop - Grand Burning Scene 2": ItemSpec(ITEM_ID_BASE + 625, ItemClassification.useful),
     "Shop - Grand Burning Scene 3": ItemSpec(ITEM_ID_BASE + 626, ItemClassification.useful),
     "Shop - Grand Tranquil Scene 3": ItemSpec(ITEM_ID_BASE + 627, ItemClassification.useful),
-    "Shop - Besmirched Frame": ItemSpec(ITEM_ID_BASE + 628, ItemClassification.useful),
+    "Shop - Besmirched Frame": ItemSpec(ITEM_ID_BASE + 628, ItemClassification.progression),
     "Shop - Wylder's Goblet": ItemSpec(ITEM_ID_BASE + 629, ItemClassification.useful),
     "Shop - Guardian's Goblet": ItemSpec(ITEM_ID_BASE + 630, ItemClassification.useful),
     "Shop - Ironeye's Goblet": ItemSpec(ITEM_ID_BASE + 631, ItemClassification.useful),
