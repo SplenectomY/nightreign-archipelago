@@ -119,7 +119,7 @@ pub fn item_label(id: i64) -> Option<&'static str> {
         683 => "Shop - Grand Tranquil Scene 4",
         900 => "Victory",
         _ => return None,
-    }.to_string())
+    })
 }
 
 pub fn location_label(id: i64) -> Option<String> {
@@ -407,5 +407,5 @@ pub fn location_label(id: i64) -> Option<String> {
         820 => "Bosses Killed (20)",
         600 => "Nightfarer Reserve",
         _ => return None,
-    })
+    }.to_string())
 }
