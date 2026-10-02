@@ -77,6 +77,7 @@ struct OptWin {
     width: HWND,
     height: HWND,
     fade: HWND,
+    font: HWND,
     local: HWND,
     remote: HWND,
     item: HWND,
@@ -304,7 +305,7 @@ fn open_options(app: &App) {
         let class = wide("NRAPOptions");
         let wc = WndClass { style: 0, wnd_proc: Some(opt_proc), cls_extra: 0, wnd_extra: 0, instance: std::ptr::null_mut(), icon: std::ptr::null_mut(), cursor: std::ptr::null_mut(), background: std::ptr::null_mut(), menu_name: std::ptr::null(), class_name: class.as_ptr() };
         RegisterClassW(&wc);
-        let win = CreateWindowExW(0, class.as_ptr(), wide("NRAP Options").as_ptr(), WS_OVERLAPPEDWINDOW | WS_VISIBLE, 140, 120, 420, 560, std::ptr::null_mut(), 0, std::ptr::null_mut(), std::ptr::null_mut());
+        let win = CreateWindowExW(0, class.as_ptr(), wide("NRAP Options").as_ptr(), WS_OVERLAPPEDWINDOW | WS_VISIBLE, 140, 120, 420, 600, std::ptr::null_mut(), 0, std::ptr::null_mut(), std::ptr::null_mut());
         let edit = wide("EDIT");
         let button = wide("BUTTON");
         let text = fs::read_to_string(app.dir.join("flags.toml")).unwrap_or_default();
@@ -325,17 +326,18 @@ fn open_options(app: &App) {
         let width = row("Width", 104, 203, &overlay("width", "720"), false);
         let height = row("Height", 136, 204, &overlay("height", "220"), false);
         let fade = row("Fade seconds", 168, 205, &overlay("hold_seconds", "5"), false);
-        let local = row("Local player", 208, 211, &overlay("color_local", "EE77FF"), true);
-        let remote = row("Remote player", 244, 212, &overlay("color_remote", "EE77FF"), true);
-        let item = row("Item", 280, 213, &overlay("color_item", "5DC8C8"), true);
-        let location = row("Location", 316, 214, &overlay("color_location", "6BE36B"), true);
-        let text_color = row("Text", 352, 215, &overlay("text_color", "E8D7A4"), true);
-        CreateWindowExW(0, wide("STATIC").as_ptr(), wide("Debug").as_ptr(), WS_CHILD | WS_VISIBLE, 16, 400, 200, 20, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
-        let debug = CreateWindowExW(0, button.as_ptr(), wide("Debug log").as_ptr(), WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX, 28, 428, 160, 24, win, 216, std::ptr::null_mut(), std::ptr::null_mut());
+        let font = row("Font size", 200, 206, &overlay("font_size", "16"), false);
+        let local = row("Local player", 240, 211, &overlay("color_local", "EE77FF"), true);
+        let remote = row("Remote player", 276, 212, &overlay("color_remote", "EE77FF"), true);
+        let item = row("Item", 312, 213, &overlay("color_item", "5DC8C8"), true);
+        let location = row("Location", 348, 214, &overlay("color_location", "6BE36B"), true);
+        let text_color = row("Text", 384, 215, &overlay("text_color", "E8D7A4"), true);
+        CreateWindowExW(0, wide("STATIC").as_ptr(), wide("Debug").as_ptr(), WS_CHILD | WS_VISIBLE, 16, 432, 200, 20, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
+        let debug = CreateWindowExW(0, button.as_ptr(), wide("Debug log").as_ptr(), WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX, 28, 460, 160, 24, win, 216, std::ptr::null_mut(), std::ptr::null_mut());
         let on = text.lines().any(|l| l.trim() == "debug = true");
         SendMessageW(debug, BM_SETCHECK, if on { 1 } else { 0 }, 0);
-        CreateWindowExW(0, button.as_ptr(), wide("Close").as_ptr(), WS_CHILD | WS_VISIBLE, 110, 476, 200, 32, win, 220, std::ptr::null_mut(), std::ptr::null_mut());
-        let boxed = Box::new(OptWin { x, y, width, height, fade, local, remote, item, location, text: text_color, debug });
+        CreateWindowExW(0, button.as_ptr(), wide("Close").as_ptr(), WS_CHILD | WS_VISIBLE, 110, 512, 200, 32, win, 220, std::ptr::null_mut(), std::ptr::null_mut());
+        let boxed = Box::new(OptWin { x, y, width, height, fade, font, local, remote, item, location, text: text_color, debug });
         OPT = Box::into_raw(boxed);
     }
 }
@@ -352,6 +354,7 @@ fn save_options(app: &App) {
     text = replace_key(&text, "width", &quoted(&text_of(opt.width)));
     text = replace_key(&text, "height", &quoted(&text_of(opt.height)));
     text = replace_key(&text, "hold_seconds", &quoted(&text_of(opt.fade)));
+    text = replace_key(&text, "font_size", &quoted(&text_of(opt.font)));
     text = replace_key(&text, "color_local", &format!("\"{}\"", text_of(opt.local)));
     text = replace_key(&text, "color_remote", &format!("\"{}\"", text_of(opt.remote)));
     text = replace_key(&text, "color_item", &format!("\"{}\"", text_of(opt.item)));
@@ -816,8 +819,8 @@ fn main() {
         let warn_nrsc = CreateWindowExW(0, wide("STATIC").as_ptr(), wide("!").as_ptr(), WS_CHILD | SS_ICON, 672, 470, 20, 20, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
         let icon = LoadIconW(std::ptr::null_mut(), 32515 as *const u16);
         SendMessageW(warn_nrsc, 0x0170, icon as usize, 0);
-        CreateWindowExW(0, button.as_ptr(), wide("Options").as_ptr(), WS_CHILD | WS_VISIBLE, 280, 476, 200, 28, win, OPTIONS, std::ptr::null_mut(), std::ptr::null_mut());
-        CreateWindowExW(0, button.as_ptr(), wide("Launch").as_ptr(), WS_CHILD | WS_VISIBLE, 280, 516, 200, 42, win, LAUNCH, std::ptr::null_mut(), std::ptr::null_mut());
+        CreateWindowExW(0, button.as_ptr(), wide("Options").as_ptr(), WS_CHILD | WS_VISIBLE, 280, 516, 200, 28, win, OPTIONS, std::ptr::null_mut(), std::ptr::null_mut());
+        CreateWindowExW(0, button.as_ptr(), wide("Launch").as_ptr(), WS_CHILD | WS_VISIBLE, 280, 556, 200, 42, win, LAUNCH, std::ptr::null_mut(), std::ptr::null_mut());
         let mut app = App { log, cmd, host, slot, pass, nrsc, warn_nrsc, dir, log_off: 0 };
         set_text(nrsc, &default_nrsc().display().to_string());
         refresh_paths(&app);
