@@ -10,6 +10,7 @@ mod flagman;
 mod grant;
 mod hero;
 mod menu;
+mod names;
 mod scan;
 
 use std::ffi::c_void;
@@ -200,9 +201,23 @@ fn write_console(msg: &str) {
     }
 }
 
+static DEBUG: AtomicBool = AtomicBool::new(false);
+
+fn console_visible(msg: &str) -> bool {
+    DEBUG.load(Ordering::SeqCst)
+        || msg.starts_with("NRAP attached")
+        || msg.starts_with("NRAP AP connected")
+        || msg.starts_with("NRAP AP socket")
+        || msg.starts_with("NRAP AP not connected")
+        || msg.starts_with("NRAP AP |")
+        || msg.starts_with("NRAP debug")
+}
+
 fn log_line(dir: &Option<PathBuf>, msg: &str) {
     let line = format!("[{}] {msg}", timestamp());
-    write_console(&line);
+    if console_visible(msg) {
+        write_console(&line);
+    }
     if let Some(dir) = dir {
         if let Ok(mut f) = OpenOptions::new()
             .create(true)
@@ -387,6 +402,9 @@ fn worker() {
     if text.as_deref().is_some_and(|t| t.lines().any(|l| l.trim() == "flag_diff = true")) {
         FLAG_DIFF.store(true, Ordering::SeqCst);
     }
+    if text.as_deref().is_some_and(|t| t.lines().any(|l| l.trim() == "debug = true")) {
+        DEBUG.store(true, Ordering::SeqCst);
+    }
     let console_dir = dir.clone();
     thread::spawn(move || {
         loop {
@@ -399,6 +417,16 @@ fn worker() {
                 continue;
             }
             let lower = line.to_ascii_lowercase();
+            if lower.starts_with("/debug") {
+                let arg = lower.split_whitespace().nth(1).unwrap_or("");
+                let on = match arg {
+                    "on" | "1" | "true" => true,
+                    "off" | "0" | "false" => false,
+                    _ => !DEBUG.load(Ordering::SeqCst),
+                };
+                DEBUG.store(on, Ordering::SeqCst);
+                log_line(&console_dir, &format!("NRAP debug {}", if on { "on" } else { "off" }));
+            }
             if lower.starts_with("/flagdiff") {
                 let arg = lower.split_whitespace().nth(1).unwrap_or("");
                 let on = match arg {

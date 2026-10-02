@@ -2,6 +2,7 @@
 
 use std::net::TcpStream;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Mutex;
 use std::sync::mpsc::{Receiver, RecvTimeoutError};
 use std::time::Duration;
 use tungstenite::protocol::WebSocket;
@@ -96,6 +97,35 @@ fn parse_i64_after(hay: &str, key: &str) -> Option<i64> {
 
 static GOAL: AtomicBool = AtomicBool::new(false);
 static GOAL_SENT: AtomicBool = AtomicBool::new(false);
+static PLAYERS: Mutex<Vec<(i64, String)>> = Mutex::new(Vec::new());
+
+fn player_name(id: i64) -> Option<String> {
+    PLAYERS.lock().unwrap().iter().find(|(slot, _)| *slot == id).map(|(_, name)| name.clone())
+}
+
+fn remember_players(text: &str) {
+    if !text.contains("Connected") {
+        return;
+    }
+    let mut players = Vec::new();
+    let mut from = 0usize;
+    while let Some(rel) = text[from..].find("\"slot\":") {
+        let at = from + rel;
+        let Some(slot) = parse_i64_after(&text[at..], "slot") else { break };
+        let name = text[at..].find("\"alias\":\"").or_else(|| text[at..].find("\"name\":\"")).map(|n| {
+            let key_at = at + n;
+            let start = text[key_at..].find("\":\"").map(|i| key_at + i + 3).unwrap_or(key_at);
+            let end = text[start..].find('"').map(|i| start + i).unwrap_or(start);
+            text[start..end].to_string()
+        }).unwrap_or_else(|| format!("Player {slot}"));
+        players.push((slot, name));
+        from = at + 8;
+        if players.len() > 32 { break; }
+    }
+    if !players.is_empty() {
+        *PLAYERS.lock().unwrap() = players;
+    }
+}
 
 fn preview(text: &str) -> String {
     let t = text.replace('\n', " ");
@@ -127,6 +157,16 @@ fn json_unescape(s: &str) -> String {
     out
 }
 
+fn part_name(raw: &str, kind: &str) -> String {
+    let id = raw.parse::<i64>().unwrap_or(i64::MIN);
+    match kind {
+        "item_id" => crate::names::item_label(id).unwrap_or(raw).to_string(),
+        "location_id" => crate::names::location_label(id).unwrap_or(raw).to_string(),
+        "player_id" => player_name(id).unwrap_or_else(|| raw.to_string()),
+        _ => raw.to_string(),
+    }
+}
+
 fn printjson_text(text: &str) -> Option<String> {
     if !text.contains("PrintJSON") {
         return None;
@@ -150,7 +190,18 @@ fn printjson_text(text: &str) -> Option<String> {
         if end > bytes.len() {
             break;
         }
-        parts.push(json_unescape(&text[at..end]));
+        let raw = json_unescape(&text[at..end]);
+        let tail = &text[end..end.saturating_add(80).min(text.len())];
+        let kind = if tail.contains("\"type\":\"item_id\"") {
+            "item_id"
+        } else if tail.contains("\"type\":\"location_id\"") {
+            "location_id"
+        } else if tail.contains("\"type\":\"player_id\"") {
+            "player_id"
+        } else {
+            ""
+        };
+        parts.push(part_name(&raw, kind));
         from = end + 1;
     }
     if parts.is_empty() {
@@ -176,6 +227,7 @@ fn handle_server_text(text: &str, log: &impl Fn(&str), next_index: &mut i64, dro
         log(&format!("NRAP AP server refused: {text}"));
         return;
     }
+    remember_players(text);
     if text.contains("RoomInfo") {
         if let Some(seed) = parse_seed(&text) {
             log(&crate::flag_write::bind_seed(&seed));
