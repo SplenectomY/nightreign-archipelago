@@ -143,7 +143,6 @@ pub fn lock_game_flags() -> std::sync::MutexGuard<'static, ()> {
 }
 
 fn game_get(inst: usize, flag: u32) -> Option<bool> {
-    let _hold = GAME_FLAG.lock().unwrap();
     if inst < 0x10000 {
         return None;
     }
@@ -180,6 +179,11 @@ impl FlagMan {
     }
 
     pub fn get(&self, flag: u32) -> Option<bool> {
+        let _hold = GAME_FLAG.lock().unwrap();
+        self.get_unlocked(flag)
+    }
+
+    pub fn get_unlocked(&self, flag: u32) -> Option<bool> {
         game_get(self.instance, flag).or_else(|| self.read_flag(flag, true, false))
     }
 

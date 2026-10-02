@@ -84,7 +84,7 @@ fn set_flag_from_force(flag: u32, on: bool, why: &str, force: bool) -> Result<St
         return Err(format!("flagman instance not live (0x{:X})", man.instance));
     }
     let _hold = flagman::lock_game_flags();
-    let before = man.get(flag);
+    let before = man.get_unlocked(flag);
     if !force && before == Some(on) {
         return Ok(format!(
             "NRAP SetEventFlag {flag} {} why={why} skip already before={before:?}",
@@ -95,7 +95,7 @@ fn set_flag_from_force(flag: u32, on: bool, why: &str, force: bool) -> Result<St
     unsafe {
         setter(man.instance, flag, u32::from(on));
     }
-    let after = man.get(flag);
+    let after = man.get_unlocked(flag);
     Ok(format!(
         "NRAP SetEventFlag {flag} {} why={why} {}ms fn=0x{fn_addr:X} inst=0x{:X} before={before:?} after={after:?}",
         on as u8,
