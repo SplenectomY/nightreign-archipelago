@@ -481,7 +481,7 @@ fn slash(path: &str) -> String { path.replace('\\', "/") }
 
 fn pick_file(owner: HWND, title: &str) -> Option<String> {
     let mut buf = [0u16; 520];
-    let filter = wide("DLL*.dllAll*.*");
+    let filter = wide("DLL\0*.dll\0All\0*.*\0\0");
     let title = wide(title);
     let mut ofn = unsafe { std::mem::zeroed::<OpenFile>() };
     ofn.size = std::mem::size_of::<OpenFile>() as u32;
