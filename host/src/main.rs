@@ -463,8 +463,7 @@ fn steam_nrsc() -> Option<PathBuf> {
         }
     }
     for root in roots {
-        let dll = root.join(r"steamapps\common\ELDEN RING NIGHTREIGN\Game\SeamlessCoop
-rsc.dll");
+        let dll = root.join(r"steamapps\common\ELDEN RING NIGHTREIGN\Game\SeamlessCoop\nrsc.dll");
         if dll.is_file() {
             return Some(dll);
         }
@@ -475,11 +474,10 @@ rsc.dll");
 fn default_nrap() -> PathBuf { exe_dir().join("nightreign_ap.dll") }
 fn default_reg() -> PathBuf { exe_dir().join("regulation") }
 fn default_nrsc() -> PathBuf {
-    steam_nrsc().unwrap_or_else(|| PathBuf::from(r"C:\Program Files (x86)\Steam\steamapps\common\ELDEN RING NIGHTREIGN\Game\SeamlessCoop
-rsc.dll"))
+    steam_nrsc().unwrap_or_else(|| PathBuf::from(r"C:\Program Files (x86)\Steam\steamapps\common\ELDEN RING NIGHTREIGN\Game\SeamlessCoop\nrsc.dll"))
 }
 
-fn slash(path: &str) -> String { path.replace('\', "/") }
+fn slash(path: &str) -> String { path.replace('\\', "/") }
 
 fn pick_file(owner: HWND, title: &str) -> Option<String> {
     let mut buf = [0u16; 520];
