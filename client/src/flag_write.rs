@@ -342,7 +342,7 @@ static DAY1_KILLS: Mutex<u32> = Mutex::new(0);
 static DAY2_KILLS: Mutex<u32> = Mutex::new(0);
 static EVERGAOL: Mutex<u32> = Mutex::new(0);
 static TOWER: Mutex<u32> = Mutex::new(0);
-static IGNORE_CLEAR: Mutex<Option<std::time::Instant>> = Mutex::new(None);
+static IGNORE_CLEAR: Mutex<Vec<u32>> = Mutex::new(Vec::new());
 static BOSS_PATH: Mutex<Option<std::path::PathBuf>> = Mutex::new(None);
 
 fn boss_path(dir: &std::path::PathBuf) -> std::path::PathBuf {
@@ -416,7 +416,12 @@ pub fn note_day_boss(flag: u32) -> Option<(u32, i64)> {
 }
 
 pub fn note_return() {
-    *IGNORE_CLEAR.lock().unwrap() = Some(std::time::Instant::now());
+    let mut pending = IGNORE_CLEAR.lock().unwrap();
+    for flag in [8140, 8145] {
+        if !pending.contains(&flag) {
+            pending.push(flag);
+        }
+    }
 }
 
 pub fn note_toggle(flag: u32, rising: bool) -> Option<(u32, i64)> {
@@ -424,8 +429,9 @@ pub fn note_toggle(flag: u32, rising: bool) -> Option<(u32, i64)> {
         return None;
     }
     if !rising {
-        let ignore = IGNORE_CLEAR.lock().unwrap().map(|t| t.elapsed().as_secs() < 20).unwrap_or(false);
-        if ignore {
+        let mut pending = IGNORE_CLEAR.lock().unwrap();
+        if let Some(i) = pending.iter().position(|f| *f == flag) {
+            pending.remove(i);
             return None;
         }
     }
