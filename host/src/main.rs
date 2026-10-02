@@ -730,7 +730,7 @@ fn launch(app: &App) {
         .arg(&profile)
         .spawn()
     {
-        Ok(_) => { ShowWindow(app.reconnect, 5); append_log(app, &format!("Launched me3 -p {profile}")); }
+        Ok(_) => { unsafe { ShowWindow(app.reconnect, 5); } append_log(app, &format!("Launched me3 -p {profile}")); }
         Err(e) => append_log(app, &format!("Launch failed: {e}")),
     }
 }
