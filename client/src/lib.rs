@@ -379,7 +379,7 @@ fn worker() {
         flag_write::configure_heolstor(in_pool, count);
     }
     let mut watches = text.as_deref().map(parse_watches).unwrap_or_default();
-    if !watches.iter().any(|w| w.flag == 5901) {
+    if crate::ap::tutorial_margit() && !watches.iter().any(|w| w.flag == 5901) {
         watches.push(Watch {
             location: "Defeat Tutorial Margit".into(),
             location_id: 839000210,

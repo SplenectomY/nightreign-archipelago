@@ -68,6 +68,12 @@ class IncludeDlc(Toggle):
     default = True
 
 
+class TutorialMargit(Toggle):
+    """Defeat Tutorial Margit is a location. Flag 5901."""
+    display_name = "Tutorial Margit"
+    default = True
+
+
 class ShopChecks(Choice):
     """Which Hold purchases become locations.
     none: no shop locations.
@@ -158,6 +164,7 @@ class NightreignOptions(PerGameCommonOptions):
     heolstor_unlock_count: HeolstorUnlockCount
     include_everdark: IncludeEverdark
     include_dlc: IncludeDlc
+    tutorial_margit: TutorialMargit
     shop_checks: ShopChecks
     starting_nightfarers: StartingNightfarers
     starting_shop_min: StartingShopMin

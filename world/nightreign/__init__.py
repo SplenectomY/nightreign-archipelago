@@ -93,7 +93,7 @@ class NightreignWorld(World):
             "Board unlock after first Nightlord": LOCATION_NAME_TO_ID[
                 "Board unlock after first Nightlord"
             ],
-            "Defeat Tutorial Margit": LOCATION_NAME_TO_ID["Defeat Tutorial Margit"],
+            **({"Defeat Tutorial Margit": LOCATION_NAME_TO_ID["Defeat Tutorial Margit"]} if self.options.tutorial_margit else {}),
             "Nightlord - Heolstor": LOCATION_NAME_TO_ID["Nightlord - Heolstor"],
             "Nightfarer Reserve": LOCATION_NAME_TO_ID["Nightfarer Reserve"],
         }
@@ -215,6 +215,7 @@ class NightreignWorld(World):
             "heolstor_unlock_count": int(self.options.heolstor_unlock_count),
             "include_everdark": bool(self.options.include_everdark),
             "include_dlc": bool(self.options.include_dlc),
+            "tutorial_margit": bool(self.options.tutorial_margit),
             "starting_nightfarers": int(self.options.starting_nightfarers),
             "shop_checks": self.options.shop_checks.current_key,
         }

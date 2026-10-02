@@ -64,6 +64,10 @@ Elden Ring Nightreign:
   # false: base game roster only.
   include_dlc: true
 
+  # true: Defeat Tutorial Margit is a location (flag 5901).
+  # false: the tutorial fight is not a check.
+  tutorial_margit: true
+
   # Which Hold purchases become locations.
   # none: no shop locations. The bazaar stays empty unless you turn this back on.
   # unique_only: Small Jar Bazaar rows. Finding the item stocks the shelf. Buying it is the check.

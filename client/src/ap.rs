@@ -103,6 +103,11 @@ fn parse_i64_after(hay: &str, key: &str) -> Option<i64> {
 }
 
 static GOAL: AtomicBool = AtomicBool::new(false);
+static TUTORIAL_MARGIT: AtomicBool = AtomicBool::new(true);
+
+pub fn tutorial_margit() -> bool {
+    TUTORIAL_MARGIT.load(Ordering::SeqCst)
+}
 static GOAL_SENT: AtomicBool = AtomicBool::new(false);
 static PLAYERS: Mutex<Vec<(i64, String)>> = Mutex::new(Vec::new());
 
@@ -116,6 +121,9 @@ fn remember_players(text: &str) {
     }
     if text.contains("\"shop_checks\":\"none\"") || text.contains("\"shop_checks\": \"none\"") {
         crate::flag_write::stock_shop(true);
+    }
+    if text.contains("\"tutorial_margit\":false") || text.contains("\"tutorial_margit\": false") {
+        TUTORIAL_MARGIT.store(false, Ordering::SeqCst);
     }
     let mut players = Vec::new();
     let mut from = 0usize;
