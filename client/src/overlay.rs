@@ -24,6 +24,8 @@ const WM_DESTROY: u32 = 0x0002;
 const WM_PAINT: u32 = 0x000F;
 const WM_TIMER: u32 = 0x0113;
 const DT_LEFT: u32 = 0;
+const DT_NOPREFIX: u32 = 0x800;
+const DT_SINGLELINE: u32 = 0x20;
 const CS_HREDRAW: u32 = 0x0002;
 const CS_VREDRAW: u32 = 0x0001;
 
@@ -79,6 +81,11 @@ struct Cfg {
     alpha: u8,
     text: u32,
     back: u32,
+    local: u32,
+    remote: u32,
+    item: u32,
+    location: u32,
+    slot: String,
 }
 
 static LINES: Mutex<VecDeque<String>> = Mutex::new(VecDeque::new());
@@ -87,6 +94,11 @@ static LINE_CAP: AtomicUsize = AtomicUsize::new(8);
 static TEXT_COLOR: AtomicUsize = AtomicUsize::new(0x00A4D7E8);
 static BACK_COLOR: AtomicUsize = AtomicUsize::new(0x00080E12);
 static FONT_SIZE: AtomicUsize = AtomicUsize::new(16);
+static COLOR_LOCAL: AtomicUsize = AtomicUsize::new(0x00FF77EE);
+static COLOR_REMOTE: AtomicUsize = AtomicUsize::new(0x00FF77EE);
+static COLOR_ITEM: AtomicUsize = AtomicUsize::new(0x00C8C85D);
+static COLOR_LOCATION: AtomicUsize = AtomicUsize::new(0x006BE36B);
+static SLOT: Mutex<String> = Mutex::new(String::new());
 
 #[link(name = "user32")]
 extern "system" {
@@ -136,12 +148,19 @@ fn color(s: &str, default: u32) -> u32 {
 fn parse(text: &str) -> Option<Cfg> {
     let mut in_overlay = false;
     let mut enable = true;
-    let mut cfg = Cfg { x: 24, y: 48, width: 720, height: 220, font_size: 16, lines: 8, alpha: 210, text: color("E8D7A4", 0x00A4D7E8), back: color("120E08", 0x00080E12) };
+    let mut cfg = Cfg { x: 24, y: 48, width: 720, height: 220, font_size: 16, lines: 8, alpha: 210, text: color("E8D7A4", 0x00A4D7E8), back: color("120E08", 0x00080E12), local: color("EE77FF", 0x00FF77EE), remote: color("EE77FF", 0x00FF77EE), item: color("5DC8C8", 0x00C8C85D), location: color("6BE36B", 0x006BE36B), slot: String::new() };
+    let mut section = "";
     for line in text.lines() {
         let t = line.trim();
         if t.starts_with('[') {
+            section = t;
             in_overlay = t == "[overlay]";
             continue;
+        }
+        if section == "[ap]" {
+            if let Some((k, v)) = t.split_once('=') {
+                if k.trim() == "slot" { cfg.slot = v.trim().trim_matches('"').to_string(); }
+            }
         }
         if !in_overlay { continue; }
         if t.is_empty() || t.starts_with('#') { continue; }
@@ -159,6 +178,10 @@ fn parse(text: &str) -> Option<Cfg> {
             "alpha" => cfg.alpha = v.parse().unwrap_or(cfg.alpha as u32) as u8,
             "text_color" => cfg.text = color(v, cfg.text),
             "back_color" => cfg.back = color(v, cfg.back),
+            "color_local" => cfg.local = color(v, cfg.local),
+            "color_remote" => cfg.remote = color(v, cfg.remote),
+            "color_item" => cfg.item = color(v, cfg.item),
+            "color_location" => cfg.location = color(v, cfg.location),
             _ => {}
         }
     }
@@ -171,6 +194,11 @@ pub fn start(toml: &str) {
     TEXT_COLOR.store(cfg.text as usize, Ordering::SeqCst);
     BACK_COLOR.store(cfg.back as usize, Ordering::SeqCst);
     FONT_SIZE.store(cfg.font_size.max(8) as usize, Ordering::SeqCst);
+    COLOR_LOCAL.store(cfg.local as usize, Ordering::SeqCst);
+    COLOR_REMOTE.store(cfg.remote as usize, Ordering::SeqCst);
+    COLOR_ITEM.store(cfg.item as usize, Ordering::SeqCst);
+    COLOR_LOCATION.store(cfg.location as usize, Ordering::SeqCst);
+    if let Ok(mut slot) = SLOT.lock() { *slot = cfg.slot; }
     thread::spawn(move || run(cfg));
 }
 
@@ -183,6 +211,108 @@ pub fn push(line: &str) {
     let hwnd = HWND_SLOT.load(Ordering::SeqCst) as HWND;
     if !hwnd.is_null() {
         unsafe { InvalidateRect(hwnd, std::ptr::null(), 1) };
+    }
+}
+
+
+fn player_color(name: &str) -> u32 {
+    let local = SLOT.lock().map(|s| s.clone()).unwrap_or_default();
+    if !local.is_empty() && name == local {
+        COLOR_LOCAL.load(Ordering::SeqCst) as u32
+    } else {
+        COLOR_REMOTE.load(Ordering::SeqCst) as u32
+    }
+}
+
+fn colorize(line: &str) -> Vec<(String, u32)> {
+    let text = TEXT_COLOR.load(Ordering::SeqCst) as u32;
+    let item = COLOR_ITEM.load(Ordering::SeqCst) as u32;
+    let loc = COLOR_LOCATION.load(Ordering::SeqCst) as u32;
+    let body = line.split("NRAP AP | ").nth(1).unwrap_or(line);
+    let prefix = line.len() - body.len();
+    let mut spans = vec![(line[..prefix].to_string(), text)];
+    if let Some(idx) = body.find(" found their ") {
+        let (player, rest) = body.split_at(idx);
+        let rest = &rest[" found their ".len()..];
+        spans.push((player.to_string(), player_color(player.trim())));
+        spans.push((" found their ".to_string(), text));
+        if let Some(open) = rest.rfind(" (") {
+            spans.push((rest[..open].to_string(), item));
+            spans.push((" (".to_string(), text));
+            let end = rest[open+2..].trim_end_matches(')');
+            spans.push((end.to_string(), loc));
+            spans.push((")".to_string(), text));
+        } else {
+            spans.push((rest.to_string(), item));
+        }
+        return spans;
+    }
+    if let Some(sent) = body.find(" sent ") {
+        let (player, rest) = body.split_at(sent);
+        let rest = &rest[" sent ".len()..];
+        spans.push((player.to_string(), player_color(player.trim())));
+        spans.push((" sent ".to_string(), text));
+        if let Some(to) = rest.find(" to ") {
+            spans.push((rest[..to].to_string(), item));
+            spans.push((" to ".to_string(), text));
+            let rest = &rest[to + " to ".len()..];
+            if let Some(open) = rest.rfind(" (") {
+                spans.push((rest[..open].to_string(), player_color(rest[..open].trim())));
+                spans.push((" (".to_string(), text));
+                spans.push((rest[open+2..].trim_end_matches(')').to_string(), loc));
+                spans.push((")".to_string(), text));
+            } else {
+                spans.push((rest.to_string(), player_color(rest.trim())));
+            }
+        } else {
+            spans.push((rest.to_string(), text));
+        }
+        return spans;
+    }
+    spans.push((body.to_string(), text));
+    spans
+}
+
+fn paint_wrapped(hdc: HDC, rc: &Rect, lines: &[String]) {
+    let width = (rc.right - rc.left - 16).max(40);
+    let height = FONT_SIZE.load(Ordering::SeqCst) as i32 + 4;
+    let mut y = rc.top + 6;
+    for line in lines {
+        let spans = colorize(line);
+        let mut row: Vec<(String, u32)> = Vec::new();
+        let mut used = 0i32;
+        for (text, color) in spans {
+            for word in text.split_inclusive(' ') {
+                let w = wide(word);
+                let mut box_rc = Rect { left: 0, top: 0, right: 0, bottom: 0 };
+                DrawTextW(hdc, w.as_ptr(), (w.len() as i32) - 1, &mut box_rc, DT_LEFT | DT_NOPREFIX | DT_SINGLELINE | 0x400);
+                let word_w = box_rc.right.max(8);
+                if used > 0 && used + word_w > width {
+                    draw_row(hdc, 8, y, &row);
+                    y += height;
+                    row.clear();
+                    used = 0;
+                    if y > rc.bottom { return; }
+                }
+                row.push((word.to_string(), color));
+                used += word_w;
+            }
+        }
+        if !row.is_empty() {
+            draw_row(hdc, 8, y, &row);
+            y += height;
+            if y > rc.bottom { return; }
+        }
+    }
+}
+
+fn draw_row(hdc: HDC, mut x: i32, y: i32, row: &[(String, u32)]) {
+    for (text, color) in row {
+        SetTextColor(hdc, *color);
+        let w = wide(text);
+        let mut box_rc = Rect { left: x, top: y, right: x + 2000, bottom: y + 40 };
+        DrawTextW(hdc, w.as_ptr(), (w.len() as i32) - 1, &mut box_rc, DT_LEFT | DT_NOPREFIX | DT_SINGLELINE);
+        x = box_rc.right;
     }
 }
 
@@ -212,12 +342,8 @@ unsafe extern "system" fn wnd_proc(hwnd: HWND, msg: u32, w: usize, l: isize) -> 
             let face = wide("Consolas");
             let font = CreateFontW(-(FONT_SIZE.load(Ordering::SeqCst) as i32), 0, 0, 0, 400, 0, 0, 0, 1, 0, 0, 5, 0, face.as_ptr());
             let old = SelectObject(hdc, font);
-            let text = LINES.lock().map(|q| joined(&q)).unwrap_or_default();
-            let wide_text = wide(&text);
-            let mut box_rc = Rect { left: 8, top: 6, right: rc.right - 8, bottom: rc.bottom - 6 };
-            if wide_text.len() > 1 {
-                DrawTextW(hdc, wide_text.as_ptr(), (wide_text.len() as i32) - 1, &mut box_rc, DT_LEFT);
-            }
+            let lines = LINES.lock().map(|q| q.iter().cloned().collect::<Vec<_>>()).unwrap_or_default();
+            paint_wrapped(hdc, &rc, &lines);
             SelectObject(hdc, old);
             DeleteObject(font);
             EndPaint(hwnd, &paint);

@@ -10,6 +10,10 @@ lines = 8
 alpha = 210
 text_color = "E8D7A4"
 back_color = "120E08"
+color_local = "EE77FF"
+color_remote = "EE77FF"
+color_item = "5DC8C8"
+color_location = "6BE36B"
 
 debug = false
 flag_diff = false
