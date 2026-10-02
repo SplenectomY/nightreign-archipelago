@@ -405,9 +405,10 @@ fn worker() {
                     if *last != Some(on) {
                         log_line(&dir, &format!("NRAP dayflag {flag} {}->{}", last.map(|v| if v {"1"} else {"0"}).unwrap_or("?"), if on {"1"} else {"0"}));
                         if last.is_some() && on {
-                            let loc = if *flag == 7502 { 839000701 } else { 839000702 };
-                            let _ = tx.send(loc);
-                            log_line(&dir, &format!("NRAP day boss check flag {flag} loc {loc}"));
+                            if let Some((n, loc)) = flag_write::note_day_boss(*flag) {
+                                let _ = tx.send(loc);
+                                log_line(&dir, &format!("NRAP day boss {flag} count {n} loc {loc}"));
+                            }
                         }
                         *last = Some(on);
                     }

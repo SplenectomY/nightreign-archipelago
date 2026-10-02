@@ -12,4 +12,6 @@ Elden Ring Nightreign:
   starting_nightfarers: 1
   starting_shop_min: 3
   starting_shop_max: 6
+  day1_boss_count: 10
+  day2_boss_count: 10
   death_link: false

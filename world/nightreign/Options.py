@@ -94,6 +94,22 @@ class StartingShopMax(Range):
     default = 6
 
 
+class Day1BossCount(Range):
+    """How many Day 1 night-boss defeats become locations."""
+    display_name = "Day 1 Boss Count"
+    range_start = 1
+    range_end = 30
+    default = 10
+
+
+class Day2BossCount(Range):
+    """How many Day 2 night-boss defeats become locations."""
+    display_name = "Day 2 Boss Count"
+    range_start = 1
+    range_end = 30
+    default = 10
+
+
 class DeathLink(Toggle):
     """Not implemented in Phase 0."""
     display_name = "Death Link"
@@ -112,5 +128,8 @@ class NightreignOptions(PerGameCommonOptions):
     shop_checks: ShopChecks
     starting_nightfarers: StartingNightfarers
     starting_shop_min: StartingShopMin
+    starting_shop_min: StartingShopMin
     starting_shop_max: StartingShopMax
+    day1_boss_count: Day1BossCount
+    day2_boss_count: Day2BossCount
     death_link: DeathLink

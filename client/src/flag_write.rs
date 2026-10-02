@@ -338,6 +338,8 @@ pub fn load_cache(dir: Option<&std::path::PathBuf>) -> String {
 }
 
 static BOSS_KILLS: Mutex<u32> = Mutex::new(0);
+static DAY1_KILLS: Mutex<u32> = Mutex::new(0);
+static DAY2_KILLS: Mutex<u32> = Mutex::new(0);
 static BOSS_PATH: Mutex<Option<std::path::PathBuf>> = Mutex::new(None);
 
 fn boss_path(dir: &std::path::PathBuf) -> std::path::PathBuf {
@@ -353,10 +355,12 @@ pub fn load_boss_kills(dir: Option<&std::path::PathBuf>) -> String {
     for line in text.lines() {
         if let Some(rest) = line.trim().strip_prefix("seed=") { seed = rest.to_string(); }
         if let Some(rest) = line.trim().strip_prefix("count=") { count = rest.parse().unwrap_or(0); }
+        if let Some(rest) = line.trim().strip_prefix("day1=") { *DAY1_KILLS.lock().unwrap() = rest.parse().unwrap_or(0); }
+        if let Some(rest) = line.trim().strip_prefix("day2=") { *DAY2_KILLS.lock().unwrap() = rest.parse().unwrap_or(0); }
     }
     *BOSS_PATH.lock().unwrap() = Some(path);
     *BOSS_KILLS.lock().unwrap() = count;
-    format!("NRAP boss kills loaded {count} seed={seed}")
+    format!("NRAP boss kills loaded {count} day1={} day2={} seed={seed}", *DAY1_KILLS.lock().unwrap(), *DAY2_KILLS.lock().unwrap())
 }
 
 pub fn note_boss_kill() -> Option<String> {
@@ -377,6 +381,34 @@ pub fn boss_kill_count() -> u32 {
     *BOSS_KILLS.lock().unwrap()
 }
 
+fn write_counts() {
+    let Some(path) = BOSS_PATH.lock().unwrap().clone() else { return };
+    let seed = CACHE_SEED.lock().unwrap().clone();
+    let _ = std::fs::write(path, format!(
+        "seed={seed}\ncount={}\nday1={}\nday2={}\n",
+        *BOSS_KILLS.lock().unwrap(), *DAY1_KILLS.lock().unwrap(), *DAY2_KILLS.lock().unwrap()
+    ));
+}
+
+pub fn note_day_boss(flag: u32) -> Option<(u32, i64)> {
+    if !ARMED.load(std::sync::atomic::Ordering::SeqCst) {
+        return None;
+    }
+    let (count, loc) = if flag == 7502 {
+        let mut n = DAY1_KILLS.lock().unwrap();
+        *n += 1;
+        (*n, 839001001 + *n as i64)
+    } else if flag == 7507 {
+        let mut n = DAY2_KILLS.lock().unwrap();
+        *n += 1;
+        (*n, 839001101 + *n as i64)
+    } else {
+        return None;
+    };
+    write_counts();
+    Some((count, loc))
+}
+
 pub fn bind_seed(seed: &str) -> String {
     let known = CACHE_SEED.lock().unwrap().clone();
     if !known.is_empty() && known != seed {
@@ -386,9 +418,9 @@ pub fn bind_seed(seed: &str) -> String {
         }
         *CACHE_SEED.lock().unwrap() = seed.to_string();
         *BOSS_KILLS.lock().unwrap() = 0;
-        if let Some(path) = BOSS_PATH.lock().unwrap().as_ref() {
-            let _ = std::fs::write(path, format!("seed={seed}\ncount=0\n"));
-        }
+        *DAY1_KILLS.lock().unwrap() = 0;
+        *DAY2_KILLS.lock().unwrap() = 0;
+        write_counts();
         ARMED.store(true, std::sync::atomic::Ordering::SeqCst);
         return format!("NRAP unlock cache cleared, seed {known} -> {seed}");
     }
