@@ -272,7 +272,18 @@ fn colorize(line: &str) -> Vec<(String, u32)> {
         }
         return spans;
     }
-    spans.push((body.to_string(), text));
+    let slot = SLOT.lock().map(|s| s.clone()).unwrap_or_default();
+    if slot.is_empty() {
+        spans.push((body.to_string(), text));
+        return spans;
+    }
+    let mut rest = body;
+    while let Some(idx) = rest.find(&slot) {
+        spans.push((rest[..idx].to_string(), text));
+        spans.push((slot.clone(), COLOR_LOCAL.load(Ordering::SeqCst) as u32));
+        rest = &rest[idx + slot.len()..];
+    }
+    spans.push((rest.to_string(), text));
     spans
 }
 

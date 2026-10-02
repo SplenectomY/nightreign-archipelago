@@ -26,6 +26,7 @@ const BM_SETCHECK: u32 = 0x00F1;
 const EM_SETSEL: u32 = 0x00B1;
 const EM_REPLACESEL: u32 = 0x00C2;
 const EM_SETCHARFORMAT: u32 = 0x0444;
+const EM_SETBKGNDCOLOR: u32 = 0x0443;
 const SCF_SELECTION: usize = 1;
 const CFM_COLOR: u32 = 0x40000000;
 
@@ -77,6 +78,7 @@ struct CharFormat {
     color: u32,
     charset: u8,
     pitch: u8,
+    pad: [u8; 2],
     face: [u16; 32],
 }
 
@@ -221,7 +223,7 @@ fn paint(app: &App, text: &str, color: u32) {
     unsafe {
         SendMessageW(app.log, EM_SETSEL, usize::MAX, -1);
         let mut fmt = std::mem::zeroed::<CharFormat>();
-        fmt.cb_size = std::mem::size_of::<CharFormat>() as u32;
+        fmt.cb_size = 92;
         fmt.mask = CFM_COLOR;
         fmt.color = color;
         SendMessageW(app.log, EM_SETCHARFORMAT, SCF_SELECTION, &fmt as *const _ as isize);
@@ -262,8 +264,25 @@ fn append_colored(app: &App, line: &str) {
                 paint(app, ")", plain);
             } else { paint(app, rest, player(rest)); }
         } else { paint(app, rest, plain); }
-    } else { paint(app, body, plain); }
+    } else {
+        paint_names(app, body, plain, local, remote, &slot);
+    }
     paint(app, "\r\n", plain);
+}
+
+fn paint_names(app: &App, body: &str, plain: u32, local: u32, remote: u32, slot: &str) {
+    if slot.is_empty() {
+        paint(app, body, plain);
+        return;
+    }
+    let mut rest = body;
+    while let Some(idx) = rest.find(slot) {
+        paint(app, &rest[..idx], plain);
+        paint(app, slot, local);
+        rest = &rest[idx + slot.len()..];
+    }
+    paint(app, rest, plain);
+    let _ = remote;
 }
 
 fn append_log(app: &App, line: &str) {
@@ -398,6 +417,7 @@ fn main() {
         let rich = wide("RICHEDIT50W");
         let button = wide("BUTTON");
         let log = CreateWindowExW(0, rich.as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE | WS_VSCROLL | ES_MULTILINE | ES_AUTOVSCROLL | ES_READONLY, 12, 12, 720, 360, win, LOG, std::ptr::null_mut(), std::ptr::null_mut());
+        SendMessageW(log, EM_SETBKGNDCOLOR, 0, 0x00080E12);
         let cmd = CreateWindowExW(0, edit.as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE, 12, 382, 560, 24, win, CMD, std::ptr::null_mut(), std::ptr::null_mut());
         CreateWindowExW(0, button.as_ptr(), wide("Send").as_ptr(), WS_CHILD | WS_VISIBLE, 580, 380, 70, 26, win, SEND, std::ptr::null_mut(), std::ptr::null_mut());
         CreateWindowExW(0, button.as_ptr(), wide("Launch").as_ptr(), WS_CHILD | WS_VISIBLE, 656, 380, 76, 26, win, LAUNCH, std::ptr::null_mut(), std::ptr::null_mut());
