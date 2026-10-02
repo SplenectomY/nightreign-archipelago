@@ -441,18 +441,11 @@ fn worker() {
     let console_dir = dir.clone();
     thread::spawn(move || {
         loop {
-            let queued = take_command_file(&console_dir);
-            let line = if let Some(line) = queued {
-                line
-            } else {
-                match read_console_line() {
-                    Some(line) if !line.is_empty() => line,
-                    _ => {
-                        thread::sleep(Duration::from_millis(200));
-                        continue;
-                    }
-                }
+            let Some(line) = take_command_file(&console_dir) else {
+                thread::sleep(Duration::from_millis(200));
+                continue;
             };
+            log_line(&console_dir, &format!("NRAP command {line}"));
             if line.starts_with('!') {
                 let _ = say_tx.send(line);
                 continue;
