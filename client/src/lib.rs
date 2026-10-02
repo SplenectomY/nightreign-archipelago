@@ -55,11 +55,17 @@ struct SystemTime {
     milliseconds: u16,
 }
 
+#[link(name = "user32")]
+extern "system" {
+    fn ShowWindow(hwnd: *mut c_void, cmd: i32) -> BOOL;
+}
+
 #[link(name = "kernel32")]
 extern "system" {
     fn AllocConsole() -> BOOL;
+    fn GetConsoleWindow() -> *mut c_void;
     fn SetConsoleTitleW(title: *const u16) -> BOOL;
-    fn GetModuleHandleA(name: *const u8) -> HMODULE;
+        fn GetModuleHandleA(name: *const u8) -> HMODULE;
     fn GetModuleFileNameA(module: HMODULE, buf: *mut u8, size: DWORD) -> DWORD;
     fn GetStdHandle(kind: DWORD) -> HANDLE;
     fn SetStdHandle(kind: DWORD, handle: HANDLE) -> BOOL;
@@ -132,6 +138,10 @@ fn bind_console() {
             .chain(std::iter::once(0))
             .collect();
         SetConsoleTitleW(title.as_ptr());
+        let hwnd = GetConsoleWindow();
+        if !hwnd.is_null() {
+            ShowWindow(hwnd, 0);
+        }
         let con = CreateFileA(
             b"CONOUT$\0".as_ptr(),
             GENERIC_READ | GENERIC_WRITE,
@@ -160,6 +170,16 @@ fn bind_console() {
             SetConsoleMode(input, 0x1 | 0x2 | 0x4);
         }
     }
+}
+
+
+fn take_command_file(dir: &Option<PathBuf>) -> Option<String> {
+    let path = dir.as_ref()?.join("commands.txt");
+    let text = std::fs::read_to_string(&path).ok()?;
+    let line = text.lines().find(|l| !l.trim().is_empty())?.trim().to_string();
+    let rest: String = text.lines().skip_while(|l| l.trim().is_empty()).skip(1).collect::<Vec<_>>().join("\n");
+    let _ = std::fs::write(&path, if rest.is_empty() { String::new() } else { rest + "\n" });
+    Some(line)
 }
 
 fn read_console_line() -> Option<String> {
@@ -414,9 +434,17 @@ fn worker() {
     let console_dir = dir.clone();
     thread::spawn(move || {
         loop {
-            let Some(line) = read_console_line() else {
-                thread::sleep(Duration::from_millis(200));
-                continue;
+            let queued = take_command_file(&console_dir);
+            let line = if let Some(line) = queued {
+                line
+            } else {
+                match read_console_line() {
+                    Some(line) if !line.is_empty() => line,
+                    _ => {
+                        thread::sleep(Duration::from_millis(200));
+                        continue;
+                    }
+                }
             };
             if line.starts_with('!') {
                 let _ = say_tx.send(line);

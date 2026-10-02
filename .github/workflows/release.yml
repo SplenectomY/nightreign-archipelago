@@ -31,6 +31,10 @@ jobs:
         working-directory: client
         run: cargo build --release --target x86_64-pc-windows-msvc
 
+      - name: Build host
+        working-directory: host
+        run: cargo build --release --target x86_64-pc-windows-msvc
+
       - name: Pack apworld
         shell: bash
         run: python tools/pack_apworld.py
@@ -40,6 +44,7 @@ jobs:
         run: |
           mkdir -p dist/nightreign-ap
           cp client/target/x86_64-pc-windows-msvc/release/nightreign_ap.dll dist/nightreign-ap/
+          cp host/target/x86_64-pc-windows-msvc/release/nrap-host.exe dist/nightreign-ap/
           cp data/flags.toml dist/nightreign-ap/
           cp profiles/nightreign-ap.me3 dist/nightreign-ap/
           cp nightreign.apworld dist/nightreign-ap/

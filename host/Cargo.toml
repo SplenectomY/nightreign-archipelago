@@ -1,0 +1,9 @@
+[package]
+name = "nrap_host"
+version = "0.5.2"
+edition = "2021"
+description = "External window for the Nightreign Archipelago client"
+
+[[bin]]
+name = "nrap-host"
+path = "src/main.rs"
