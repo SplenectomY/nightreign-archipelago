@@ -398,7 +398,9 @@ fn worker() {
             }
         }
         if let Some(found) = man {
-            static DAY: std::sync::Mutex<[(u32, Option<bool>); 2]> = std::sync::Mutex::new([(7502, None), (7507, None)]);
+            static DAY: std::sync::Mutex<[(u32, Option<bool>); 6]> = std::sync::Mutex::new([
+                (7502, None), (7507, None), (8140, None), (8145, None), (8150, None), (8155, None),
+            ]);
             let mut day = DAY.lock().unwrap();
             for (flag, last) in day.iter_mut() {
                 if let Some(on) = found.get(*flag) {
