@@ -136,7 +136,14 @@ fn game_get_fn() -> Option<GetFlagFn> {
     Some(unsafe { std::mem::transmute(addr) })
 }
 
+static GAME_FLAG: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+pub fn lock_game_flags() -> std::sync::MutexGuard<'static, ()> {
+    GAME_FLAG.lock().unwrap()
+}
+
 fn game_get(inst: usize, flag: u32) -> Option<bool> {
+    let _hold = GAME_FLAG.lock().unwrap();
     if inst < 0x10000 {
         return None;
     }

@@ -83,6 +83,7 @@ fn set_flag_from_force(flag: u32, on: bool, why: &str, force: bool) -> Result<St
     if man.instance < 0x10000 {
         return Err(format!("flagman instance not live (0x{:X})", man.instance));
     }
+    let _hold = flagman::lock_game_flags();
     let before = man.get(flag);
     if !force && before == Some(on) {
         return Ok(format!(
@@ -575,7 +576,8 @@ pub fn reapply_cached() -> Option<String> {
     let mut wrote = 0usize;
     let mut notes = Vec::new();
     for flag in &sticky {
-        match set_flag_from_force(*flag, true, "sticky", true) {
+        match set_flag_from_force(*flag, true, "sticky", false) {
+            Ok(msg) if msg.contains("skip already") => {}
             Ok(msg) => {
                 wrote += 1;
                 notes.push(msg);
