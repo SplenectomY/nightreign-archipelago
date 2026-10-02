@@ -1,5 +1,4 @@
-//! Click-through log panel. Same idea as nightlord-detector: a topmost layered
-//! window, no game hook. Position and colors come from [overlay] in flags.toml.
+//! Click-through log panel. Position and colors come from [overlay] in flags.toml.
 
 use std::collections::VecDeque;
 use std::ffi::c_void;
@@ -125,7 +124,7 @@ fn wide(s: &str) -> Vec<u16> {
 }
 
 fn color(s: &str, default: u32) -> u32 {
-    let s = s.trim().trim_start_matches("#");
+    let s = s.trim().trim_start_matches('#');
     u32::from_str_radix(s, 16).ok().map(|rgb| {
         let r = (rgb >> 16) & 0xff;
         let g = (rgb >> 8) & 0xff;
@@ -140,16 +139,15 @@ fn parse(text: &str) -> Option<Cfg> {
     let mut cfg = Cfg { x: 24, y: 48, width: 720, height: 220, font_size: 16, lines: 8, alpha: 210, text: color("E8D7A4", 0x00A4D7E8), back: color("120E08", 0x00080E12) };
     for line in text.lines() {
         let t = line.trim();
-        if t.starts_with("[") {
+        if t.starts_with('[') {
             in_overlay = t == "[overlay]";
             continue;
         }
         if !in_overlay { continue; }
-        let line = t;
-        if line.is_empty() || line.starts_with("#") { continue; }
-        let Some((k, v)) = line.split_once("=") else { continue };
+        if t.is_empty() || t.starts_with('#') { continue; }
+        let Some((k, v)) = t.split_once('=') else { continue };
         let k = k.trim();
-        let v = v.trim().trim_matches(""");
+        let v = v.trim().trim_matches('"');
         match k {
             "enable" => enable = v == "true",
             "x" => cfg.x = v.parse().unwrap_or(cfg.x),
@@ -188,6 +186,17 @@ pub fn push(line: &str) {
     }
 }
 
+fn joined(lines: &VecDeque<String>) -> String {
+    let mut out = String::new();
+    for (i, line) in lines.iter().enumerate() {
+        if i > 0 {
+            out.push(char::from(10));
+        }
+        out.push_str(line);
+    }
+    out
+}
+
 unsafe extern "system" fn wnd_proc(hwnd: HWND, msg: u32, w: usize, l: isize) -> isize {
     match msg {
         WM_PAINT => {
@@ -203,14 +212,7 @@ unsafe extern "system" fn wnd_proc(hwnd: HWND, msg: u32, w: usize, l: isize) -> 
             let face = wide("Consolas");
             let font = CreateFontW(-(FONT_SIZE.load(Ordering::SeqCst) as i32), 0, 0, 0, 400, 0, 0, 0, 1, 0, 0, 5, 0, face.as_ptr());
             let old = SelectObject(hdc, font);
-            let text = LINES.lock().map(|q| {
-                let mut out = String::new();
-                for (i, line) in q.iter().enumerate() {
-                    if i > 0 { out.push('\n'); }
-                    out.push_str(line);
-                }
-                out
-            }).unwrap_or_default();
+            let text = LINES.lock().map(|q| joined(&q)).unwrap_or_default();
             let wide_text = wide(&text);
             let mut box_rc = Rect { left: 8, top: 6, right: rc.right - 8, bottom: rc.bottom - 6 };
             if wide_text.len() > 1 {
