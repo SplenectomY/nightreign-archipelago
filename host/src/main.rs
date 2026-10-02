@@ -94,7 +94,7 @@ fn set_text(hwnd: HWND, s: &str) {
 }
 
 fn mod_dir() -> PathBuf {
-    PathBuf::from(r"C:\Mods\nightreign-ap")
+    PathBuf::from(r"C:/Mods/nightreign-ap")
 }
 
 fn me3_exe() -> PathBuf {
@@ -229,7 +229,7 @@ fn launch(app: &App) {
         return;
     }
     let Some(profile) = profile_path() else {
-        append_log(app, "nightreign-ap.me3 was not found in the me3 profiles folder or C:\Mods\nightreign-ap");
+        append_log(app, r"nightreign-ap.me3 was not found in the me3 profiles folder or C:/Mods/nightreign-ap");
         return;
     };
     let profile = profile.display().to_string().replace('\\', "/");
