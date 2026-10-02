@@ -2,12 +2,13 @@
 [overlay]
 enable = true
 x = 24
-y = 48
+y = "center"
 width = 720
 height = 220
 font_size = 16
 lines = 8
-alpha = 210
+alpha = 255
+hold_seconds = 5
 text_color = "E8D7A4"
 back_color = "120E08"
 color_local = "EE77FF"
