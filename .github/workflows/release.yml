@@ -44,7 +44,7 @@ jobs:
         run: |
           mkdir -p dist/nightreign-ap
           cp client/target/x86_64-pc-windows-msvc/release/nightreign_ap.dll dist/nightreign-ap/
-          cp host/target/x86_64-pc-windows-msvc/release/nrap-host.exe dist/nightreign-ap/
+          cp host/target/x86_64-pc-windows-msvc/release/nrap.exe dist/nightreign-ap/
           cp data/flags.toml dist/nightreign-ap/
           cp docs/INSTALL.md dist/nightreign-ap/
           mkdir -p dist/nightreign-ap/regulation
@@ -55,9 +55,9 @@ jobs:
 
           1. Install Seamless Coop for Nightreign and me3.
           2. Run the MSI. The default folder is C:/NRAP and can be changed in the installer.
-          3. Open NRAP Host. Launch writes nightreign-ap.me3 into the me3 profiles folder.
+          3. Open nrap.exe. Launch writes nightreign-ap.me3 into the me3 profiles folder.
           4. Download nightreign.apworld and Nightreign.yaml from this release. Copy the apworld to your Archipelago installation's custom_worlds folder and the yaml to the Players folder (or give these files to whoever is generating your world). See https://archipelago.gg/tutorial/Archipelago/setup_en#playing-with-custom-worlds for more information.
-          5. Generate, host MultiServer, then launch from NRAP Host. Do not also launch nrsc_launcher.exe.
+          5. Generate, host MultiServer, then launch from nrap.exe. Do not also launch nrsc_launcher.exe.
 
           You do not need Rust or Visual Studio.
           EOF
@@ -86,6 +86,6 @@ jobs:
 
             `NightreignArchipelago.msi` installs to `C:/NRAP` by default. The installer can change that folder. `nightreign.apworld` and `Nightreign.yaml` stay separate downloads.
 
-            Launch with nrap-host.exe. It saves host, slot, and password, starts me3, and shows the log. The in-game overlay is a click-through log. Local servers use ws; archipelago.gg uses wss.
+            Launch with nrap.exe. It saves host, slot, and password, starts me3, and shows the log. The in-game overlay is a click-through log. Local servers use ws; archipelago.gg uses wss.
 
             The regulation package is included and enabled. Seamless Coop is tested, including multi-slot sessions.

@@ -5,5 +5,5 @@ edition = "2021"
 description = "External window for the Nightreign Archipelago client"
 
 [[bin]]
-name = "nrap-host"
+name = "nrap"
 path = "src/main.rs"

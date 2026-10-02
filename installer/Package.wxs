@@ -23,7 +23,7 @@
   <Fragment>
     <ComponentGroup Id="InstallFiles" Directory="INSTALLFOLDER">
       <Component Guid="B1E2C3D4-1111-4A20-9C20-7B6E8A1D2F41">
-        <File Id="HostExe" Source="$(var.Stage)\nrap-host.exe" KeyPath="yes" />
+        <File Id="HostExe" Source="$(var.Stage)\nrap.exe" KeyPath="yes" />
       </Component>
       <Component Guid="B1E2C3D4-1111-4A20-9C20-7B6E8A1D2F42">
         <File Source="$(var.Stage)\nightreign_ap.dll" KeyPath="yes" />
@@ -40,7 +40,7 @@
     </ComponentGroup>
     <ComponentGroup Id="Shortcuts" Directory="ProgramMenuDir">
       <Component Guid="B1E2C3D4-1111-4A20-9C20-7B6E8A1D2F46">
-        <Shortcut Name="NRAP Host" Target="[#HostExe]" WorkingDirectory="INSTALLFOLDER" />
+        <Shortcut Name="NRAP" Target="[#HostExe]" WorkingDirectory="INSTALLFOLDER" />
         <RemoveFolder Id="RemoveProgramMenuDir" On="uninstall" />
         <RegistryValue Root="HKCU" Key="Software\NRAP" Name="installed" Type="integer" Value="1" KeyPath="yes" />
       </Component>
