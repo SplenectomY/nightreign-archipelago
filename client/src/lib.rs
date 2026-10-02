@@ -57,6 +57,7 @@ struct SystemTime {
 #[link(name = "kernel32")]
 extern "system" {
     fn AllocConsole() -> BOOL;
+    fn SetConsoleTitleW(title: *const u16) -> BOOL;
     fn GetModuleHandleA(name: *const u8) -> HMODULE;
     fn GetModuleFileNameA(module: HMODULE, buf: *mut u8, size: DWORD) -> DWORD;
     fn GetStdHandle(kind: DWORD) -> HANDLE;
@@ -125,6 +126,11 @@ pub extern "system" fn DllMain(
 fn bind_console() {
     unsafe {
         AllocConsole();
+        let title: Vec<u16> = format!("NRAP {}", env!("CARGO_PKG_VERSION"))
+            .encode_utf16()
+            .chain(std::iter::once(0))
+            .collect();
+        SetConsoleTitleW(title.as_ptr());
         let con = CreateFileA(
             b"CONOUT$\0".as_ptr(),
             GENERIC_READ | GENERIC_WRITE,
