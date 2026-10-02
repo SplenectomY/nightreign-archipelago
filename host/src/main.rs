@@ -25,6 +25,9 @@ const BM_GETCHECK: u32 = 0x00F0;
 const BM_SETCHECK: u32 = 0x00F1;
 const EM_SETSEL: u32 = 0x00B1;
 const EM_REPLACESEL: u32 = 0x00C2;
+const EM_SETCHARFORMAT: u32 = 0x0444;
+const SCF_SELECTION: usize = 1;
+const CFM_COLOR: u32 = 0x40000000;
 
 const LOG: isize = 100;
 const CMD: isize = 101;
@@ -62,6 +65,19 @@ extern "system" {
     fn SendMessageW(hwnd: HWND, msg: u32, w: usize, l: isize) -> isize;
     fn SetWindowTextW(hwnd: HWND, text: *const u16) -> i32;
     fn GetWindowTextW(hwnd: HWND, buf: *mut u16, max: i32) -> i32;
+    fn LoadLibraryW(name: *const u16) -> *mut c_void;
+}
+#[repr(C)]
+struct CharFormat {
+    cb_size: u32,
+    mask: u32,
+    effects: u32,
+    height: i32,
+    offset: i32,
+    color: u32,
+    charset: u8,
+    pitch: u8,
+    face: [u16; 32],
 }
 
 #[repr(C)]
@@ -161,12 +177,97 @@ fn save_settings(app: &App) {
     }
 }
 
-fn append_log(app: &App, line: &str) {
-    let w = wide(&format!("{line}\r\n"));
+fn bgr(hex: &str) -> u32 {
+    let hex = hex.trim().trim_start_matches('#');
+    u32::from_str_radix(hex, 16).ok().map(|rgb| {
+        let r = (rgb >> 16) & 0xff;
+        let g = (rgb >> 8) & 0xff;
+        let b = rgb & 0xff;
+        (b << 16) | (g << 8) | r
+    }).unwrap_or(0x00A4D7E8)
+}
+
+fn colors(app: &App) -> (u32, u32, u32, u32, u32, String) {
+    let text = std::fs::read_to_string(app.dir.join("flags.toml")).unwrap_or_default();
+    let mut local = bgr("EE77FF");
+    let mut remote = bgr("EE77FF");
+    let mut item = bgr("5DC8C8");
+    let mut loc = bgr("6BE36B");
+    let mut plain = bgr("E8D7A4");
+    let mut slot = text_of(app.slot);
+    let mut section = "";
+    for line in text.lines() {
+        let t = line.trim();
+        if t.starts_with('[') { section = t; continue; }
+        let Some((k, v)) = t.split_once('=') else { continue };
+        let v = v.trim().trim_matches('"');
+        if section == "[overlay]" {
+            match k.trim() {
+                "color_local" => local = bgr(v),
+                "color_remote" => remote = bgr(v),
+                "color_item" => item = bgr(v),
+                "color_location" => loc = bgr(v),
+                "text_color" => plain = bgr(v),
+                _ => {}
+            }
+        }
+        if section == "[ap]" && k.trim() == "slot" && slot.is_empty() { slot = v.to_string(); }
+    }
+    (plain, local, remote, item, loc, slot)
+}
+
+fn paint(app: &App, text: &str, color: u32) {
+    let w = wide(text);
     unsafe {
         SendMessageW(app.log, EM_SETSEL, usize::MAX, -1);
+        let mut fmt = std::mem::zeroed::<CharFormat>();
+        fmt.cb_size = std::mem::size_of::<CharFormat>() as u32;
+        fmt.mask = CFM_COLOR;
+        fmt.color = color;
+        SendMessageW(app.log, EM_SETCHARFORMAT, SCF_SELECTION, &fmt as *const _ as isize);
         SendMessageW(app.log, EM_REPLACESEL, 0, w.as_ptr() as isize);
     }
+}
+
+fn append_colored(app: &App, line: &str) {
+    let (plain, local, remote, item, loc, slot) = colors(app);
+    let player = |name: &str| if !slot.is_empty() && name.trim() == slot { local } else { remote };
+    let body = line.split("NRAP AP | ").nth(1).unwrap_or(line);
+    let prefix = &line[..line.len() - body.len()];
+    paint(app, prefix, plain);
+    if let Some(idx) = body.find(" found their ") {
+        let (who, rest) = body.split_at(idx);
+        let rest = &rest[" found their ".len()..];
+        paint(app, who, player(who));
+        paint(app, " found their ", plain);
+        if let Some(open) = rest.rfind(" (") {
+            paint(app, &rest[..open], item);
+            paint(app, " (", plain);
+            paint(app, rest[open+2..].trim_end_matches(')'), loc);
+            paint(app, ")", plain);
+        } else { paint(app, rest, item); }
+    } else if let Some(sent) = body.find(" sent ") {
+        let (who, rest) = body.split_at(sent);
+        let rest = &rest[" sent ".len()..];
+        paint(app, who, player(who));
+        paint(app, " sent ", plain);
+        if let Some(to) = rest.find(" to ") {
+            paint(app, &rest[..to], item);
+            paint(app, " to ", plain);
+            let rest = &rest[to + 4..];
+            if let Some(open) = rest.rfind(" (") {
+                paint(app, &rest[..open], player(&rest[..open]));
+                paint(app, " (", plain);
+                paint(app, rest[open+2..].trim_end_matches(')'), loc);
+                paint(app, ")", plain);
+            } else { paint(app, rest, player(rest)); }
+        } else { paint(app, rest, plain); }
+    } else { paint(app, body, plain); }
+    paint(app, "\r\n", plain);
+}
+
+fn append_log(app: &App, line: &str) {
+    append_colored(app, line);
 }
 
 fn tail(app: &mut App) {
@@ -291,9 +392,11 @@ fn main() {
         };
         RegisterClassW(&wc);
         let win = CreateWindowExW(0, class.as_ptr(), title.as_ptr(), WS_OVERLAPPEDWINDOW | WS_VISIBLE, 80, 80, 760, 640, std::ptr::null_mut(), 0, std::ptr::null_mut(), std::ptr::null_mut());
+        LoadLibraryW(wide("Msftedit.dll").as_ptr());
         let edit = wide("EDIT");
+        let rich = wide("RICHEDIT50W");
         let button = wide("BUTTON");
-        let log = CreateWindowExW(0, edit.as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE | WS_VSCROLL | ES_MULTILINE | ES_AUTOVSCROLL | ES_READONLY, 12, 12, 720, 360, win, LOG, std::ptr::null_mut(), std::ptr::null_mut());
+        let log = CreateWindowExW(0, rich.as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE | WS_VSCROLL | ES_MULTILINE | ES_AUTOVSCROLL | ES_READONLY, 12, 12, 720, 360, win, LOG, std::ptr::null_mut(), std::ptr::null_mut());
         let cmd = CreateWindowExW(0, edit.as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE, 12, 382, 560, 24, win, CMD, std::ptr::null_mut(), std::ptr::null_mut());
         CreateWindowExW(0, button.as_ptr(), wide("Send").as_ptr(), WS_CHILD | WS_VISIBLE, 580, 380, 70, 26, win, SEND, std::ptr::null_mut(), std::ptr::null_mut());
         CreateWindowExW(0, button.as_ptr(), wide("Launch").as_ptr(), WS_CHILD | WS_VISIBLE, 656, 380, 76, 26, win, LAUNCH, std::ptr::null_mut(), std::ptr::null_mut());
