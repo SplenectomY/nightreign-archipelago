@@ -1,37 +1,39 @@
-# Elden Ring Nightreign — Archipelago
+# Nightreign Archipelago
 
-Runtime Archipelago world for *Elden Ring Nightreign*. Vanilla game files stay on disk. A me3/Seamless-loaded DLL talks to an Archipelago server. Progression lives on the Hold, not on Limveld floor loot.
+Archipelago world for *Elden Ring Nightreign*, version 0.5.0. Vanilla game files stay on disk. A me3 profile loads Seamless Coop and `nightreign_ap.dll`. The DLL talks to an Archipelago server. Progression lives on the Hold.
 
-**Status: Phase 0.** Checks, expedition unlocks, and Nightfarer grants work. The regulation package that hides default Nightfarers can crash the expedition board. That package is not in the tester zip.
+## In this build
 
-Repo: https://github.com/SplenectomY/nightreign-archipelago
+- Seamless Coop launch path, tested. `nrsc.dll` loads from the me3 profile and writes `.co2` saves. One AP slot. The host client submits checks. A player in another world can join the Seamless session and help.
+- Expedition board gated per unlock, including Tricephalos. One random expedition and one random Nightfarer are granted at start. Heolstor stays out of the pool unless `heolstor_in_pool` is set, and unlocks locally after `heolstor_unlock_count` Nightlord defeats.
+- Nightlord and Everdark defeat checks. A Nightlord defeat counts only if that expedition is unlocked.
+- Shop checks for the Small Jar Bazaar. Rows stay hidden until the item is found, then the purchase is the check. A random 3 to 6 rows start unlocked.
+- Murk purses, bundles, coffers, chests, and hoards. Received murk is remembered per seed.
+- Counters: Day 1 bosses, Day 2 bosses, evergaols, magician towers. The first of each is check 1.
+- Goal: a Nightlord count, or a specific Nightlord. Default is Heolstor.
+- Console commands: `!` sends to the server, `/debug on` and `/debug off`. Item and location names are printed, not raw ids.
+- `archipelago.gg` uses `wss`. A localhost host uses `ws`.
 
-## Testers: do not install Rust
+## Not in this build
 
-Download the latest zip from [Releases](https://github.com/SplenectomY/nightreign-archipelago/releases). It already contains `nightreign_ap.dll`.
-
-You still need Nightreign, Seamless Coop, and me3. You do not need Visual Studio or `cargo`.
+1. Tutorial Margit as an optional check.
+2. Garb shop checks.
+3. Optional remembrance quest checks.
+4. More overworld checks, where a stable flag exists.
+5. The walking model updating when the active Nightfarer is forced off Wylder.
 
 ## Install
 
-1. Install [Seamless Coop for Nightreign](https://www.nexusmods.com/eldenringnightreign) and [me3](https://github.com/garyttierney/me3).
-2. Unzip the release into `C:/Mods/nightreign-ap/`. `nightreign_ap.dll` and `flags.toml` must stay in that same folder.
-3. Copy `nightreign-ap.me3` to the me3 profiles folder. Edit the two paths if your install is not the default. Paths must use forward slashes. A backslash is an escape character and the profile will not load.
-4. Launch with me3 using that profile. Do not use `nrsc_launcher.exe` at the same time, and do not use Steam's Play button.
-5. The console must print `NRAP attached` and `NRAP AP connected`.
-6. Copy `nightreign.apworld` to `%USERPROFILE%\Archipelago\custom_worlds\` and `Nightreign.yaml` to the Archipelago Players folder. Generate, then host the output with MultiServer before launching the game.
+You still need Nightreign, Seamless Coop, and me3. You do not need Visual Studio or `cargo`.
 
-The zip includes `regulation/regulation.bin`, and the profile loads it. Do not open the expedition board unless the Nightfarer you are walking around as has been granted. A locked active Nightfarer exits the game without a Windows crash dump. Remove the `[[packages]]` block to run without that override.
+1. Install [Seamless Coop for Nightreign](https://www.nexusmods.com/eldenringnightreign/mods/3) and [me3](https://github.com/garyttierney/me3).
+2. Unzip a release to `C:/Mods/nightreign-ap/`. `nightreign_ap.dll` and `flags.toml` must stay in that folder.
+3. Copy `nightreign-ap.me3` to the me3 profiles folder. Paths must use forward slashes.
+4. Copy `nightreign.apworld` to `C:/ProgramData/Archipelago/custom_worlds/` and `Nightreign.yaml` to the Archipelago Players folder. Generate, then host.
+5. Launch with me3. Do not also launch `nrsc_launcher.exe`.
+6. The console must print `NRAP attached 0.5.0` and `NRAP AP connected`.
 
-## Locked design
-
-- **Offline first.** Generate locally, host `MultiServer` on localhost. Official From matchmaking is never used.
-- **Launch path is Seamless Coop.** `nrsc.dll` loads from the me3 profile and writes `.co2` saves.
-- **One AP slot** when a Seamless party exists. Host client submits checks. Friends in BK in other worlds can join the Seamless session and help.
-- **Named boss checks = Nightlords (and optional Everdark / DLC Nightlords) only.**
-- **Checks fire on the kill / the purchase.** A wipe after a Night 1 kill still keeps that check.
-- **Start with 1 random Nightfarer.** Revenant is excluded from that pick until the active-character slot can be set. Remembrance quest items go in the item pool; the quests themselves are not checks.
-- **Heolstor stays out of the pool** unless `heolstor_in_pool` is set. He unlocks locally after `heolstor_unlock_count` expedition unlocks.
+The zip includes `regulation/regulation.bin`, and the profile loads it. Do not open the expedition board or character select until the unlock cache is armed. A locked active Nightfarer exits the game.
 
 ## Layout
 
@@ -40,18 +42,18 @@ world/nightreign/     apworld source
 client/               Rust cdylib loaded into nightreign.exe
 profiles/             me3 profile
 players/              template YAML
-docs/                 design + tester brief
+docs/                 design and install notes
 data/                 flag table the client reads
 ```
 
-Planned check list: [`docs/LOCATIONS_AND_UNLOCKS.md`](docs/LOCATIONS_AND_UNLOCKS.md).
+Catalog: [`docs/LOCATIONS_AND_UNLOCKS.md`](docs/LOCATIONS_AND_UNLOCKS.md).
 
 ## Requirements
 
-- Nightreign PC (Steam), 1.03.3.0
+- Nightreign PC (Steam)
 - Seamless Coop for Nightreign
 - me3
-- The zip from Releases
-- Archipelago 0.6.7+ for the server half
+- A release zip
+- Archipelago 0.6.7 or newer for the server
 
-Developers who want to change the DLL still use Rust + MSVC. That is optional.
+Developers who change the DLL need Rust and MSVC. That is optional.

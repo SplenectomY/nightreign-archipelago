@@ -1,12 +1,26 @@
-# Planned locations and unlocks
+# Locations and unlocks
 
-Working catalog for feedback. This is not Phase 0. Phase 0 is still **Nightlord - Gladius** only.
+What 0.5.0 ships, then what is still planned.
 
-Comment on whole rows. Preferred notes: `keep` / `cut` / `optional yaml` / `move to filler`.
+## Shipped
 
-Assumed seed length: **10–15 expeditions**, about **5–10 hours** if wipes are not constant. Named inner-boss catalogs stay out.
+- Nightlord defeats, including DLC, and Everdark defeats. A defeat counts only after that expedition is unlocked.
+- Expedition unlocks, one random at start. Tricephalos is gated like the others. Heolstor is local unless `heolstor_in_pool` is set.
+- Nightfarer unlocks, one random at start.
+- Small Jar Bazaar rows. Finding the item stocks it. Buying it is the check. Three to six start unlocked.
+- Murk purses, bundles, coffers, chests, and hoards.
+- Day 1 boss, Day 2 boss, evergaol, and magician tower counters. First credit is 1.
+- Goal: Nightlord count, or a named Nightlord. Default Heolstor.
 
----
+## Planned
+
+1. Tutorial Margit as an optional check.
+2. Garb shop checks.
+3. Optional remembrance quest checks.
+4. More overworld checks, where a stable flag exists.
+5. Walking model update when the active Nightfarer is forced off Wylder.
+
+The tables below are the working catalog. A row with no flag is not a check yet.
 
 ## How to read this
 

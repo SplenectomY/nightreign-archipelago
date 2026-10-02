@@ -1,30 +1,13 @@
-# Releasing tester builds
+# Releasing
 
-Testers should not install Rust. GitHub Actions builds the MSVC DLL and attaches a zip to [Releases](https://github.com/SplenectomY/nightreign-archipelago/releases).
+Tags are semantic versions: `v0.5.0`, `v0.5.1`. No phase suffix.
 
-## Cut a release from the site
-
-1. Actions → **Release** → Run workflow.
-2. Tag: `v0.1.0-phase0` (bump the number when the DLL changes).
-3. Leave prerelease checked until Phase 0 is closed.
-4. Wait for the Windows job. The zip lands on the Releases page.
-
-## Cut a release from git
+1. Bump `client/Cargo.toml`. The console prints that version.
+2. Tag and push. The release workflow builds the DLL and the tester zip.
 
 ```
-git tag v0.1.1-phase0
-git push origin v0.1.1-phase0
+git tag v0.5.0
+git push origin v0.5.0
 ```
 
-Same workflow runs on `v*` tags.
-
-## What is in the zip
-
-- `nightreign_ap.dll`
-- `flags.toml` (sit this next to the DLL)
-- `nightreign-ap.me3`
-- `nightreign.apworld`
-- `Nightreign.yaml`
-- `PHASE0_TESTER.md`
-
-Do not commit the DLL to `main`. The zip is the distribution.
+The zip contains the DLL, `flags.toml`, the me3 profile, the apworld, the player yaml, `regulation.bin`, and the install notes.

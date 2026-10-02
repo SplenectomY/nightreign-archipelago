@@ -1,4 +1,4 @@
-# Local Archipelago test (Phase 0)
+# Local Archipelago test
 
 Slot name **Player1** and host **127.0.0.1:38281** match `data/flags.toml`.
 

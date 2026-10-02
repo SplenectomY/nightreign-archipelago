@@ -8,11 +8,11 @@ on:
       tag:
         description: Release tag to create or reuse
         required: true
-        default: v0.2.0-phase0
+        default: v0.5.0
       prerelease:
         description: Mark as prerelease
         type: boolean
-        default: true
+        default: false
 
 permissions:
   contents: write
@@ -44,7 +44,7 @@ jobs:
           cp profiles/nightreign-ap.me3 dist/nightreign-ap/
           cp nightreign.apworld dist/nightreign-ap/
           cp players/Nightreign.yaml dist/nightreign-ap/
-          cp docs/PHASE0_TESTER.md dist/nightreign-ap/
+          cp docs/INSTALL.md dist/nightreign-ap/
           mkdir -p dist/nightreign-ap/regulation
           cp regulation/regulation.bin dist/nightreign-ap/regulation/
           cp README.md dist/nightreign-ap/
@@ -69,7 +69,7 @@ jobs:
         with:
           tag_name: ${{ github.event.inputs.tag || github.ref_name }}
           name: ${{ github.event.inputs.tag || github.ref_name }}
-          prerelease: ${{ github.event_name == 'workflow_dispatch' && inputs.prerelease || startsWith(github.ref, 'refs/tags/v0') }}
+          prerelease: ${{ github.event_name == 'workflow_dispatch' && inputs.prerelease || false }}
           generate_release_notes: true
           files: dist/nightreign-ap-windows.zip
           body: |
@@ -77,4 +77,4 @@ jobs:
 
             Zip contains `nightreign_ap.dll`, `flags.toml`, me3 profile, apworld, player yaml, and the install notes.
 
-            The regulation package is included and enabled. Board gating can exit the game when the active Nightfarer is locked.
+            The regulation package is included and enabled. Seamless Coop is the tested launch path.

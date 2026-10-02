@@ -1,6 +1,6 @@
 # Flag discovery cookbook
 
-Targeted memory work for this project. Read [`PHASE0_TESTER.md`](PHASE0_TESTER.md) first and run that protocol. This file is the why and the later checklist.
+Targeted memory work for this project. Historical flag-discovery notes. Install is [`INSTALL.md`](INSTALL.md).
 
 ## What we will accept as a "flag"
 

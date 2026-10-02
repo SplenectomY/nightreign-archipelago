@@ -1,4 +1,4 @@
-# Phase 0 world. Victory is locked to the goal. Heolstor is local unless opted into the pool.
+# Victory is locked to the goal. Heolstor is local unless opted into the pool.
 # One base expedition unlock is precollected. Tricephalos is flag 189, not free.
 
 from typing import Dict, List
@@ -33,7 +33,7 @@ class NightreignWeb(WebWorld):
     tutorials = [
         Tutorial(
             "Setup Guide",
-            "Generating and launching Elden Ring Nightreign for Archipelago (Phase 0).",
+            "Generating and launching Elden Ring Nightreign for Archipelago.",
             "en",
             "setup_en.md",
             "setup/en",

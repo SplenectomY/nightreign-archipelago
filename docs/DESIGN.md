@@ -108,9 +108,21 @@ Vanilla Everdark is session/online gated. This repo will ship an offline unlock 
 
 If discovery shows the fight data is simply missing offline and cannot be enabled without a live directory, we flip the default to `false` and document it. Until that is proven, treat offline Everdark as in-scope.
 
-## Out of v1
+## Shipped in 0.5.0
 
-- Named catalog of every field / Night 1 inner boss
+Seamless Coop is the tested launch path. One slot. Expedition and Nightfarer gating, shop checks, murk, day-boss and evergaol and tower counters, and the Heolstor gate are in.
+
+## Planned
+
+1. Tutorial Margit as an optional check.
+2. Garb shop checks.
+3. Optional remembrance quest checks.
+4. More overworld checks, where a stable flag exists.
+5. Walking model update when the active Nightfarer is forced off Wylder.
+
+## Out of scope
+
+- Named catalog of every field boss
 - In-run weapon shuffle
 - DeathLink
 - Official online

@@ -1,4 +1,4 @@
-//! Phase 0 client. Attach, resolve event flags, submit AP checks, grant items.
+//! Client. Attach, resolve event flags, submit AP checks, grant items.
 
 #![cfg(windows)]
 

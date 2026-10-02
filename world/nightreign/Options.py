@@ -127,7 +127,7 @@ class TowerCount(Range):
 
 
 class DeathLink(Toggle):
-    """Not implemented in Phase 0."""
+    """Not implemented yet."""
     display_name = "Death Link"
     default = False
 
