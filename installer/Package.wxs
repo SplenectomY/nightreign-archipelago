@@ -8,7 +8,6 @@
       <ComponentGroupRef Id="Shortcuts" />
     </Feature>
     <ui:WixUI Id="WixUI_InstallDir" InstallDirectory="INSTALLFOLDER" />
-    <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
   </Package>
 
   <Fragment>
