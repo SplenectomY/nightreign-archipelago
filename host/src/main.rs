@@ -903,7 +903,9 @@ unsafe extern "system" fn wnd_proc(hwnd: HWND, msg: u32, w: usize, l: isize) -> 
         WM_CTLCOLOREDIT => {
             let bad = !APP.is_null() && {
                 let app = &*APP;
-                l as HWND == app.nrsc && !PathBuf::from(text_of(app.nrsc)).is_file()
+                let hwnd = l as HWND;
+                (hwnd == app.nrsc && !PathBuf::from(text_of(app.nrsc)).is_file())
+                    || (hwnd == app.me3 && !PathBuf::from(text_of(app.me3)).is_file())
             };
             let hint = !APP.is_null() && l as HWND == (*APP).cmd && text_of((*APP).cmd) == CMD_HINT;
             let color = if bad { 0x006464FF } else { 0x00FFFFFF };
@@ -922,7 +924,7 @@ unsafe extern "system" fn wnd_proc(hwnd: HWND, msg: u32, w: usize, l: isize) -> 
             let app = &mut *APP;
             if id == CMD && note == 0x0100 && text_of(app.cmd) == CMD_HINT { set_text(app.cmd, ""); }
             if id == CMD && note == 0x0200 && text_of(app.cmd).is_empty() { set_text(app.cmd, CMD_HINT); }
-            if note == EN_KILLFOCUS && matches!(id, HOST | SLOT | PASS | SEAMLESS) {
+            if note == EN_KILLFOCUS && matches!(id, HOST | SLOT | PASS | SEAMLESS | ME3) {
                 save_connection(app);
                 return 0;
             }
