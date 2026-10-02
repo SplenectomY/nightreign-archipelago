@@ -176,6 +176,11 @@ impl FlagMan {
         game_get(self.instance, flag).or_else(|| self.read_flag(flag, true, false))
     }
 
+    /// Slab read only. GetFlag takes the game lock, and a menu holds that lock.
+    pub fn get_local(&self, flag: u32) -> Option<bool> {
+        self.read_flag(flag, true, false)
+    }
+
     /// Copy each group slab and return flag ids that went 0 to 1 since the last call.
     /// The usize is how many group slabs were readable.
     pub fn diff_rising(&self, prev: &mut Vec<Vec<u8>>) -> (Vec<u32>, usize) {

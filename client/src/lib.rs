@@ -455,7 +455,7 @@ fn worker() {
             }
             drop(day);
             for w in &mut watches {
-                match found.get(w.flag) {
+                match found.get_local(w.flag) {
                     Some(on) => {
                         if w.last != Some(on) {
                             if w.last == Some(false) && on {
@@ -529,7 +529,15 @@ fn worker() {
                 }
             }
         }
-        if let Some(text) = config.as_ref().and_then(|p| fs::read_to_string(p).ok()) {
+        static TOML_AT: std::sync::Mutex<Option<std::time::Instant>> = std::sync::Mutex::new(None);
+        static TOML: std::sync::Mutex<String> = std::sync::Mutex::new(String::new());
+        let due = TOML_AT.lock().unwrap().map(|t| t.elapsed().as_millis() >= 1000).unwrap_or(true);
+        if due {
+            *TOML_AT.lock().unwrap() = Some(std::time::Instant::now());
+            *TOML.lock().unwrap() = config.as_ref().and_then(|p| fs::read_to_string(p).ok()).unwrap_or_default();
+        }
+        let text = TOML.lock().unwrap().clone();
+        if !text.is_empty() {
             if let Some(flag) = flag_write::debug_flag_from_toml(&text) {
                 if flag != last_debug_flag {
                     last_debug_flag = flag;
