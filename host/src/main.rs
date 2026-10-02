@@ -19,6 +19,10 @@ const ES_READONLY: u32 = 0x0800;
 const ES_PASSWORD: u32 = 0x0020;
 const BS_AUTOCHECKBOX: u32 = 0x0003;
 const WM_COMMAND: u32 = 0x0111;
+const WM_CTLCOLOREDIT: u32 = 0x0133;
+const WM_CTLCOLORSTATIC: u32 = 0x0138;
+const WS_EX_CLIENTEDGE: u32 = 0x00000200;
+const EM_SCROLLCARET: u32 = 0x00B7;
 const WM_TIMER: u32 = 0x0113;
 const WM_DESTROY: u32 = 0x0002;
 const BM_GETCHECK: u32 = 0x00F0;
@@ -67,6 +71,12 @@ extern "system" {
     fn SetWindowTextW(hwnd: HWND, text: *const u16) -> i32;
     fn GetWindowTextW(hwnd: HWND, buf: *mut u16, max: i32) -> i32;
     fn LoadLibraryW(name: *const u16) -> *mut c_void;
+}
+#[link(name = "gdi32")]
+extern "system" {
+    fn CreateSolidBrush(color: u32) -> *mut c_void;
+    fn SetBkColor(hdc: *mut std::ffi::c_void, color: u32) -> u32;
+    fn SetTextColor(hdc: *mut std::ffi::c_void, color: u32) -> u32;
 }
 #[repr(C)]
 struct CharFormat {
@@ -228,6 +238,7 @@ fn paint(app: &App, text: &str, color: u32) {
         fmt.color = color;
         SendMessageW(app.log, EM_SETCHARFORMAT, SCF_SELECTION, &fmt as *const _ as isize);
         SendMessageW(app.log, EM_REPLACESEL, 0, w.as_ptr() as isize);
+        SendMessageW(app.log, EM_SCROLLCARET, 0, 0);
     }
 }
 
@@ -310,6 +321,7 @@ fn tail(app: &mut App) {
     unsafe {
         SendMessageW(app.log, EM_SETSEL, usize::MAX, -1);
         SendMessageW(app.log, EM_REPLACESEL, 0, w.as_ptr() as isize);
+        SendMessageW(app.log, EM_SCROLLCARET, 0, 0);
     }
 }
 
@@ -369,6 +381,16 @@ fn launch(app: &App) {
 
 unsafe extern "system" fn wnd_proc(hwnd: HWND, msg: u32, w: usize, l: isize) -> isize {
     match msg {
+        WM_CTLCOLOREDIT => {
+            SetBkColor(w as *mut std::ffi::c_void, 0x00FFFFFF);
+            SetTextColor(w as *mut std::ffi::c_void, 0x00111111);
+            FIELD_BRUSH
+        }
+        WM_CTLCOLORSTATIC => {
+            SetBkColor(w as *mut std::ffi::c_void, 0x00F2F2F2);
+            SetTextColor(w as *mut std::ffi::c_void, 0x00111111);
+            LABEL_BRUSH
+        }
         WM_COMMAND => {
             let id = (w & 0xffff) as isize;
             let app = &mut *APP;
@@ -411,24 +433,26 @@ fn main() {
             class_name: class.as_ptr(),
         };
         RegisterClassW(&wc);
+        FIELD_BRUSH = CreateSolidBrush(0x00FFFFFF) as isize;
+        LABEL_BRUSH = CreateSolidBrush(0x00F2F2F2) as isize;
         let win = CreateWindowExW(0, class.as_ptr(), title.as_ptr(), WS_OVERLAPPEDWINDOW | WS_VISIBLE, 80, 80, 760, 640, std::ptr::null_mut(), 0, std::ptr::null_mut(), std::ptr::null_mut());
         LoadLibraryW(wide("Msftedit.dll").as_ptr());
         let edit = wide("EDIT");
         let rich = wide("RICHEDIT50W");
         let button = wide("BUTTON");
-        let log = CreateWindowExW(0, rich.as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE | WS_VSCROLL | ES_MULTILINE | ES_AUTOVSCROLL | ES_READONLY, 12, 12, 720, 360, win, LOG, std::ptr::null_mut(), std::ptr::null_mut());
-        SendMessageW(log, EM_SETBKGNDCOLOR, 0, 0x00080E12);
-        let cmd = CreateWindowExW(0, edit.as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE, 12, 382, 560, 24, win, CMD, std::ptr::null_mut(), std::ptr::null_mut());
-        CreateWindowExW(0, button.as_ptr(), wide("Send").as_ptr(), WS_CHILD | WS_VISIBLE, 580, 380, 70, 26, win, SEND, std::ptr::null_mut(), std::ptr::null_mut());
-        CreateWindowExW(0, button.as_ptr(), wide("Launch").as_ptr(), WS_CHILD | WS_VISIBLE, 656, 380, 76, 26, win, LAUNCH, std::ptr::null_mut(), std::ptr::null_mut());
-        CreateWindowExW(0, wide("STATIC").as_ptr(), wide("Host").as_ptr(), WS_CHILD | WS_VISIBLE, 12, 420, 60, 20, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
-        let host = CreateWindowExW(0, edit.as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE, 80, 418, 240, 22, win, HOST, std::ptr::null_mut(), std::ptr::null_mut());
-        CreateWindowExW(0, wide("STATIC").as_ptr(), wide("Slot").as_ptr(), WS_CHILD | WS_VISIBLE, 330, 420, 40, 20, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
-        let slot = CreateWindowExW(0, edit.as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE, 372, 418, 160, 22, win, SLOT, std::ptr::null_mut(), std::ptr::null_mut());
-        CreateWindowExW(0, wide("STATIC").as_ptr(), wide("Password").as_ptr(), WS_CHILD | WS_VISIBLE, 12, 450, 64, 20, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
-        let pass = CreateWindowExW(0, edit.as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE | ES_PASSWORD, 80, 448, 240, 22, win, PASS, std::ptr::null_mut(), std::ptr::null_mut());
-        let debug = CreateWindowExW(0, button.as_ptr(), wide("Debug log").as_ptr(), WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX, 340, 448, 120, 22, win, DEBUG, std::ptr::null_mut(), std::ptr::null_mut());
-        CreateWindowExW(0, button.as_ptr(), wide("Save settings").as_ptr(), WS_CHILD | WS_VISIBLE, 480, 446, 120, 26, win, SAVE, std::ptr::null_mut(), std::ptr::null_mut());
+        let log = CreateWindowExW(WS_EX_CLIENTEDGE, rich.as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE | WS_VSCROLL | ES_MULTILINE | ES_AUTOVSCROLL | ES_READONLY, 12, 12, 720, 340, win, LOG, std::ptr::null_mut(), std::ptr::null_mut());
+        SendMessageW(log, EM_SETBKGNDCOLOR, 0, 0x00E6E6E6);
+        let cmd = CreateWindowExW(WS_EX_CLIENTEDGE, edit.as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE, 12, 360, 640, 26, win, CMD, std::ptr::null_mut(), std::ptr::null_mut());
+        CreateWindowExW(0, button.as_ptr(), wide("Send").as_ptr(), WS_CHILD | WS_VISIBLE, 660, 360, 72, 26, win, SEND, std::ptr::null_mut(), std::ptr::null_mut());
+        CreateWindowExW(0, wide("STATIC").as_ptr(), wide("Host").as_ptr(), WS_CHILD | WS_VISIBLE, 12, 404, 60, 20, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
+        let host = CreateWindowExW(WS_EX_CLIENTEDGE, edit.as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE, 80, 400, 240, 24, win, HOST, std::ptr::null_mut(), std::ptr::null_mut());
+        CreateWindowExW(0, wide("STATIC").as_ptr(), wide("Slot").as_ptr(), WS_CHILD | WS_VISIBLE, 340, 404, 40, 20, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
+        let slot = CreateWindowExW(WS_EX_CLIENTEDGE, edit.as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE, 384, 400, 180, 24, win, SLOT, std::ptr::null_mut(), std::ptr::null_mut());
+        CreateWindowExW(0, wide("STATIC").as_ptr(), wide("Password").as_ptr(), WS_CHILD | WS_VISIBLE, 12, 438, 64, 20, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
+        let pass = CreateWindowExW(WS_EX_CLIENTEDGE, edit.as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE | ES_PASSWORD, 80, 434, 240, 24, win, PASS, std::ptr::null_mut(), std::ptr::null_mut());
+        let debug = CreateWindowExW(0, button.as_ptr(), wide("Debug log").as_ptr(), WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX, 340, 434, 120, 24, win, DEBUG, std::ptr::null_mut(), std::ptr::null_mut());
+        CreateWindowExW(0, button.as_ptr(), wide("Save settings").as_ptr(), WS_CHILD | WS_VISIBLE, 480, 432, 130, 28, win, SAVE, std::ptr::null_mut(), std::ptr::null_mut());
+        CreateWindowExW(0, button.as_ptr(), wide("Launch").as_ptr(), WS_CHILD | WS_VISIBLE, 280, 500, 200, 42, win, LAUNCH, std::ptr::null_mut(), std::ptr::null_mut());
         let mut app = App { log, cmd, host, slot, pass, debug, dir, log_off: 0 };
         load_settings(&app);
         append_log(&app, "NRAP Host. Alt-tab here to send !commands or /debug on. Launch starts me3.");
