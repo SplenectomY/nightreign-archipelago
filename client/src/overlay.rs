@@ -208,7 +208,7 @@ pub fn start(toml: &str) {
 fn short_time(line: &str) -> String {
     let bytes = line.as_bytes();
     if bytes.len() > 17 && bytes[0] == b'[' && bytes[5] == b'-' && bytes[11] == b' ' && bytes[14] == b':' {
-        return format!("[{}]{}", &line[12..17], &line[24..]);
+        return format!("[{}]{}", &line[12..17], &line[25..]);
     }
     line.to_string()
 }
