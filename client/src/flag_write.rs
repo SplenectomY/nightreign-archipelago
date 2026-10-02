@@ -720,6 +720,26 @@ fn reapply_nightfarers() -> Option<String> {
 }
 
 
+static STOCK_SHOP: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+pub fn stock_shop(on: bool) {
+    STOCK_SHOP.store(on, std::sync::atomic::Ordering::SeqCst);
+}
+
+pub fn stock_shop_rows() -> Option<String> {
+    if !STOCK_SHOP.load(std::sync::atomic::Ordering::SeqCst) {
+        return None;
+    }
+    let mut opened = 0;
+    for flag in 68800u32..=68883 {
+        match set_flag_from(flag, true, "shop-open") {
+            Ok(msg) if msg.contains("before=Some(false)") && msg.contains("after=Some(true)") => opened += 1,
+            _ => {}
+        }
+    }
+    if opened == 0 { None } else { Some(format!("NRAP shop stocked {opened} rows (shop checks off)")) }
+}
+
 pub fn apply_item(item_id: i64) -> Option<String> {
     if let Some(release) = shop_release(item_id) {
         return Some(match set_flag_from(release, true, "shop") {

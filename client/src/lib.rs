@@ -645,6 +645,9 @@ fn worker() {
         if let Some(msg) = flag_write::retry_pending() {
             log_line(&dir, &msg);
         }
+        if let Some(msg) = flag_write::stock_shop_rows() {
+            log_line(&dir, &msg);
+        }
         if let Some(msg) = flag_write::reapply_cached() {
             if DEBUG.load(Ordering::SeqCst) {
                 log_line(&dir, &msg);

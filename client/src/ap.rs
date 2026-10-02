@@ -114,6 +114,9 @@ fn remember_players(text: &str) {
     if !text.contains("Connected") {
         return;
     }
+    if text.contains("\"shop_checks\":\"none\"") || text.contains("\"shop_checks\": \"none\"") {
+        crate::flag_write::stock_shop(true);
+    }
     let mut players = Vec::new();
     let mut from = 0usize;
     while let Some(rel) = text[from..].find("\"slot\":") {
