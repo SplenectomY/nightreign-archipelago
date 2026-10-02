@@ -188,6 +188,11 @@ class NightreignWorld(World):
                 self.get_location("Unlock Revenant"),
                 lambda state: state.has("Shop - Besmirched Frame", player),
             )
+            for name in SHOP_LOCATIONS:
+                set_rule(
+                    self.get_location(name),
+                    lambda state, name=name: state.has(name, player),
+                )
         set_rule(self.get_location("Nightlord - Heolstor"), heolstor_gate)
 
         goal = self.options.goal.current_key
