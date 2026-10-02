@@ -11,6 +11,7 @@ mod grant;
 mod hero;
 mod menu;
 mod names;
+mod overlay;
 mod scan;
 
 use std::ffi::c_void;
@@ -216,6 +217,7 @@ fn log_line(dir: &Option<PathBuf>, msg: &str) {
     let line = format!("[{}] {msg}", timestamp());
     if console_visible(msg) {
         write_console(&line);
+        overlay::push(&line);
     }
     if let Some(dir) = dir {
         if let Ok(mut f) = OpenOptions::new()
@@ -330,6 +332,11 @@ fn worker() {
     let dir = dll_dir();
     bind_console();
     log_line(&dir, &format!("NRAP attached {}", env!("CARGO_PKG_VERSION")));
+    if let Some(text) = text.as_deref() {
+        overlay::start(text);
+        log_line(&dir, "NRAP overlay started");
+    }
+
     let base = unsafe { GetModuleHandleA(std::ptr::null()) };
     log_line(&dir, &format!("NRAP nightreign.exe base = {base:p}"));
     log_line(
