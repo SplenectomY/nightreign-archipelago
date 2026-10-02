@@ -205,9 +205,18 @@ pub fn start(toml: &str) {
     thread::spawn(move || run(cfg));
 }
 
+fn short_time(line: &str) -> String {
+    let bytes = line.as_bytes();
+    if bytes.len() > 17 && bytes[0] == b'[' && bytes[5] == b'-' && bytes[11] == b' ' && bytes[14] == b':' {
+        return format!("[{}]{}", &line[12..17], &line[24..]);
+    }
+    line.to_string()
+}
+
 pub fn push(line: &str) {
+    let line = short_time(line);
     if let Ok(mut q) = LINES.lock() {
-        q.push_back(line.to_string());
+        q.push_back(line);
         let cap = LINE_CAP.load(Ordering::SeqCst).max(1);
         while q.len() > cap { q.pop_front(); }
     }
