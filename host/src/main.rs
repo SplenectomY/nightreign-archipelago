@@ -16,6 +16,7 @@ const WS_VSCROLL: u32 = 0x00200000;
 const ES_MULTILINE: u32 = 0x0004;
 const ES_AUTOVSCROLL: u32 = 0x0040;
 const ES_READONLY: u32 = 0x0800;
+const WS_DISABLED: u32 = 0x08000000;
 const ES_PASSWORD: u32 = 0x0020;
 const BS_AUTOCHECKBOX: u32 = 0x0003;
 const BS_OWNERDRAW: u32 = 0x000B;
@@ -580,9 +581,10 @@ fn set_connected(app: &mut App, on: bool) {
 }
 
 fn note_connection(app: &mut App, chunk: &str) {
-    if chunk.contains("NRAP AP connected") { set_connected(app, true); }
-    if chunk.contains("NRAP AP socket") || chunk.contains("NRAP AP not connected") || chunk.contains("NRAP AP disconnecting") {
+    if chunk.contains("NRAP AP not connected") || chunk.contains("NRAP AP socket") || chunk.contains("NRAP AP disconnecting") {
         set_connected(app, false);
+    } else if chunk.contains("NRAP AP connected") {
+        set_connected(app, true);
     }
 }
 
@@ -958,10 +960,10 @@ fn main() {
         let button = wide("BUTTON");
         let log = CreateWindowExW(WS_EX_CLIENTEDGE, rich.as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE | WS_VSCROLL | ES_MULTILINE | ES_AUTOVSCROLL | ES_READONLY, 12, 12, 720, 340, win, LOG, std::ptr::null_mut(), std::ptr::null_mut());
         SendMessageW(log, EM_SETBKGNDCOLOR, 0, 0x00E6E6E6);
-        let cmd = CreateWindowExW(WS_EX_CLIENTEDGE, edit.as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE | 0x0800, 12, 360, 640, 26, win, CMD, std::ptr::null_mut(), std::ptr::null_mut());
+        let cmd = CreateWindowExW(WS_EX_CLIENTEDGE, edit.as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE | WS_DISABLED, 12, 360, 640, 26, win, CMD, std::ptr::null_mut(), std::ptr::null_mut());
         let cue = wide("!hint, !help ...");
         SendMessageW(cmd, EM_SETCUEBANNER, 1, cue.as_ptr() as isize);
-        let send = CreateWindowExW(0, button.as_ptr(), wide("Send").as_ptr(), WS_CHILD | WS_VISIBLE | 0x0800, 660, 360, 72, 26, win, SEND, std::ptr::null_mut(), std::ptr::null_mut());
+        let send = CreateWindowExW(0, button.as_ptr(), wide("Send").as_ptr(), WS_CHILD | WS_VISIBLE | WS_DISABLED, 660, 360, 72, 26, win, SEND, std::ptr::null_mut(), std::ptr::null_mut());
         CreateWindowExW(0, wide("STATIC").as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE | SS_ETCHEDHORZ, 12, 404, 720, 2, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
         CreateWindowExW(0, wide("STATIC").as_ptr(), wide("Host").as_ptr(), WS_CHILD | WS_VISIBLE, 12, 428, 60, 20, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
         let host = CreateWindowExW(WS_EX_CLIENTEDGE, edit.as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE, 80, 424, 240, 24, win, HOST, std::ptr::null_mut(), std::ptr::null_mut());
