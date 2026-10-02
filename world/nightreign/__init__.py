@@ -140,7 +140,7 @@ class NightreignWorld(World):
         pool: List[Item] = [self.create_item(name) for name in unlocks if name != start]
         pool += [self.create_item(name) for name in everdark]
         pool += [self.create_item(name) for name in roster[start_count:]]
-        shop = list(SHOP_ITEMS) if self.options.shop_checks.current_key != "none" else []
+        shop = list(SHOP_ITEMS) if self.options.shop_checks.current_key != "none" else ["Shop - Besmirched Frame"]
         self.random.shuffle(shop)
         low = int(self.options.starting_shop_min)
         high = int(self.options.starting_shop_max)
@@ -179,12 +179,11 @@ class NightreignWorld(World):
                 self.get_location(loc_name),
                 lambda state, item_name=item_name: state.has(item_name, player),
             )
-        # Quest checks are in-game tasks. They do not require the Nightfarer item.
-        if self.options.shop_checks.current_key != "none":
-            set_rule(
-                self.get_location("Unlock Revenant"),
-                lambda state: state.has("Shop - Besmirched Frame", player),
-            )
+        # Quest checks do not require the Nightfarer item. Revenant always needs the frame.
+        set_rule(
+            self.get_location("Unlock Revenant"),
+            lambda state: state.has("Shop - Besmirched Frame", player),
+        )
         set_rule(self.get_location("Nightlord - Heolstor"), heolstor_gate)
 
         goal = self.options.goal.current_key
