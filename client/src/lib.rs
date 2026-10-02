@@ -417,18 +417,30 @@ fn worker() {
             }
         }
         if let Some(found) = man {
-            static DAY: std::sync::Mutex<[(u32, Option<bool>); 6]> = std::sync::Mutex::new([
-                (7502, None), (7507, None), (8140, None), (8145, None), (8150, None), (8155, None),
+            static DAY: std::sync::Mutex<[(u32, Option<bool>); 8]> = std::sync::Mutex::new([
+                (7502, None), (7507, None), (8140, None), (8145, None), (7001, None), (2000, None), (7512, None), (8155, None),
             ]);
             let mut day = DAY.lock().unwrap();
             for (flag, last) in day.iter_mut() {
                 if let Some(on) = found.get(*flag) {
                     if *last != Some(on) {
                         log_line(&dir, &format!("NRAP dayflag {flag} {}->{}", last.map(|v| if v {"1"} else {"0"}).unwrap_or("?"), if on {"1"} else {"0"}));
+                        if last.is_some() && on && matches!(*flag, 7512 | 7001 | 2000) {
+                            flag_write::note_return();
+                            log_line(&dir, &format!("NRAP return signal {flag}, ignoring counter clears"));
+                        }
                         if last.is_some() && on {
                             if let Some((n, loc)) = flag_write::note_day_boss(*flag) {
                                 let _ = tx.send(loc);
                                 log_line(&dir, &format!("NRAP day boss {flag} count {n} loc {loc}"));
+                            }
+                        }
+                        if last.is_some() && matches!(*flag, 8140 | 8145) {
+                            if let Some((n, loc)) = flag_write::note_toggle(*flag, on) {
+                                let _ = tx.send(loc);
+                                log_line(&dir, &format!("NRAP toggle {flag} count {n} loc {loc}"));
+                            } else if !on {
+                                log_line(&dir, &format!("NRAP toggle {flag} clear ignored"));
                             }
                         }
                         *last = Some(on);
@@ -447,18 +459,6 @@ fn worker() {
                                 );
                                 if let Some(msg) = flag_write::note_defeat(w.flag) {
                                     log_line(&dir, &msg);
-                                }
-                                if w.flag == 7512 {
-                                    if let Some(msg) = flag_write::note_boss_kill() {
-                                        log_line(&dir, &msg);
-                                    }
-                                    let n = flag_write::boss_kill_count();
-                                    for (need, loc) in [(1, 839000801i64), (3, 839000803), (5, 839000805), (10, 839000810), (20, 839000820)] {
-                                        if n == need {
-                                            let _ = tx.send(loc);
-                                            log_line(&dir, &format!("NRAP boss kill check {need} loc {loc}"));
-                                        }
-                                    }
                                 }
                             } else {
                                 log_line(

@@ -110,6 +110,22 @@ class Day2BossCount(Range):
     default = 10
 
 
+class EvergaolCount(Range):
+    """How many evergaol seals become locations. The flag toggles, so both edges count."""
+    display_name = "Evergaol Count"
+    range_start = 1
+    range_end = 40
+    default = 20
+
+
+class TowerCount(Range):
+    """How many magician tower openings become locations. The flag toggles, so both edges count."""
+    display_name = "Tower Count"
+    range_start = 1
+    range_end = 30
+    default = 10
+
+
 class DeathLink(Toggle):
     """Not implemented in Phase 0."""
     display_name = "Death Link"
@@ -132,4 +148,6 @@ class NightreignOptions(PerGameCommonOptions):
     starting_shop_max: StartingShopMax
     day1_boss_count: Day1BossCount
     day2_boss_count: Day2BossCount
+    evergaol_count: EvergaolCount
+    tower_count: TowerCount
     death_link: DeathLink

@@ -340,6 +340,9 @@ pub fn load_cache(dir: Option<&std::path::PathBuf>) -> String {
 static BOSS_KILLS: Mutex<u32> = Mutex::new(0);
 static DAY1_KILLS: Mutex<u32> = Mutex::new(0);
 static DAY2_KILLS: Mutex<u32> = Mutex::new(0);
+static EVERGAOL: Mutex<u32> = Mutex::new(0);
+static TOWER: Mutex<u32> = Mutex::new(0);
+static IGNORE_CLEAR: Mutex<Option<std::time::Instant>> = Mutex::new(None);
 static BOSS_PATH: Mutex<Option<std::path::PathBuf>> = Mutex::new(None);
 
 fn boss_path(dir: &std::path::PathBuf) -> std::path::PathBuf {
@@ -357,6 +360,8 @@ pub fn load_boss_kills(dir: Option<&std::path::PathBuf>) -> String {
         if let Some(rest) = line.trim().strip_prefix("count=") { count = rest.parse().unwrap_or(0); }
         if let Some(rest) = line.trim().strip_prefix("day1=") { *DAY1_KILLS.lock().unwrap() = rest.parse().unwrap_or(0); }
         if let Some(rest) = line.trim().strip_prefix("day2=") { *DAY2_KILLS.lock().unwrap() = rest.parse().unwrap_or(0); }
+        if let Some(rest) = line.trim().strip_prefix("evergaol=") { *EVERGAOL.lock().unwrap() = rest.parse().unwrap_or(0); }
+        if let Some(rest) = line.trim().strip_prefix("tower=") { *TOWER.lock().unwrap() = rest.parse().unwrap_or(0); }
     }
     *BOSS_PATH.lock().unwrap() = Some(path);
     *BOSS_KILLS.lock().unwrap() = count;
@@ -385,8 +390,9 @@ fn write_counts() {
     let Some(path) = BOSS_PATH.lock().unwrap().clone() else { return };
     let seed = CACHE_SEED.lock().unwrap().clone();
     let _ = std::fs::write(path, format!(
-        "seed={seed}\ncount={}\nday1={}\nday2={}\n",
-        *BOSS_KILLS.lock().unwrap(), *DAY1_KILLS.lock().unwrap(), *DAY2_KILLS.lock().unwrap()
+        "seed={seed}\ncount={}\nday1={}\nday2={}\nevergaol={}\ntower={}\n",
+        *BOSS_KILLS.lock().unwrap(), *DAY1_KILLS.lock().unwrap(), *DAY2_KILLS.lock().unwrap(),
+        *EVERGAOL.lock().unwrap(), *TOWER.lock().unwrap()
     ));
 }
 
@@ -409,6 +415,35 @@ pub fn note_day_boss(flag: u32) -> Option<(u32, i64)> {
     Some((count, loc))
 }
 
+pub fn note_return() {
+    *IGNORE_CLEAR.lock().unwrap() = Some(std::time::Instant::now());
+}
+
+pub fn note_toggle(flag: u32, rising: bool) -> Option<(u32, i64)> {
+    if !ARMED.load(std::sync::atomic::Ordering::SeqCst) {
+        return None;
+    }
+    if !rising {
+        let ignore = IGNORE_CLEAR.lock().unwrap().map(|t| t.elapsed().as_secs() < 20).unwrap_or(false);
+        if ignore {
+            return None;
+        }
+    }
+    let (count, loc) = if flag == 8145 {
+        let mut n = EVERGAOL.lock().unwrap();
+        *n += 1;
+        (*n, 839001201 + *n as i64)
+    } else if flag == 8140 {
+        let mut n = TOWER.lock().unwrap();
+        *n += 1;
+        (*n, 839001301 + *n as i64)
+    } else {
+        return None;
+    };
+    write_counts();
+    Some((count, loc))
+}
+
 pub fn bind_seed(seed: &str) -> String {
     let known = CACHE_SEED.lock().unwrap().clone();
     if !known.is_empty() && known != seed {
@@ -420,6 +455,8 @@ pub fn bind_seed(seed: &str) -> String {
         *BOSS_KILLS.lock().unwrap() = 0;
         *DAY1_KILLS.lock().unwrap() = 0;
         *DAY2_KILLS.lock().unwrap() = 0;
+        *EVERGAOL.lock().unwrap() = 0;
+        *TOWER.lock().unwrap() = 0;
         write_counts();
         ARMED.store(true, std::sync::atomic::Ordering::SeqCst);
         return format!("NRAP unlock cache cleared, seed {known} -> {seed}");

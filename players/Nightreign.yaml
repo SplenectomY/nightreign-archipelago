@@ -14,4 +14,6 @@ Elden Ring Nightreign:
   starting_shop_max: 6
   day1_boss_count: 10
   day2_boss_count: 10
+  evergaol_count: 20
+  tower_count: 10
   death_link: false
