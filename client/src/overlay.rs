@@ -492,7 +492,6 @@ fn stamp(bits: *mut u8, width: i32, height: i32, y: i32, alpha: u8) {
 }
 
 fn present(hwnd: HWND, width: i32, height: i32) {
-    let lines = live_lines(mem, width, height);
     unsafe {
         let screen = GetDC(std::ptr::null_mut());
         let mem = CreateCompatibleDC(screen);

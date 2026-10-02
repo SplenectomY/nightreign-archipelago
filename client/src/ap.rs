@@ -12,13 +12,13 @@ use tungstenite::{connect as ws_connect, Message};
 const GAME: &str = "Elden Ring Nightreign";
 const ITEMS_HANDLING: u8 = 0b111;
 
-#[derive(Clone)]
 pub static RECONNECT: AtomicBool = AtomicBool::new(false);
 
 pub fn request_reconnect() {
     RECONNECT.store(true, Ordering::SeqCst);
 }
 
+#[derive(Clone)]
 pub struct ApConfig {
     pub host: String,
     pub slot: String,
