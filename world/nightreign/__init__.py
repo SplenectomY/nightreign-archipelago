@@ -6,6 +6,7 @@ from typing import Dict, List
 from BaseClasses import Item, ItemClassification, Location, Region, Tutorial
 from worlds.AutoWorld import WebWorld, World
 from worlds.generic.Rules import set_rule
+from BaseClasses import ItemClassification
 
 from .Items import (
     SHOP_ITEMS,
@@ -132,7 +133,10 @@ class NightreignWorld(World):
     def create_items(self) -> None:
         unlocks = self._unlocks()
         everdark = [item for _loc, item in self._everdark()]
-        start = self.random.choice([n for n in unlocks if n not in ("Expedition Unlock - Heolstor", "Expedition Unlock - Deep of Night")] or unlocks)
+        self._late_unlocks = self._goal_unlocks(unlocks)
+        late = self._late_unlocks
+        start_pool = [n for n in unlocks if n not in late and n not in ("Expedition Unlock - Heolstor", "Expedition Unlock - Deep of Night")]
+        start = self.random.choice(start_pool or [n for n in unlocks if n not in ("Expedition Unlock - Heolstor", "Expedition Unlock - Deep of Night")] or unlocks)
         self.push_precollected(self.create_item(start))
         roster = self._nightfarers()
         self.random.shuffle(roster)
@@ -161,9 +165,33 @@ class NightreignWorld(World):
             pool.append(self.create_item("Murk Purse"))
         self.multiworld.itempool += pool
 
+    def _goal_unlocks(self, unlocks: List[str]) -> set:
+        """Expedition unlocks that are the goal. Specific names one. Count names every pooled Nightlord unlock."""
+        if self.options.goal.current_key == "specific":
+            key = self.options.specific_nightlord.current_key
+            name = {
+                "gladius": "Expedition Unlock - Tricephalos",
+                "adel": "Expedition Unlock - Adel",
+                "gnoster": "Expedition Unlock - Gnoster",
+                "maris": "Expedition Unlock - Maris",
+                "libra": "Expedition Unlock - Libra",
+                "fulghor": "Expedition Unlock - Fulghor",
+                "caligo": "Expedition Unlock - Caligo",
+                "heolstor": "Expedition Unlock - Heolstor",
+                "harmonia": "Expedition Unlock - Harmonia",
+                "straghess": "Expedition Unlock - Straghess",
+            }.get(key)
+            return {name} if name in unlocks else set()
+        if self.options.goal.current_key == "count":
+            return {n for n in unlocks if n.startswith("Expedition Unlock - ") and n != "Expedition Unlock - Deep of Night"}
+        return set()
+
     def create_item(self, name: str) -> Item:
         data = item_table[name]
-        return NightreignItem(name, data.classification, data.code, self.player)
+        classification = data.classification
+        if name in getattr(self, "_late_unlocks", set()) and classification & ItemClassification.progression:
+            classification = ItemClassification.progression_deprioritized
+        return NightreignItem(name, classification, data.code, self.player)
 
     def set_rules(self) -> None:
         player = self.player
