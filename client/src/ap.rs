@@ -160,7 +160,12 @@ fn printjson_text(text: &str) -> Option<String> {
 }
 
 fn handle_server_text(text: &str, log: &impl Fn(&str), next_index: &mut i64, drop_goods: i32) {
-    if let Some(msg) = printjson_text(text) {
+    if text.contains("\"type\":\"ItemSend\"") || text.contains("\"type\": \"ItemSend\"") {
+        if let Some(msg) = printjson_text(text) {
+            let team = parse_i64_after(text, "team").unwrap_or(0) + 1;
+            log(&format!("NRAP AP | (Team #{team}) {msg}"));
+        }
+    } else if let Some(msg) = printjson_text(text) {
         for line in msg.split('\n') {
             log(&format!("NRAP AP | {line}"));
         }
