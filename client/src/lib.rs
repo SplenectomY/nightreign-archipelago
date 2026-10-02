@@ -398,6 +398,17 @@ fn worker() {
             }
         }
         if let Some(found) = man {
+            static DAY: std::sync::Mutex<[(u32, Option<bool>); 2]> = std::sync::Mutex::new([(7502, None), (7507, None)]);
+            let mut day = DAY.lock().unwrap();
+            for (flag, last) in day.iter_mut() {
+                if let Some(on) = found.get(*flag) {
+                    if *last != Some(on) {
+                        log_line(&dir, &format!("NRAP dayflag {flag} {}->{}", last.map(|v| if v {"1"} else {"0"}).unwrap_or("?"), if on {"1"} else {"0"}));
+                        *last = Some(on);
+                    }
+                }
+            }
+            drop(day);
             for w in &mut watches {
                 match found.get(w.flag) {
                     Some(on) => {
