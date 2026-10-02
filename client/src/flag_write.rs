@@ -72,6 +72,10 @@ pub fn set_flag(flag: u32, on: bool) -> Result<String, String> {
 }
 
 pub fn set_flag_from(flag: u32, on: bool, why: &str) -> Result<String, String> {
+    set_flag_from_force(flag, on, why, false)
+}
+
+fn set_flag_from_force(flag: u32, on: bool, why: &str, force: bool) -> Result<String, String> {
     let started = std::time::Instant::now();
     let span = ModuleSpan::nightreign().ok_or_else(|| "no nightreign module".to_string())?;
     let fn_addr = find_setter(span).ok_or_else(|| "EventFlagBaseA AOB not found".to_string())?;
@@ -80,7 +84,7 @@ pub fn set_flag_from(flag: u32, on: bool, why: &str) -> Result<String, String> {
         return Err(format!("flagman instance not live (0x{:X})", man.instance));
     }
     let before = man.get(flag);
-    if before == Some(on) {
+    if !force && before == Some(on) {
         return Ok(format!(
             "NRAP SetEventFlag {flag} {} why={why} skip already before={before:?}",
             u32::from(on)
@@ -567,15 +571,20 @@ pub fn reapply_cached() -> Option<String> {
         return None;
     }
     *LAST.lock().unwrap() = Some(std::time::Instant::now());
+    let sticky: Vec<u32> = flags.into_iter().filter(|flag| is_sticky(*flag)).collect();
+    let mut wrote = 0usize;
     let mut notes = Vec::new();
-    for flag in flags.into_iter().filter(|flag| is_sticky(*flag)) {
-        match set_flag_from(flag, true, "sticky") {
-            Ok(msg) if !msg.contains("skip already") => notes.push(msg),
+    for flag in &sticky {
+        match set_flag_from_force(*flag, true, "sticky", true) {
+            Ok(msg) => {
+                wrote += 1;
+                notes.push(msg);
+            }
             Err(e) => notes.push(format!("NRAP sticky {flag} waiting ({e})")),
-            _ => {}
         }
     }
-    if notes.is_empty() { None } else { Some(notes.join("; ")) }
+    notes.insert(0, format!("NRAP sticky pass cached={} wrote={wrote}", sticky.len()));
+    Some(notes.join("; "))
 }
 
 pub fn flag_for_item(item_id: i64) -> Option<u32> {
@@ -712,6 +721,7 @@ pub fn apply_item(item_id: i64) -> Option<String> {
     let Some(flag) = flag_for_item(item_id) else {
         return gate.or_else(|| Some(format!("NRAP grant {item_id} (no unlock flag)")));
     };
+    remember_unlock(item_id);
     remember_nightfarer(flag);
     let msg = match set_flag_from(flag, true, "item") {
         Ok(msg) => msg,

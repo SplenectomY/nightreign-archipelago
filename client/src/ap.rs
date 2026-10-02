@@ -253,6 +253,7 @@ fn handle_server_text(text: &str, log: &impl Fn(&str), next_index: &mut i64, dro
         if crate::flag_write::enqueue_item(ap_index, id) {
             log(&format!("NRAP grant queued {id} index {ap_index}"));
         } else {
+            crate::flag_write::remember_unlock(id);
             log(&format!("NRAP grant skip already {id} index {ap_index}"));
         }
         let _ = drop_goods;
