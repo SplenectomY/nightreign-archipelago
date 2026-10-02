@@ -128,6 +128,10 @@ extern "system" {
     fn GetFocus() -> HWND;
     fn GetLocalTime(out: *mut SystemTime);
     fn EnableWindow(hwnd: HWND, enable: i32) -> i32;
+    fn CreateMutexW(attrs: *mut c_void, owner: i32, name: *const u16) -> *mut c_void;
+    fn GetLastError() -> u32;
+    fn FindWindowW(class: *const u16, title: *const u16) -> HWND;
+    fn SetForegroundWindow(hwnd: HWND) -> i32;
 }
 #[link(name = "comdlg32")]
 extern "system" {
@@ -943,6 +947,28 @@ unsafe extern "system" fn wnd_proc(hwnd: HWND, msg: u32, w: usize, l: isize) -> 
 }
 
 fn main() {
+    let mutex_name = wide("Local\\NRAPHost");
+    let existing = unsafe {
+        let handle = CreateMutexW(std::ptr::null_mut(), 1, mutex_name.as_ptr());
+        let already = GetLastError() == 183;
+        if already {
+            let class = wide("NRAPHost");
+            let title = wide("NRAP");
+            let hwnd = FindWindowW(class.as_ptr(), title.as_ptr());
+            if !hwnd.is_null() {
+                ShowWindow(hwnd, 9);
+                SetForegroundWindow(hwnd);
+            }
+            let _ = handle;
+            true
+        } else {
+            let _ = handle;
+            false
+        }
+    };
+    if existing {
+        return;
+    }
     let dir = exe_dir();
     rotate_log(&dir);
     let legacy = PathBuf::from(r"C:/Mods/nightreign-ap");
