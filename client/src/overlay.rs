@@ -31,7 +31,7 @@ const CS_VREDRAW: u32 = 0x0001;
 #[repr(C)]
 struct WndClass {
     style: u32,
-    wnd_proc: Option<unsafe extern \"system\" fn(HWND, u32, usize, isize) -> isize>,
+    wnd_proc: Option<unsafe extern "system" fn(HWND, u32, usize, isize) -> isize>,
     cls_extra: i32,
     wnd_extra: i32,
     instance: *mut c_void,
@@ -89,8 +89,8 @@ static TEXT_COLOR: AtomicUsize = AtomicUsize::new(0x00A4D7E8);
 static BACK_COLOR: AtomicUsize = AtomicUsize::new(0x00080E12);
 static FONT_SIZE: AtomicUsize = AtomicUsize::new(16);
 
-#[link(name = \"user32\")]
-extern \"system\" {
+#[link(name = "user32")]
+extern "system" {
     fn RegisterClassW(class: *const WndClass) -> u16;
     fn CreateWindowExW(ex: u32, class: *const u16, title: *const u16, style: u32, x: i32, y: i32, w: i32, h: i32, parent: HWND, menu: *mut c_void, instance: *mut c_void, param: *mut c_void) -> HWND;
     fn DefWindowProcW(hwnd: HWND, msg: u32, w: usize, l: isize) -> isize;
@@ -109,8 +109,8 @@ extern \"system\" {
     fn PostQuitMessage(code: i32);
 }
 
-#[link(name = \"gdi32\")]
-extern \"system\" {
+#[link(name = "gdi32")]
+extern "system" {
     fn CreateSolidBrush(color: u32) -> *mut c_void;
     fn CreateFontW(height: i32, width: i32, esc: i32, orient: i32, weight: i32, italic: u32, underline: u32, strike: u32, charset: u32, out: u32, clip: u32, quality: u32, pitch: u32, face: *const u16) -> HFONT;
     fn SelectObject(hdc: HDC, obj: HGDIOBJ) -> HGDIOBJ;
@@ -125,7 +125,7 @@ fn wide(s: &str) -> Vec<u16> {
 }
 
 fn color(s: &str, default: u32) -> u32 {
-    let s = s.trim().trim_start_matches(\"#\");
+    let s = s.trim().trim_start_matches("#");
     u32::from_str_radix(s, 16).ok().map(|rgb| {
         let r = (rgb >> 16) & 0xff;
         let g = (rgb >> 8) & 0xff;
@@ -137,30 +137,30 @@ fn color(s: &str, default: u32) -> u32 {
 fn parse(text: &str) -> Option<Cfg> {
     let mut in_overlay = false;
     let mut enable = true;
-    let mut cfg = Cfg { x: 24, y: 48, width: 720, height: 220, font_size: 16, lines: 8, alpha: 210, text: color(\"E8D7A4\", 0x00A4D7E8), back: color(\"120E08\", 0x00080E12) };
+    let mut cfg = Cfg { x: 24, y: 48, width: 720, height: 220, font_size: 16, lines: 8, alpha: 210, text: color("E8D7A4", 0x00A4D7E8), back: color("120E08", 0x00080E12) };
     for line in text.lines() {
         let t = line.trim();
-        if t.starts_with(\"[\") {
-            in_overlay = t == \"[overlay]\";
+        if t.starts_with("[") {
+            in_overlay = t == "[overlay]";
             continue;
         }
         if !in_overlay { continue; }
         let line = t;
-        if line.is_empty() || line.starts_with(\"#\") { continue; }
-        let Some((k, v)) = line.split_once(\"=\") else { continue };
+        if line.is_empty() || line.starts_with("#") { continue; }
+        let Some((k, v)) = line.split_once("=") else { continue };
         let k = k.trim();
-        let v = v.trim().trim_matches(\"\\\"\");
+        let v = v.trim().trim_matches(""");
         match k {
-            \"enable\" => enable = v == \"true\",
-            \"x\" => cfg.x = v.parse().unwrap_or(cfg.x),
-            \"y\" => cfg.y = v.parse().unwrap_or(cfg.y),
-            \"width\" => cfg.width = v.parse().unwrap_or(cfg.width),
-            \"height\" => cfg.height = v.parse().unwrap_or(cfg.height),
-            \"font_size\" => cfg.font_size = v.parse().unwrap_or(cfg.font_size),
-            \"lines\" => cfg.lines = v.parse().unwrap_or(cfg.lines),
-            \"alpha\" => cfg.alpha = v.parse().unwrap_or(cfg.alpha as u32) as u8,
-            \"text_color\" => cfg.text = color(v, cfg.text),
-            \"back_color\" => cfg.back = color(v, cfg.back),
+            "enable" => enable = v == "true",
+            "x" => cfg.x = v.parse().unwrap_or(cfg.x),
+            "y" => cfg.y = v.parse().unwrap_or(cfg.y),
+            "width" => cfg.width = v.parse().unwrap_or(cfg.width),
+            "height" => cfg.height = v.parse().unwrap_or(cfg.height),
+            "font_size" => cfg.font_size = v.parse().unwrap_or(cfg.font_size),
+            "lines" => cfg.lines = v.parse().unwrap_or(cfg.lines),
+            "alpha" => cfg.alpha = v.parse().unwrap_or(cfg.alpha as u32) as u8,
+            "text_color" => cfg.text = color(v, cfg.text),
+            "back_color" => cfg.back = color(v, cfg.back),
             _ => {}
         }
     }
@@ -188,7 +188,7 @@ pub fn push(line: &str) {
     }
 }
 
-unsafe extern \"system\" fn wnd_proc(hwnd: HWND, msg: u32, w: usize, l: isize) -> isize {
+unsafe extern "system" fn wnd_proc(hwnd: HWND, msg: u32, w: usize, l: isize) -> isize {
     match msg {
         WM_PAINT => {
             let mut paint = std::mem::zeroed::<Paint>();
@@ -200,10 +200,10 @@ unsafe extern \"system\" fn wnd_proc(hwnd: HWND, msg: u32, w: usize, l: isize) -
             DeleteObject(brush);
             SetBkMode(hdc, 1);
             SetTextColor(hdc, TEXT_COLOR.load(Ordering::SeqCst) as u32);
-            let face = wide(\"Segoe UI\");
+            let face = wide("Segoe UI");
             let font = CreateFontW(-(FONT_SIZE.load(Ordering::SeqCst) as i32), 0, 0, 0, 400, 0, 0, 0, 1, 0, 0, 5, 0, face.as_ptr());
             let old = SelectObject(hdc, font);
-            let text = LINES.lock().map(|q| q.iter().cloned().collect::<Vec<_>>().join(\"\\n\")).unwrap_or_default();
+            let text = LINES.lock().map(|q| q.iter().cloned().collect::<Vec<_>>().join("\\n")).unwrap_or_default();
             let wide_text = wide(&text);
             let mut box_rc = Rect { left: 8, top: 6, right: rc.right - 8, bottom: rc.bottom - 6 };
             if wide_text.len() > 1 {
@@ -222,8 +222,8 @@ unsafe extern \"system\" fn wnd_proc(hwnd: HWND, msg: u32, w: usize, l: isize) -
 
 fn run(cfg: Cfg) {
     unsafe {
-        let class = wide(\"NRAPOverlay\");
-        let title = wide(\"NRAP\");
+        let class = wide("NRAPOverlay");
+        let title = wide("NRAP");
         let wc = WndClass {
             style: CS_HREDRAW | CS_VREDRAW,
             wnd_proc: Some(wnd_proc),
