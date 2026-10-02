@@ -94,6 +94,7 @@ struct Cfg {
 }
 
 static LINES: Mutex<VecDeque<(String, u128)>> = Mutex::new(VecDeque::new());
+static PENDING: Mutex<VecDeque<String>> = Mutex::new(VecDeque::new());
 static HOLD_MS: AtomicUsize = AtomicUsize::new(5000);
 static HWND_SLOT: AtomicUsize = AtomicUsize::new(0);
 static LINE_CAP: AtomicUsize = AtomicUsize::new(8);
@@ -256,10 +257,8 @@ fn now_ms() -> u128 {
 
 pub fn push(line: &str) {
     let line = short_time(line);
-    if let Ok(mut q) = LINES.lock() {
-        q.push_back((line, now_ms()));
-        let cap = LINE_CAP.load(Ordering::SeqCst).max(1);
-        while q.len() > cap { q.pop_front(); }
+    if let Ok(mut q) = PENDING.lock() {
+        q.push_back(line);
     }
     let hwnd = HWND_SLOT.load(Ordering::SeqCst) as HWND;
     if !hwnd.is_null() {
@@ -346,14 +345,44 @@ fn text_width(hdc: HDC, text: &str) -> i32 {
     size.cx.max(1)
 }
 
-fn live_lines() -> Vec<(String, u8)> {
+fn wrap_rows(hdc: HDC, width: i32, line: &str) -> usize {
+    let mut rows = 1usize;
+    let mut used = 0i32;
+    for (text, _) in colorize(line) {
+        for word in text.split_inclusive(' ') {
+            let word_w = text_width(hdc, word);
+            if used > 0 && used + word_w > width - 16 {
+                rows += 1;
+                used = 0;
+            }
+            used += word_w;
+        }
+    }
+    rows.max(1)
+}
+
+fn live_lines(hdc: HDC, width: i32, height: i32) -> Vec<(String, u8)> {
     let now = now_ms();
     let hold = HOLD_MS.load(Ordering::SeqCst) as u128;
     let fade = 800u128;
+    let row_h = FONT_SIZE.load(Ordering::SeqCst) as i32 + 6;
+    let room = ((height - 8) / row_h.max(1)).max(1) as usize;
     let mut out = Vec::new();
-    if let Ok(mut q) = LINES.lock() {
-        q.retain(|(_, born)| now.saturating_sub(*born) < hold + fade);
-        for (text, born) in q.iter() {
+    if let Ok(mut shown) = LINES.lock() {
+        shown.retain(|(_, born)| now.saturating_sub(*born) < hold + fade);
+        let mut used = 0usize;
+        for (text, _) in shown.iter() {
+            used += wrap_rows(hdc, width, text);
+        }
+        if let Ok(mut pending) = PENDING.lock() {
+            while let Some(next) = pending.front() {
+                let rows = wrap_rows(hdc, width, next);
+                if used + rows > room { break; }
+                used += rows;
+                shown.push_back((pending.pop_front().unwrap(), now));
+            }
+        }
+        for (text, born) in shown.iter() {
             let age = now.saturating_sub(*born);
             let alpha = if age <= hold {
                 255
@@ -447,7 +476,7 @@ fn stamp(bits: *mut u8, width: i32, height: i32, y: i32, alpha: u8) {
 }
 
 fn present(hwnd: HWND, width: i32, height: i32) {
-    let lines = live_lines();
+    let lines = live_lines(mem, width, height);
     unsafe {
         let screen = GetDC(std::ptr::null_mut());
         let mem = CreateCompatibleDC(screen);
@@ -469,6 +498,7 @@ fn present(hwnd: HWND, width: i32, height: i32) {
         let face = wide("Consolas");
         let font = CreateFontW(-(FONT_SIZE.load(Ordering::SeqCst) as i32), 0, 0, 0, 400, 0, 0, 0, 1, 0, 0, 5, 0, face.as_ptr());
         let old_font = SelectObject(mem, font);
+        let lines = live_lines(mem, width, height);
         let placed = paint_wrapped(mem, width, &lines);
         for (y, alpha) in placed { stamp(bits, width, height, y, alpha); }
         let pos = Point { x: 0, y: 0 };
