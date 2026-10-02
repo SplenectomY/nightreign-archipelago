@@ -225,6 +225,34 @@ fn me3_exe() -> PathBuf {
     PathBuf::from(local).join(r"Programs\garyttierney\me3\bin\me3.exe")
 }
 
+fn replace_section_key(text: &str, section: &str, key: &str, value: &str) -> String {
+    let mut out = Vec::new();
+    let mut current = "";
+    let mut hit = false;
+    for line in text.lines() {
+        let trimmed = line.trim();
+        if trimmed.starts_with('[') {
+            if current == section && !hit {
+                out.push(format!("{key} = {value}"));
+                hit = true;
+            }
+            current = trimmed;
+            out.push(line.to_string());
+            continue;
+        }
+        if current == section && trimmed.starts_with(key) && trimmed[key.len()..].trim_start().starts_with('=') {
+            out.push(format!("{key} = {value}"));
+            hit = true;
+        } else {
+            out.push(line.to_string());
+        }
+    }
+    if !hit {
+        out.push(format!("{key} = {value}"));
+    }
+    out.join("\n") + "\n"
+}
+
 fn replace_key(text: &str, key: &str, value: &str) -> String {
     let mut out = Vec::new();
     let mut hit = false;
@@ -350,23 +378,24 @@ fn save_options(app: &App) {
     };
     let path = app.dir.join("flags.toml");
     let mut text = fs::read_to_string(&path).unwrap_or_default();
-    text = replace_key(&text, "x", &quoted(&text_of(opt.x)));
-    text = replace_key(&text, "y", &quoted(&text_of(opt.y)));
-    text = replace_key(&text, "width", &quoted(&text_of(opt.width)));
-    text = replace_key(&text, "height", &quoted(&text_of(opt.height)));
-    text = replace_key(&text, "hold_seconds", &quoted(&text_of(opt.fade)));
-    text = replace_key(&text, "font_size", &quoted(&text_of(opt.font)));
-    text = replace_key(&text, "color_local", &format!("\"{}\"", text_of(opt.local)));
-    text = replace_key(&text, "color_remote", &format!("\"{}\"", text_of(opt.remote)));
-    text = replace_key(&text, "color_item", &format!("\"{}\"", text_of(opt.item)));
-    text = replace_key(&text, "color_location", &format!("\"{}\"", text_of(opt.location)));
-    text = replace_key(&text, "text_color", &format!("\"{}\"", text_of(opt.text)));
+    let font = text_of(opt.font);
+    text = replace_section_key(&text, "[overlay]", "x", &quoted(&text_of(opt.x)));
+    text = replace_section_key(&text, "[overlay]", "y", &quoted(&text_of(opt.y)));
+    text = replace_section_key(&text, "[overlay]", "width", &quoted(&text_of(opt.width)));
+    text = replace_section_key(&text, "[overlay]", "height", &quoted(&text_of(opt.height)));
+    text = replace_section_key(&text, "[overlay]", "hold_seconds", &quoted(&text_of(opt.fade)));
+    text = replace_section_key(&text, "[overlay]", "font_size", &quoted(&font));
+    text = replace_section_key(&text, "[overlay]", "color_local", &format!("\"{}\"", text_of(opt.local)));
+    text = replace_section_key(&text, "[overlay]", "color_remote", &format!("\"{}\"", text_of(opt.remote)));
+    text = replace_section_key(&text, "[overlay]", "color_item", &format!("\"{}\"", text_of(opt.item)));
+    text = replace_section_key(&text, "[overlay]", "color_location", &format!("\"{}\"", text_of(opt.location)));
+    text = replace_section_key(&text, "[overlay]", "text_color", &format!("\"{}\"", text_of(opt.text)));
     let debug = unsafe { SendMessageW(opt.debug, BM_GETCHECK, 0, 0) } == 1;
     text = replace_key(&text, "debug", if debug { "true" } else { "false" });
     if let Err(e) = fs::write(&path, text) {
         append_log(app, &format!("Options save failed: {e}"));
     } else {
-        append_log(app, "Saved overlay options");
+        append_log(app, &format!("Saved overlay options, font size {font}"));
         queue_command(app, "/reload");
     }
 }
@@ -789,7 +818,7 @@ unsafe extern "system" fn wnd_proc(hwnd: HWND, msg: u32, w: usize, l: isize) -> 
 }
 
 fn main() {
-    let dir = mod_dir();
+    let dir = exe_dir();
     let _ = fs::create_dir_all(&dir);
     unsafe {
         let class = wide("NRAPHost");
