@@ -340,7 +340,7 @@ pub fn run(cfg: ApConfig, rx: Receiver<i64>, say_rx: Receiver<String>, drop_good
             Ok(mut socket) => {
                 log("NRAP AP connected");
                 for _ in 0..20 {
-                    if drain_server(&mut socket, &log, &mut next_index, drop_goods).is_err() {
+                    if let Err(e) = drain_server(&mut socket, &log, &mut next_index, drop_goods) {
                         log(&format!("NRAP AP socket ended: {e}"));
                         break;
                     }
@@ -368,8 +368,7 @@ pub fn run(cfg: ApConfig, rx: Receiver<i64>, say_rx: Receiver<String>, drop_good
                                 break;
                             }
                             log(&format!("NRAP AP LocationChecks {id}"));
-                            if drain_server(&mut socket, &log, &mut next_index, drop_goods).is_err()
-                            {
+                            if let Err(e) = drain_server(&mut socket, &log, &mut next_index, drop_goods) {
                                 log(&format!("NRAP AP socket ended: {e}"));
                                 break;
                             }
@@ -380,8 +379,7 @@ pub fn run(cfg: ApConfig, rx: Receiver<i64>, say_rx: Receiver<String>, drop_good
                             }
                         }
                         Err(RecvTimeoutError::Timeout) => {
-                            if drain_server(&mut socket, &log, &mut next_index, drop_goods).is_err()
-                            {
+                            if let Err(e) = drain_server(&mut socket, &log, &mut next_index, drop_goods) {
                                 log(&format!("NRAP AP socket ended: {e}"));
                                 break;
                             }
