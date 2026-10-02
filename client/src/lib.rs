@@ -540,18 +540,19 @@ fn worker() {
     let mut last_clear_flag = 0u32;
     let mut last_debug_drop = 0i32;
     loop {
-        if let Some(id) = flag_write::pop_queued() {
+        if let Some((index, id)) = flag_write::pop_queued() {
             if let Some(msg) = flag_write::apply_item(id) {
                 log_line(&dir, &msg);
             }
             if let Some(msg) = hero::want(id) {
                 log_line(&dir, &msg);
             }
-            if let Some(msg) = grant::want(id) {
+            if let Some(msg) = grant::want_once(dir.as_ref(), &flag_write::cache_seed(), index, id) {
                 log_line(&dir, &msg);
             }
             if id != 839_100_100 {
-                let goods = drop::drop_item_id_from_toml(Some(&TOML.lock().unwrap().clone()));
+                let toml = TOML.lock().unwrap().clone();
+                let goods = drop::drop_item_id_from_toml(&toml);
                 if let Some(msg) = drop::apply_item(id, goods) {
                     log_line(&dir, &msg);
                 }

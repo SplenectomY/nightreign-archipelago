@@ -317,7 +317,7 @@ fn unlock_flag(item_id: i64) -> Option<u32> {
 static APPLIED: Mutex<Vec<u32>> = Mutex::new(Vec::new());
 static CACHED: Mutex<Vec<u32>> = Mutex::new(Vec::new());
 static SEEN: Mutex<Vec<i64>> = Mutex::new(Vec::new());
-static GRANT_Q: Mutex<Vec<i64>> = Mutex::new(Vec::new());
+static GRANT_Q: Mutex<Vec<(i64, i64)>> = Mutex::new(Vec::new());
 static CACHE_PATH: Mutex<Option<std::path::PathBuf>> = Mutex::new(None);
 static CACHE_SEED: Mutex<String> = Mutex::new(String::new());
 static ARMED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
@@ -510,7 +510,7 @@ pub fn enqueue_item(index: i64, item_id: i64) -> bool {
     }
     seen.push(index);
     drop(seen);
-    GRANT_Q.lock().unwrap().push(item_id);
+    GRANT_Q.lock().unwrap().push((index, item_id));
     let flags = CACHED.lock().unwrap().clone();
     if let Some(path) = CACHE_PATH.lock().unwrap().as_ref() {
         write_cache(path, &CACHE_SEED.lock().unwrap(), &flags);
@@ -518,9 +518,13 @@ pub fn enqueue_item(index: i64, item_id: i64) -> bool {
     true
 }
 
-pub fn pop_queued() -> Option<i64> {
+pub fn pop_queued() -> Option<(i64, i64)> {
     let mut q = GRANT_Q.lock().unwrap();
     if q.is_empty() { None } else { Some(q.remove(0)) }
+}
+
+pub fn cache_seed() -> String {
+    CACHE_SEED.lock().unwrap().clone()
 }
 
 pub fn remember_unlock(item_id: i64) {

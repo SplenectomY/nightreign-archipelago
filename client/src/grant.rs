@@ -78,13 +78,56 @@ fn murk_amount(item_id: i64) -> Option<i32> {
     }
 }
 
-pub fn want(item_id: i64) -> Option<String> {
+fn murk_path(dir: &std::path::Path) -> std::path::PathBuf {
+    dir.join("murk_received.txt")
+}
+
+fn murk_seen(dir: &std::path::Path, seed: &str, index: i64) -> bool {
+    let text = std::fs::read_to_string(murk_path(dir)).unwrap_or_default();
+    let mut file_seed = "";
+    let mut hit = false;
+    for line in text.lines() {
+        if let Some(rest) = line.strip_prefix("seed=") {
+            file_seed = rest.trim();
+        } else if file_seed == seed && line.starts_with(&format!("{index} ")) {
+            hit = true;
+        }
+    }
+    hit
+}
+
+fn remember_murk(dir: &std::path::Path, seed: &str, index: i64, item_id: i64, amt: i32) {
+    let path = murk_path(dir);
+    let text = std::fs::read_to_string(&path).unwrap_or_default();
+    let mut body = if text.lines().any(|l| l == format!("seed={seed}")) {
+        text
+    } else {
+        format!("seed={seed}\n")
+    };
+    if !body.ends_with('\n') {
+        body.push('\n');
+    }
+    body.push_str(&format!("{index} {item_id} {amt}\n"));
+    let _ = std::fs::write(path, body);
+}
+
+pub fn want_once(dir: Option<&std::path::PathBuf>, seed: &str, index: i64, item_id: i64) -> Option<String> {
     let amt = murk_amount(item_id)?;
+    if let Some(dir) = dir {
+        if murk_seen(dir, seed, index) {
+            return Some(format!("NRAP murk skip already index={index} id={item_id}"));
+        }
+    }
     match add_murk(amt) {
-        Ok(detail) => Some(format!("NRAP murk +{amt} {detail}")),
+        Ok(detail) => {
+            if let Some(dir) = dir {
+                remember_murk(dir, seed, index, item_id, amt);
+            }
+            Some(format!("NRAP murk +{amt} index={index} id={item_id} {detail}"))
+        }
         Err(e) => {
             PENDING.fetch_add(amt, Ordering::SeqCst);
-            Some(format!("NRAP murk queued +{amt} ({e})"))
+            Some(format!("NRAP murk queued +{amt} index={index} id={item_id} ({e})"))
         }
     }
 }
