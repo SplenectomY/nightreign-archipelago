@@ -620,18 +620,21 @@ fn worker() {
     let mut last_debug_drop = 0i32;
     loop {
         if let Some((index, id)) = flag_write::pop_queued() {
+            let mut landed = false;
             if let Some(msg) = flag_write::apply_item(id) {
                 log_line(&dir, &msg);
+                landed = flag_write::grant_landed(&msg);
             }
             if let Some(msg) = hero::want(id) {
                 log_line(&dir, &msg);
             }
             if let Some(msg) = grant::want_once(dir.as_ref(), &flag_write::cache_seed(), index, id) {
                 log_line(&dir, &msg);
-                if msg.contains("skip already") || msg.contains("murk +") {
-                    flag_write::mark_granted(index);
+                if msg.contains("murk +") || msg.contains("skip already") {
+                    landed = true;
                 }
-            } else {
+            }
+            if landed {
                 flag_write::mark_granted(index);
             }
             if id != 839_100_100 {

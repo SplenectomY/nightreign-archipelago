@@ -71,16 +71,8 @@ fn escape(s: &str) -> String {
     s.replace('\\', "\\\\").replace('"', "\\\"")
 }
 
-fn item_name(id: i64) -> &'static str {
-    match id {
-        839_100_001 => "Expedition Unlock - Tricephalos",
-        839_100_008 => "Expedition Unlock - Heolstor",
-        839_100_009 => "Expedition Unlock - Harmonia",
-        839_100_010 => "Expedition Unlock - Straghess",
-        839_100_100 => "Murk Bundle",
-        839_100_900 => "Victory",
-        _ => "unknown item",
-    }
+fn item_name(id: i64) -> String {
+    crate::names::item_label(id).unwrap_or_else(|| format!("item {id}"))
 }
 
 fn parse_seed(text: &str) -> Option<String> {
@@ -269,8 +261,9 @@ fn handle_server_text(text: &str, log: &impl Fn(&str), next_index: &mut i64, dro
         ));
         if crate::flag_write::enqueue_item(ap_index, id) {
             log(&format!("NRAP grant queued {id} index {ap_index}"));
+        } else if let Some(msg) = crate::flag_write::apply_now(id) {
+            log(&format!("NRAP grant replay {id} index {ap_index}; {msg}"));
         } else {
-            crate::flag_write::remember_unlock(id);
             log(&format!("NRAP grant skip already {id} index {ap_index}"));
         }
         let _ = drop_goods;

@@ -741,33 +741,50 @@ pub fn stock_shop_rows() -> Option<String> {
     if opened == 0 { None } else { Some(format!("NRAP shop stocked {opened} rows (shop checks off)")) }
 }
 
+pub fn grant_landed(msg: &str) -> bool {
+    !msg.contains("queued") && !msg.contains("failed") && !msg.contains("not ready")
+}
+
 pub fn apply_item(item_id: i64) -> Option<String> {
     if let Some(release) = shop_release(item_id) {
         return Some(match set_flag_from(release, true, "shop") {
-            Ok(msg) => format!("{msg} (shop row unlocked)"),
-            Err(e) => format!("NRAP shop release queued flag={release} ({e})"),
+            Ok(msg) => {
+                remember_unlock(item_id);
+                format!("{msg} (shop row unlocked)")
+            }
+            Err(e) => {
+                let mut q = PENDING.lock().unwrap();
+                if !q.contains(&release) {
+                    q.push(release);
+                }
+                format!("NRAP shop release queued flag={release} ({e})")
+            }
         });
     }
-    let gate = None;
     let Some(flag) = flag_for_item(item_id) else {
-        return gate.or_else(|| Some(format!("NRAP grant {item_id} (no unlock flag)")));
+        return Some(format!("NRAP grant {item_id} (no unlock flag)"));
     };
-    remember_unlock(item_id);
-    remember_nightfarer(flag);
-    let msg = match set_flag_from(flag, true, "item") {
-        Ok(msg) => msg,
+    match set_flag_from(flag, true, "item") {
+        Ok(msg) => {
+            remember_unlock(item_id);
+            remember_nightfarer(flag);
+            Some(msg)
+        }
         Err(e) => {
             let mut q = PENDING.lock().unwrap();
             if !q.contains(&flag) {
                 q.push(flag);
             }
-            format!("NRAP SetEventFlag queued flag={flag} item={item_id} ({e})")
+            Some(format!("NRAP SetEventFlag queued flag={flag} item={item_id} ({e})"))
         }
-    };
-    Some(match gate {
-        Some(extra) => format!("{msg}; {extra}"),
-        None => msg,
-    })
+    }
+}
+
+pub fn apply_now(item_id: i64) -> Option<String> {
+    if flag_for_item(item_id).is_none() && shop_release(item_id).is_none() {
+        return None;
+    }
+    apply_item(item_id)
 }
 
 pub fn retry_pending() -> Option<String> {
