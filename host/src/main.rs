@@ -73,6 +73,7 @@ struct App {
     reconnect: HWND,
     dir: PathBuf,
     log_off: u64,
+    mod_off: u64,
 }
 
 struct OptWin {
@@ -543,23 +544,16 @@ fn append_log(app: &App, line: &str) {
     scroll_bottom(app.log);
 }
 
-fn tail(app: &mut App) {
-    let path = app.dir.join("nrap.log");
-    let Ok(meta) = fs::metadata(&path) else { return };
+fn tail_file(app: &App, path: &PathBuf, off: &mut u64) {
+    let Ok(meta) = fs::metadata(path) else { return };
     let len = meta.len();
-    if len < app.log_off {
-        app.log_off = 0;
-    }
-    if len == app.log_off {
-        return;
-    }
-    let Ok(bytes) = fs::read(&path) else { return };
-    let start = app.log_off as usize;
-    if start >= bytes.len() {
-        return;
-    }
+    if len < *off { *off = 0; }
+    if len == *off { return; }
+    let Ok(bytes) = fs::read(path) else { return };
+    let start = *off as usize;
+    if start >= bytes.len() { return; }
     let chunk = String::from_utf8_lossy(&bytes[start..]).replace('\n', "\r\n");
-    app.log_off = len;
+    *off = len;
     let w = wide(&chunk);
     unsafe {
         SendMessageW(app.log, EM_SETSEL, usize::MAX, -1);
@@ -568,13 +562,29 @@ fn tail(app: &mut App) {
     }
 }
 
-fn queue_command(app: &App, line: &str) {
-    let path = app.dir.join("commands.txt");
-    let mut existing = fs::read_to_string(&path).unwrap_or_default();
+fn tail(app: &mut App) {
+    let primary = app.dir.join("nrap.log");
+    let legacy = PathBuf::from(r"C:/Mods/nightreign-ap/nrap.log");
+    tail_file(app, &primary, &mut app.log_off);
+    if legacy != primary {
+        tail_file(app, &legacy, &mut app.mod_off);
+    }
+}
+
+fn write_command(path: &PathBuf, line: &str) {
+    let mut existing = fs::read_to_string(path).unwrap_or_default();
     if !existing.is_empty() && !existing.ends_with('\n') { existing.push('\n'); }
     existing.push_str(line);
     existing.push('\n');
-    let _ = fs::write(&path, existing);
+    let _ = fs::write(path, existing);
+}
+
+fn queue_command(app: &App, line: &str) {
+    write_command(&app.dir.join("commands.txt"), line);
+    let legacy = PathBuf::from(r"C:/Mods/nightreign-ap/commands.txt");
+    if legacy.parent() != Some(app.dir.as_path()) && legacy.parent().is_some_and(|p| p.is_dir()) {
+        write_command(&legacy, line);
+    }
 }
 
 const CMD_HINT: &str = "!hint, !help ...";
@@ -895,7 +905,7 @@ fn main() {
         CreateWindowExW(0, wide("STATIC").as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE | SS_ETCHEDHORZ, 12, 578, 720, 2, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
         CreateWindowExW(0, button.as_ptr(), wide("Options").as_ptr(), WS_CHILD | WS_VISIBLE, 280, 596, 200, 28, win, OPTIONS, std::ptr::null_mut(), std::ptr::null_mut());
         CreateWindowExW(0, button.as_ptr(), wide("Launch").as_ptr(), WS_CHILD | WS_VISIBLE, 280, 636, 200, 42, win, LAUNCH, std::ptr::null_mut(), std::ptr::null_mut());
-        let mut app = App { log, cmd, host, slot, pass, nrsc, warn_nrsc, reconnect, dir, log_off: 0 };
+        let mut app = App { log, cmd, host, slot, pass, nrsc, warn_nrsc, reconnect, dir, log_off: 0, mod_off: 0 };
         set_text(nrsc, &default_nrsc().display().to_string());
         refresh_paths(&app);
         set_text(cmd, CMD_HINT);
