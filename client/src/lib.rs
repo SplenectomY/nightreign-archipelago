@@ -455,7 +455,7 @@ fn worker() {
             }
             drop(day);
             for w in &mut watches {
-                match found.get_local(w.flag) {
+                match found.get(w.flag) {
                     Some(on) => {
                         if w.last != Some(on) {
                             if w.last == Some(false) && on {
