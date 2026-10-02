@@ -31,7 +31,7 @@ Prefer an event-flag ID over a raw heap address. Addresses move every patch; fla
 
 Everdark locations use the same names with the prefix `Everdark - `.
 
-Phase 0 only requires **Nightlord - Gladius**.
+The first confirmed defeat flag was **Nightlord - Gladius**.
 
 ## After Gladius is found
 

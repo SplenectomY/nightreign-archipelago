@@ -1,16 +1,19 @@
-# Phase 0 — tester brief
+# Flag protocol
+
+Historical discovery steps. Current install is [INSTALL.md](INSTALL.md). This is not the feature list.
+
 
 You are the only person on a real Nightreign install. I cannot see your game. Work the steps in order. Paste results back as the report template at the bottom. Do not skip the “before kill” snapshot.
 
-Phase 0 succeeds when all five of these are true:
+this pass succeeds when all five of these are true:
 
 1. `nightreign_ap.dll` is loaded in `nightreign.exe` launched through **Seamless**.
 2. The AP console line `NRAP attached` appears.
 3. Defeating Gladius flips a recorded flag on the same frame as “Nightlord Slain” (or immediately after the results banner).
 4. That flag is still set after you return to the Hold **and** after you fully close the game and reopen the same `.co2` save.
-5. With a local MultiServer running the Phase 0 yaml, the client logs `NRAP check: Nightlord - Gladius`.
+5. With a local MultiServer running the this pass yaml, the client logs `NRAP check: Nightlord - Gladius`.
 
-Item grant (Murk poke) is bonus, not required to close Phase 0.
+Item grant (Murk poke) is bonus, not required to close this pass.
 
 ## 0. Software
 
@@ -54,7 +57,7 @@ Two acceptable injections. Prefer A.
 2. Edit the two `[[natives]]` paths:
    - `nrsc.dll` inside your `SeamlessCoop` folder
    - `nightreign_ap.dll` from the cargo output
-3. Confirm `nrsc_settings.ini` has whatever player count you use (1 is fine for Phase 0).
+3. Confirm `nrsc_settings.ini` has whatever player count you use (1 is fine for this pass).
 4. Launch through me3 with that profile, **not** through `nightreign.exe` and **not** through Steam’s Play button.
 
 ### B. Seamless launcher + extra DLL
@@ -133,7 +136,7 @@ In CE:
    - List every flag ID set in the death/award handler.
 4. Try those IDs against Nightreign’s flag manager once you have a pointer to the array.
 
-We do not need the full array mapped in Phase 0. We need **one** persistent bit that is 0 before Gladius and 1 after, on this save.
+We do not need the full array mapped in this pass. We need **one** persistent bit that is 0 before Gladius and 1 after, on this save.
 
 ### 7d. Confirm uniqueness
 
@@ -144,7 +147,7 @@ On a **second** new Seamless save that has **not** beaten Gladius, the same addr
 Fill this literally. Blank fields are worse than “unknown”.
 
 ```
-## Phase 0 report
+## Report
 Date:
 nightreign.exe version:
 Seamless version:

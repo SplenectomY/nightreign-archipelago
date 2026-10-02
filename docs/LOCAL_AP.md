@@ -90,7 +90,7 @@ NRAP AP connected
 NRAP AP LocationChecks 839000001
 ```
 
-`839000001` is Gladius. `839000100` (board unlock) is not in the Phase 0 location table; the server may ignore it.
+`839000001` is Gladius. `839000100` is the board unlock.
 
 On the Host console you should see Player1 check **Nightlord - Gladius**.
 
