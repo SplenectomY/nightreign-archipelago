@@ -18,6 +18,7 @@ use std::io::{self, BufRead};
 use std::io::Write;
 use std::path::PathBuf;
 use std::sync::mpsc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::OnceLock;
 use std::thread;
 use std::time::Duration;
@@ -293,6 +294,8 @@ fn find_config(dll_dir: Option<&PathBuf>) -> Option<PathBuf> {
     }
 }
 
+static FLAG_DIFF: AtomicBool = AtomicBool::new(false);
+
 fn worker() {
     let dir = dll_dir();
     bind_console();
@@ -365,6 +368,9 @@ fn worker() {
             ap::run(ap_cfg, rx, say_rx, drop_goods, |msg| log_line(&dir_ap, msg));
         });
     }
+    if text.as_deref().is_some_and(|t| t.lines().any(|l| l.trim() == "flag_diff = true")) {
+        FLAG_DIFF.store(true, Ordering::SeqCst);
+    }
     thread::spawn(move || {
         loop {
             let Some(line) = read_console_line() else {
@@ -373,6 +379,18 @@ fn worker() {
             };
             if line.starts_with('!') {
                 let _ = say_tx.send(line);
+                continue;
+            }
+            let lower = line.to_ascii_lowercase();
+            if lower.starts_with("/flagdiff") {
+                let arg = lower.split_whitespace().nth(1).unwrap_or("");
+                let on = match arg {
+                    "on" | "1" | "true" => true,
+                    "off" | "0" | "false" => false,
+                    _ => !FLAG_DIFF.load(Ordering::SeqCst),
+                };
+                FLAG_DIFF.store(on, Ordering::SeqCst);
+                log_line(&dir, &format!("NRAP flagdiff {}", if on { "on" } else { "off" }));
             }
         }
     });
@@ -484,7 +502,7 @@ fn worker() {
         if let Some(msg) = drop::retry_pending() {
             log_line(&dir, &msg);
         }
-        if config.as_ref().and_then(|p| fs::read_to_string(p).ok()).is_some_and(|t| t.lines().any(|l| l.trim()=="flag_diff = true")) {
+        if FLAG_DIFF.load(Ordering::SeqCst) {
             if let Some(found) = man {
                 static LAST: std::sync::Mutex<Option<std::time::Instant>> = std::sync::Mutex::new(None);
                 static IDLE: std::sync::Mutex<Option<std::time::Instant>> = std::sync::Mutex::new(None);
