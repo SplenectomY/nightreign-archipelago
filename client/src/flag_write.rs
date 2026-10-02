@@ -435,11 +435,11 @@ pub fn note_day_boss(flag: u32) -> Option<(u32, i64)> {
     let (count, loc) = if flag == 7502 {
         let mut n = DAY1_KILLS.lock().unwrap();
         *n += 1;
-        (*n, 839001001 + *n as i64)
+        (*n, 839001000 + *n as i64)
     } else if flag == 7507 {
         let mut n = DAY2_KILLS.lock().unwrap();
         *n += 1;
-        (*n, 839001101 + *n as i64)
+        (*n, 839001100 + *n as i64)
     } else {
         return None;
     };
@@ -468,11 +468,11 @@ pub fn note_toggle(flag: u32, rising: bool) -> Option<(u32, i64)> {
     let (count, loc) = if flag == 8145 {
         let mut n = EVERGAOL.lock().unwrap();
         *n += 1;
-        (*n, 839001201 + *n as i64)
+        (*n, 839001200 + *n as i64)
     } else if flag == 8140 {
         let mut n = TOWER.lock().unwrap();
         *n += 1;
-        (*n, 839001301 + *n as i64)
+        (*n, 839001300 + *n as i64)
     } else {
         return None;
     };

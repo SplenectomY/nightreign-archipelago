@@ -162,7 +162,7 @@ fn part_name(raw: &str, kind: &str) -> String {
     let id = raw.parse::<i64>().unwrap_or(i64::MIN);
     match kind {
         "item_id" => crate::names::item_label(id).unwrap_or(raw).to_string(),
-        "location_id" => crate::names::location_label(id).unwrap_or(raw).to_string(),
+        "location_id" => crate::names::location_label(id).unwrap_or(raw),
         "player_id" => player_name(id).unwrap_or_else(|| raw.to_string()),
         _ => raw.to_string(),
     }

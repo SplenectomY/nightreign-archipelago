@@ -119,11 +119,24 @@ pub fn item_label(id: i64) -> Option<&'static str> {
         683 => "Shop - Grand Tranquil Scene 4",
         900 => "Victory",
         _ => return None,
-    })
+    }.to_string())
 }
 
-pub fn location_label(id: i64) -> Option<&'static str> {
-    Some(match id - 839000000 {
+pub fn location_label(id: i64) -> Option<String> {
+    let offset = id - 839000000;
+    if (1001..=1040).contains(&offset) {
+        return Some(format!("Day 1 Boss {}", offset - 1000));
+    }
+    if (1101..=1140).contains(&offset) {
+        return Some(format!("Day 2 Boss {}", offset - 1100));
+    }
+    if (1201..=1240).contains(&offset) {
+        return Some(format!("Seal Evergaol {}", offset - 1200));
+    }
+    if (1301..=1340).contains(&offset) {
+        return Some(format!("Open Magician Tower {}", offset - 1300));
+    }
+    Some(match offset {
         1 => "Nightlord - Gladius",
         2 => "Nightlord - Adel",
         3 => "Nightlord - Gnoster",
