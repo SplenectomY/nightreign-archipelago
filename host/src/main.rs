@@ -457,7 +457,7 @@ fn steam_nrsc() -> Option<PathBuf> {
             for line in text.lines() {
                 let line = line.trim().trim_matches('"');
                 if line.contains(":\\") || line.contains(":/") {
-                    roots.push(PathBuf::from(line.replace("\\", "\")));
+                    roots.push(PathBuf::from(line.replace("\\\\", "\\")));
                 }
             }
         }
