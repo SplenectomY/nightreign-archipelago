@@ -69,6 +69,20 @@ struct App {
     log_off: u64,
 }
 
+struct OptWin {
+    x: HWND,
+    y: HWND,
+    width: HWND,
+    height: HWND,
+    fade: HWND,
+    local: HWND,
+    remote: HWND,
+    item: HWND,
+    location: HWND,
+    text: HWND,
+    debug: HWND,
+}
+
 #[link(name = "user32")]
 extern "system" {
     fn RegisterClassW(class: *const WndClass) -> u16;
@@ -633,13 +647,11 @@ fn write_profile_paths(app: &App) -> Result<(), String> {
             out.push(line.to_string());
         }
     }
-    fs::write(&path, out.join("
-") + "
-").map_err(|e| e.to_string())
+    fs::write(&path, out.join("\n") + "\n").map_err(|e| e.to_string())
 }
 
 fn launch(app: &App) {
-    save_settings(app);
+    save_connection(app);
     let exe = me3_exe();
     if !exe.exists() {
         append_log(app, &format!("me3 not found at {}", exe.display()));
