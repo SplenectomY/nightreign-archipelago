@@ -62,6 +62,9 @@ static mut OPT: *mut OptWin = std::ptr::null_mut();
 static mut CUST: [u32; 16] = [0; 16];
 static mut SCROLLED: bool = false;
 
+#[repr(C)]
+struct SystemTime { year: u16, month: u16, dow: u16, day: u16, hour: u16, minute: u16, second: u16, ms: u16 }
+
 struct App {
     log: HWND,
     cmd: HWND,
@@ -119,6 +122,7 @@ extern "system" {
     fn LoadIconW(instance: HINSTANCE, name: *const u16) -> *mut c_void;
     fn GetParent(hwnd: HWND) -> HWND;
     fn GetFocus() -> HWND;
+    fn GetLocalTime(out: *mut SystemTime);
     fn EnableWindow(hwnd: HWND, enable: i32) -> i32;
 }
 #[link(name = "comdlg32")]
@@ -654,6 +658,33 @@ fn profile_template(nrap: &str, reg: &str, nrsc: &str) -> String {
     )
 }
 
+fn rotate_log(dir: &PathBuf) {
+    let live = dir.join("nrap.log");
+    if !live.is_file() {
+        let _ = fs::write(&live, "");
+        return;
+    }
+    let logs = dir.join("logs");
+    let _ = fs::create_dir_all(&logs);
+    let mut now = SystemTime { year: 0, month: 0, dow: 0, day: 0, hour: 0, minute: 0, second: 0, ms: 0 };
+    unsafe { GetLocalTime(&mut now); }
+    let stamp = format!("nrap-{:04}-{:02}-{:02}-{:02}-{:02}-{:02}.log", now.year, now.month, now.day, now.hour, now.minute, now.second);
+    let mut dest = logs.join(&stamp);
+    let mut n = 2;
+    while dest.exists() {
+        dest = logs.join(format!("nrap-{:04}-{:02}-{:02}-{:02}-{:02}-{:02}-{n}.log", now.year, now.month, now.day, now.hour, now.minute, now.second));
+        n += 1;
+    }
+    if fs::rename(&live, &dest).is_err() {
+        if fs::copy(&live, &dest).is_ok() {
+            let _ = fs::write(&live, "");
+        }
+    }
+    if !live.exists() {
+        let _ = fs::write(&live, "");
+    }
+}
+
 fn exe_dir() -> PathBuf {
     std::env::current_exe().ok().and_then(|p| p.parent().map(|p| p.to_path_buf())).unwrap_or_else(mod_dir)
 }
@@ -883,6 +914,9 @@ unsafe extern "system" fn wnd_proc(hwnd: HWND, msg: u32, w: usize, l: isize) -> 
 
 fn main() {
     let dir = exe_dir();
+    rotate_log(&dir);
+    let legacy = PathBuf::from(r"C:/Mods/nightreign-ap");
+    if legacy.is_dir() && legacy != dir { rotate_log(&legacy); }
     let _ = fs::create_dir_all(&dir);
     unsafe {
         let class = wide("NRAPHost");
