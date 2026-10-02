@@ -288,7 +288,7 @@ fn text_width(hdc: HDC, text: &str) -> i32 {
 fn paint_wrapped(hdc: HDC, rc: &Rect, lines: &[String]) {
     let width = (rc.right - rc.left - 16).max(40);
     let height = FONT_SIZE.load(Ordering::SeqCst) as i32 + 4;
-    let mut y = rc.top + 6;
+    let mut rows: Vec<Vec<(String, u32)>> = Vec::new();
     for line in lines {
         let spans = colorize(line);
         let mut row: Vec<(String, u32)> = Vec::new();
@@ -297,21 +297,22 @@ fn paint_wrapped(hdc: HDC, rc: &Rect, lines: &[String]) {
             for word in text.split_inclusive(' ') {
                 let word_w = text_width(hdc, word);
                 if used > 0 && used + word_w > width {
-                    draw_row(hdc, 8, y, &row);
-                    y += height;
-                    row.clear();
+                    rows.push(row);
+                    row = Vec::new();
                     used = 0;
-                    if y > rc.bottom { return; }
                 }
                 row.push((word.to_string(), color));
                 used += word_w;
             }
         }
-        if !row.is_empty() {
-            draw_row(hdc, 8, y, &row);
-            y += height;
-            if y > rc.bottom { return; }
-        }
+        if !row.is_empty() { rows.push(row); }
+    }
+    let fit = ((rc.bottom - rc.top - 12) / height).max(1) as usize;
+    let start = rows.len().saturating_sub(fit);
+    let mut y = rc.top + 6;
+    for row in &rows[start..] {
+        draw_row(hdc, 8, y, row);
+        y += height;
     }
 }
 
