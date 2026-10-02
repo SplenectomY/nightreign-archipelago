@@ -28,7 +28,7 @@ You still need Nightreign, Seamless Coop, and me3. You do not need Visual Studio
 
 1. Install [Seamless Coop for Nightreign](https://www.nexusmods.com/eldenringnightreign/mods/3) and [me3](https://github.com/garyttierney/me3).
 2. Unzip a release to `C:/Mods/nightreign-ap/`. `nightreign_ap.dll` and `flags.toml` must stay in that folder.
-3. Copy `nightreign-ap.me3` to the me3 profiles folder. Paths must use forward slashes.
+3. Open `nrap-host.exe`. Check the three paths, then Launch. That writes `nightreign-ap.me3` into the me3 profiles folder.
 4. Copy `nightreign.apworld` to `C:/ProgramData/Archipelago/custom_worlds/` and `Nightreign.yaml` to the Archipelago Players folder. Generate, then host.
 5. Launch with me3. Do not also launch `nrsc_launcher.exe`.
 6. The console must print `NRAP attached 0.5.0` and `NRAP AP connected`.
