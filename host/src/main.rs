@@ -298,8 +298,19 @@ fn paint_names(app: &App, body: &str, plain: u32, local: u32, remote: u32, slot:
     let _ = remote;
 }
 
+fn scroll_bottom(log: HWND) {
+    unsafe {
+        let lines = SendMessageW(log, 0x00BA, 0, 0); // EM_GETLINECOUNT
+        SendMessageW(log, EM_SETSEL, usize::MAX, -1);
+        SendMessageW(log, 0x00B6, 0, lines); // EM_LINESCROLL
+        SendMessageW(log, EM_SCROLLCARET, 0, 0);
+        SendMessageW(log, 0x0115, 7, 0); // WM_VSCROLL SB_BOTTOM
+    }
+}
+
 fn append_log(app: &App, line: &str) {
     append_colored(app, line);
+    scroll_bottom(app.log);
 }
 
 fn tail(app: &mut App) {
@@ -323,7 +334,7 @@ fn tail(app: &mut App) {
     unsafe {
         SendMessageW(app.log, EM_SETSEL, usize::MAX, -1);
         SendMessageW(app.log, EM_REPLACESEL, 0, w.as_ptr() as isize);
-        SendMessageW(app.log, EM_SCROLLCARET, 0, 0);
+        scroll_bottom(app.log);
     }
 }
 
@@ -406,6 +417,10 @@ unsafe extern "system" fn wnd_proc(hwnd: HWND, msg: u32, w: usize, l: isize) -> 
         }
         WM_TIMER => {
             tail(&mut *APP);
+            if !SCROLLED {
+                scroll_bottom((*APP).log);
+                SCROLLED = true;
+            }
             0
         }
         WM_DESTROY => {
