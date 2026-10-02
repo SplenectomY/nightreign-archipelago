@@ -24,6 +24,8 @@ LOCATION_NAME_TO_ID: Dict[str, int] = {
     "Everdark - Caligo": LOCATION_ID_BASE + 107,
     "Everdark - Harmonia": LOCATION_ID_BASE + 108,
     "Goal - Nightlord Count": LOCATION_ID_BASE + 200,
+    "Night 1 boss defeated": LOCATION_ID_BASE + 701,
+    "Night 2 boss defeated": LOCATION_ID_BASE + 702,
     'Shop - Prattling Pate Hello': LOCATION_ID_BASE + + 548,
     'Shop - Prattling Pate Thank you': LOCATION_ID_BASE + + 549,
     'Shop - Prattling Pate Wonderful': LOCATION_ID_BASE + + 550,

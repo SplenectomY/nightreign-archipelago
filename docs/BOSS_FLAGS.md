@@ -96,7 +96,7 @@ From the Nightreign event-flag list. These are the day checks, not a boss id.
 
 | Flag | Name |
 |---:|---|
-| 7502 | Day 1 night boss defeated |
+| 7502 | Day 1 night boss defeated, confirmed 2026-10-01 |
 | 7504 | Day 1 night boss battle started |
 | 7507 | Day 2 night boss defeated |
 | 7509 | Day 2 night boss battle started |

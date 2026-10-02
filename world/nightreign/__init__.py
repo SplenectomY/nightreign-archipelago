@@ -98,6 +98,8 @@ class NightreignWorld(World):
         }
         if self.options.goal.current_key == "count":
             hold_locs["Goal - Nightlord Count"] = LOCATION_NAME_TO_ID["Goal - Nightlord Count"]
+            hold_locs["Night 1 boss defeated"] = LOCATION_NAME_TO_ID["Night 1 boss defeated"]
+            hold_locs["Night 2 boss defeated"] = LOCATION_NAME_TO_ID["Night 2 boss defeated"]
         if self.options.shop_checks.current_key != "none":
             for name in SHOP_LOCATIONS:
                 hold_locs[name] = LOCATION_NAME_TO_ID[name]
