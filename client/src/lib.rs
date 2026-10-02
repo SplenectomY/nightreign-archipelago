@@ -352,10 +352,6 @@ fn worker() {
     let dir = dll_dir();
     bind_console();
     log_line(&dir, &format!("NRAP attached {}", env!("CARGO_PKG_VERSION")));
-    if let Some(text) = text.as_deref() {
-        overlay::start(text);
-        log_line(&dir, "NRAP overlay started");
-    }
 
     let base = unsafe { GetModuleHandleA(std::ptr::null()) };
     log_line(&dir, &format!("NRAP nightreign.exe base = {base:p}"));
@@ -395,6 +391,10 @@ fn worker() {
     log_line(&dir, &flag_write::load_cache(dir.as_ref()));
     log_line(&dir, &flag_write::load_boss_kills(dir.as_ref()));
     let text = config.as_ref().and_then(|p| fs::read_to_string(p).ok());
+    if let Some(body) = text.as_deref() {
+        overlay::start(body);
+        log_line(&dir, "NRAP overlay started");
+    }
     if let Some(text) = text.as_ref() {
         let in_pool = text.lines().any(|l| l.trim() == "heolstor_in_pool = true");
         let count = text.lines().find_map(|l| l.trim().strip_prefix("heolstor_unlock_count = ").and_then(|v| v.parse().ok())).unwrap_or(4);
