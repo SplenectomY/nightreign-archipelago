@@ -56,7 +56,7 @@ jobs:
           1. Install Seamless Coop for Nightreign and me3.
           2. Run the MSI. The default folder is C:/NRAP and can be changed in the installer.
           3. Open NRAP Host. Launch writes nightreign-ap.me3 into the me3 profiles folder.
-          4. Download nightreign.apworld and Nightreign.yaml from this release. Copy the apworld to %USERPROFILE%/Archipelago/custom_worlds and the yaml to the Players folder.
+          4. Download nightreign.apworld and Nightreign.yaml from this release. Copy the apworld to your Archipelago installation's custom_worlds folder and the yaml to the Players folder (or give these files to whoever is generating your world). See https://archipelago.gg/tutorial/Archipelago/setup_en#playing-with-custom-worlds for more information.
           5. Generate, host MultiServer, then launch from NRAP Host. Do not also launch nrsc_launcher.exe.
 
           You do not need Rust or Visual Studio.

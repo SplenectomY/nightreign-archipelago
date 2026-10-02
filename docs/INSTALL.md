@@ -10,7 +10,7 @@ Seamless Coop is the launch path. It is tested with more than one Archipelago sl
 The first screen only shows Don't run. More info reveals the app name and Run anyway. Only do this for the MSI downloaded from the GitHub release.
 
 3. Open `nrap-host.exe`. Check the NRAP DLL, regulation folder, and Seamless DLL. Launch writes `nightreign-ap.me3` into the me3 profiles folder.
-4. Copy `nightreign.apworld` to `C:/ProgramData/Archipelago/custom_worlds/` and the player yaml into the Archipelago Players folder.
+4. Copy the apworld to your Archipelago installation's custom_worlds folder and the yaml to the Players folder (or give these files to whoever is generating your world). See https://archipelago.gg/tutorial/Archipelago/setup_en#playing-with-custom-worlds for more information.
 5. Generate, host, then launch with me3. Do not also run `nrsc_launcher.exe`.
 6. Expect `NRAP attached 0.5.0` and `NRAP AP connected`.
 
