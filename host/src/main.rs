@@ -65,6 +65,7 @@ static mut SCROLLED: bool = false;
 struct App {
     log: HWND,
     cmd: HWND,
+    send: HWND,
     host: HWND,
     slot: HWND,
     pass: HWND,
@@ -74,6 +75,7 @@ struct App {
     dir: PathBuf,
     log_off: u64,
     mod_off: u64,
+    connected: bool,
 }
 
 struct OptWin {
@@ -117,6 +119,7 @@ extern "system" {
     fn LoadIconW(instance: HINSTANCE, name: *const u16) -> *mut c_void;
     fn GetParent(hwnd: HWND) -> HWND;
     fn GetFocus() -> HWND;
+    fn EnableWindow(hwnd: HWND, enable: i32) -> i32;
 }
 #[link(name = "comdlg32")]
 extern "system" {
@@ -544,17 +547,18 @@ fn append_log(app: &App, line: &str) {
     scroll_bottom(app.log);
 }
 
-fn tail_file(app: &App, path: &PathBuf, off: &mut u64) {
-    let Ok(meta) = fs::metadata(path) else { return };
+fn read_new(path: &PathBuf, off: u64) -> Option<(u64, String)> {
+    let meta = fs::metadata(path).ok()?;
     let len = meta.len();
-    if len < *off { *off = 0; }
-    if len == *off { return; }
-    let Ok(bytes) = fs::read(path) else { return };
-    let start = *off as usize;
-    if start >= bytes.len() { return; }
-    let chunk = String::from_utf8_lossy(&bytes[start..]).replace('\n', "\r\n");
-    *off = len;
-    let w = wide(&chunk);
+    let off = if len < off { 0 } else { off };
+    if len == off { return None; }
+    let bytes = fs::read(path).ok()?;
+    if off as usize >= bytes.len() { return None; }
+    Some((len, String::from_utf8_lossy(&bytes[off as usize..]).into_owned()))
+}
+
+fn append_raw(app: &App, chunk: &str) {
+    let w = wide(&chunk.replace('\n', "\r\n"));
     unsafe {
         SendMessageW(app.log, EM_SETSEL, usize::MAX, -1);
         SendMessageW(app.log, EM_REPLACESEL, 0, w.as_ptr() as isize);
@@ -562,12 +566,36 @@ fn tail_file(app: &App, path: &PathBuf, off: &mut u64) {
     }
 }
 
+fn set_connected(app: &mut App, on: bool) {
+    if app.connected == on { return; }
+    app.connected = on;
+    unsafe {
+        EnableWindow(app.cmd, if on { 1 } else { 0 });
+        EnableWindow(app.send, if on { 1 } else { 0 });
+    }
+}
+
+fn note_connection(app: &mut App, chunk: &str) {
+    if chunk.contains("NRAP AP connected") { set_connected(app, true); }
+    if chunk.contains("NRAP AP socket") || chunk.contains("NRAP AP not connected") || chunk.contains("NRAP AP disconnecting") {
+        set_connected(app, false);
+    }
+}
+
 fn tail(app: &mut App) {
     let primary = app.dir.join("nrap.log");
     let legacy = PathBuf::from(r"C:/Mods/nightreign-ap/nrap.log");
-    tail_file(app, &primary, &mut app.log_off);
+    if let Some((len, chunk)) = read_new(&primary, app.log_off) {
+        app.log_off = len;
+        append_raw(app, &chunk);
+        note_connection(app, &chunk);
+    }
     if legacy != primary {
-        tail_file(app, &legacy, &mut app.mod_off);
+        if let Some((len, chunk)) = read_new(&legacy, app.mod_off) {
+            app.mod_off = len;
+            append_raw(app, &chunk);
+            note_connection(app, &chunk);
+        }
     }
 }
 
@@ -882,10 +910,10 @@ fn main() {
         let button = wide("BUTTON");
         let log = CreateWindowExW(WS_EX_CLIENTEDGE, rich.as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE | WS_VSCROLL | ES_MULTILINE | ES_AUTOVSCROLL | ES_READONLY, 12, 12, 720, 340, win, LOG, std::ptr::null_mut(), std::ptr::null_mut());
         SendMessageW(log, EM_SETBKGNDCOLOR, 0, 0x00E6E6E6);
-        let cmd = CreateWindowExW(WS_EX_CLIENTEDGE, edit.as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE, 12, 360, 640, 26, win, CMD, std::ptr::null_mut(), std::ptr::null_mut());
+        let cmd = CreateWindowExW(WS_EX_CLIENTEDGE, edit.as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE | 0x0800, 12, 360, 640, 26, win, CMD, std::ptr::null_mut(), std::ptr::null_mut());
         let cue = wide("!hint, !help ...");
         SendMessageW(cmd, EM_SETCUEBANNER, 1, cue.as_ptr() as isize);
-        CreateWindowExW(0, button.as_ptr(), wide("Send").as_ptr(), WS_CHILD | WS_VISIBLE, 660, 360, 72, 26, win, SEND, std::ptr::null_mut(), std::ptr::null_mut());
+        let send = CreateWindowExW(0, button.as_ptr(), wide("Send").as_ptr(), WS_CHILD | WS_VISIBLE | 0x0800, 660, 360, 72, 26, win, SEND, std::ptr::null_mut(), std::ptr::null_mut());
         CreateWindowExW(0, wide("STATIC").as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE | SS_ETCHEDHORZ, 12, 404, 720, 2, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
         CreateWindowExW(0, wide("STATIC").as_ptr(), wide("Host").as_ptr(), WS_CHILD | WS_VISIBLE, 12, 428, 60, 20, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
         let host = CreateWindowExW(WS_EX_CLIENTEDGE, edit.as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE, 80, 424, 240, 24, win, HOST, std::ptr::null_mut(), std::ptr::null_mut());
@@ -905,7 +933,7 @@ fn main() {
         CreateWindowExW(0, wide("STATIC").as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE | SS_ETCHEDHORZ, 12, 578, 720, 2, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
         CreateWindowExW(0, button.as_ptr(), wide("Options").as_ptr(), WS_CHILD | WS_VISIBLE, 280, 596, 200, 28, win, OPTIONS, std::ptr::null_mut(), std::ptr::null_mut());
         CreateWindowExW(0, button.as_ptr(), wide("Launch").as_ptr(), WS_CHILD | WS_VISIBLE, 280, 636, 200, 42, win, LAUNCH, std::ptr::null_mut(), std::ptr::null_mut());
-        let mut app = App { log, cmd, host, slot, pass, nrsc, warn_nrsc, reconnect, dir, log_off: 0, mod_off: 0 };
+        let mut app = App { log, cmd, send, host, slot, pass, nrsc, warn_nrsc, reconnect, dir, log_off: 0, mod_off: 0, connected: false };
         set_text(nrsc, &default_nrsc().display().to_string());
         refresh_paths(&app);
         set_text(cmd, CMD_HINT);
