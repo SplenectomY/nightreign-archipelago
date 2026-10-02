@@ -18,6 +18,8 @@ const ES_AUTOVSCROLL: u32 = 0x0040;
 const ES_READONLY: u32 = 0x0800;
 const ES_PASSWORD: u32 = 0x0020;
 const BS_AUTOCHECKBOX: u32 = 0x0003;
+const BS_OWNERDRAW: u32 = 0x000B;
+const WM_DRAWITEM: u32 = 0x002B;
 const WM_COMMAND: u32 = 0x0111;
 const WM_CTLCOLOREDIT: u32 = 0x0133;
 const WM_CTLCOLORSTATIC: u32 = 0x0138;
@@ -100,6 +102,7 @@ extern "system" {
     fn ShowWindow(hwnd: HWND, cmd: i32) -> i32;
     fn DestroyWindow(hwnd: HWND) -> i32;
     fn InvalidateRect(hwnd: HWND, rect: *const c_void, erase: i32) -> i32;
+    fn FillRect(hdc: *mut c_void, rect: *const [i32; 4], brush: *mut c_void) -> i32;
     fn LoadIconW(instance: HINSTANCE, name: *const u16) -> *mut c_void;
     fn GetParent(hwnd: HWND) -> HWND;
 }
@@ -301,35 +304,37 @@ fn open_options(app: &App) {
         let class = wide("NRAPOptions");
         let wc = WndClass { style: 0, wnd_proc: Some(opt_proc), cls_extra: 0, wnd_extra: 0, instance: std::ptr::null_mut(), icon: std::ptr::null_mut(), cursor: std::ptr::null_mut(), background: std::ptr::null_mut(), menu_name: std::ptr::null(), class_name: class.as_ptr() };
         RegisterClassW(&wc);
-        let win = CreateWindowExW(0, class.as_ptr(), wide("NRAP Options").as_ptr(), WS_OVERLAPPEDWINDOW | WS_VISIBLE, 140, 120, 460, 430, std::ptr::null_mut(), 0, std::ptr::null_mut(), std::ptr::null_mut());
+        let win = CreateWindowExW(0, class.as_ptr(), wide("NRAP Options").as_ptr(), WS_OVERLAPPEDWINDOW | WS_VISIBLE, 140, 120, 420, 560, std::ptr::null_mut(), 0, std::ptr::null_mut(), std::ptr::null_mut());
         let edit = wide("EDIT");
         let button = wide("BUTTON");
         let text = fs::read_to_string(app.dir.join("flags.toml")).unwrap_or_default();
+        CreateWindowExW(0, wide("STATIC").as_ptr(), wide("Overlay").as_ptr(), WS_CHILD | WS_VISIBLE, 16, 12, 200, 20, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
         let row = |label: &str, y: i32, id: isize, value: &str, color: bool| {
-            CreateWindowExW(0, wide("STATIC").as_ptr(), wide(label).as_ptr(), WS_CHILD | WS_VISIBLE, 16, y + 4, 130, 20, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
+            CreateWindowExW(0, wide("STATIC").as_ptr(), wide(label).as_ptr(), WS_CHILD | WS_VISIBLE, 28, y + 4, 130, 20, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
             if color {
-                CreateWindowExW(0, button.as_ptr(), wide(value).as_ptr(), WS_CHILD | WS_VISIBLE, 150, y, 140, 26, win, id, std::ptr::null_mut(), std::ptr::null_mut())
+                CreateWindowExW(0, button.as_ptr(), wide(value).as_ptr(), WS_CHILD | WS_VISIBLE | BS_OWNERDRAW, 168, y, 28, 28, win, id, std::ptr::null_mut(), std::ptr::null_mut())
             } else {
-                let h = CreateWindowExW(WS_EX_CLIENTEDGE, edit.as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE, 150, y, 140, 24, win, id, std::ptr::null_mut(), std::ptr::null_mut());
+                let h = CreateWindowExW(WS_EX_CLIENTEDGE, edit.as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE, 168, y, 140, 24, win, id, std::ptr::null_mut(), std::ptr::null_mut());
                 set_text(h, value);
                 h
             }
         };
         let overlay = |key: &str, fallback: &str| toml_get(&text, "[overlay]", key).unwrap_or_else(|| fallback.into());
-        let x = row("X", 16, 201, &overlay("x", "24"), false);
-        let y = row("Y", 48, 202, &overlay("y", "center"), false);
-        let width = row("Width", 80, 203, &overlay("width", "720"), false);
-        let height = row("Height", 112, 204, &overlay("height", "220"), false);
-        let fade = row("Fade seconds", 144, 205, &overlay("hold_seconds", "5"), false);
-        let local = row("Local player", 184, 211, &overlay("color_local", "EE77FF"), true);
-        let remote = row("Remote player", 216, 212, &overlay("color_remote", "FA9C1E"), true);
-        let item = row("Item", 248, 213, &overlay("color_item", "5DC8C8"), true);
-        let location = row("Location", 280, 214, &overlay("color_location", "6BE36B"), true);
-        let text_color = row("Text", 312, 215, &overlay("text_color", "E8D7A4"), true);
-        let debug = CreateWindowExW(0, button.as_ptr(), wide("Debug log").as_ptr(), WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX, 16, 348, 140, 24, win, 216, std::ptr::null_mut(), std::ptr::null_mut());
+        let x = row("X", 40, 201, &overlay("x", "24"), false);
+        let y = row("Y", 72, 202, &overlay("y", "center"), false);
+        let width = row("Width", 104, 203, &overlay("width", "720"), false);
+        let height = row("Height", 136, 204, &overlay("height", "220"), false);
+        let fade = row("Fade seconds", 168, 205, &overlay("hold_seconds", "5"), false);
+        let local = row("Local player", 208, 211, &overlay("color_local", "EE77FF"), true);
+        let remote = row("Remote player", 244, 212, &overlay("color_remote", "EE77FF"), true);
+        let item = row("Item", 280, 213, &overlay("color_item", "5DC8C8"), true);
+        let location = row("Location", 316, 214, &overlay("color_location", "6BE36B"), true);
+        let text_color = row("Text", 352, 215, &overlay("text_color", "E8D7A4"), true);
+        CreateWindowExW(0, wide("STATIC").as_ptr(), wide("Debug").as_ptr(), WS_CHILD | WS_VISIBLE, 16, 400, 200, 20, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
+        let debug = CreateWindowExW(0, button.as_ptr(), wide("Debug log").as_ptr(), WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX, 28, 428, 160, 24, win, 216, std::ptr::null_mut(), std::ptr::null_mut());
         let on = text.lines().any(|l| l.trim() == "debug = true");
         SendMessageW(debug, BM_SETCHECK, if on { 1 } else { 0 }, 0);
-        CreateWindowExW(0, button.as_ptr(), wide("Close").as_ptr(), WS_CHILD | WS_VISIBLE, 160, 348, 120, 28, win, 220, std::ptr::null_mut(), std::ptr::null_mut());
+        CreateWindowExW(0, button.as_ptr(), wide("Close").as_ptr(), WS_CHILD | WS_VISIBLE, 110, 476, 200, 32, win, 220, std::ptr::null_mut(), std::ptr::null_mut());
         let boxed = Box::new(OptWin { x, y, width, height, fade, local, remote, item, location, text: text_color, debug });
         OPT = Box::into_raw(boxed);
     }
@@ -684,12 +689,22 @@ fn launch(app: &App) {
 
 unsafe extern "system" fn opt_proc(hwnd: HWND, msg: u32, w: usize, l: isize) -> isize {
     match msg {
+        WM_DRAWITEM => {
+            let item = l as *const [i32; 16];
+            let hwnd_item = std::ptr::read_unaligned((l as *const u8).add(24) as *const HWND);
+            let hdc = std::ptr::read_unaligned((l as *const u8).add(32) as *const *mut c_void);
+            let rect = (l as *const u8).add(40) as *const [i32; 4];
+            let brush = CreateSolidBrush(hex_to_bgr(&text_of(hwnd_item)));
+            FillRect(hdc, rect, brush as *mut c_void);
+            let _ = item;
+            1
+        }
         WM_COMMAND => {
             let id = (w & 0xffff) as isize;
             if (211..=215).contains(&id) && !OPT.is_null() {
                 let opt = &*OPT;
                 let button = match id { 211 => opt.local, 212 => opt.remote, 213 => opt.item, 214 => opt.location, _ => opt.text };
-                if let Some(hex) = pick_color(hwnd, &text_of(button)) { set_text(button, &hex); }
+                if let Some(hex) = pick_color(hwnd, &text_of(button)) { set_text(button, &hex); InvalidateRect(button, std::ptr::null(), 1); }
             }
             if id == 220 {
                 if !APP.is_null() { save_options(&*APP); }
@@ -795,13 +810,13 @@ fn main() {
         let slot = CreateWindowExW(WS_EX_CLIENTEDGE, edit.as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE, 384, 400, 180, 24, win, SLOT, std::ptr::null_mut(), std::ptr::null_mut());
         CreateWindowExW(0, wide("STATIC").as_ptr(), wide("Password").as_ptr(), WS_CHILD | WS_VISIBLE, 12, 438, 64, 20, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
         let pass = CreateWindowExW(WS_EX_CLIENTEDGE, edit.as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE | ES_PASSWORD, 80, 434, 240, 24, win, PASS, std::ptr::null_mut(), std::ptr::null_mut());
-        CreateWindowExW(0, button.as_ptr(), wide("Options").as_ptr(), WS_CHILD | WS_VISIBLE, 480, 432, 130, 28, win, OPTIONS, std::ptr::null_mut(), std::ptr::null_mut());
         CreateWindowExW(0, wide("STATIC").as_ptr(), wide("Seamless").as_ptr(), WS_CHILD | WS_VISIBLE, 12, 474, 74, 20, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
         let nrsc = CreateWindowExW(WS_EX_CLIENTEDGE, edit.as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE, 88, 470, 500, 24, win, SEAMLESS, std::ptr::null_mut(), std::ptr::null_mut());
         CreateWindowExW(0, button.as_ptr(), wide("Browse").as_ptr(), WS_CHILD | WS_VISIBLE, 596, 470, 70, 24, win, BROWSE_NRSC, std::ptr::null_mut(), std::ptr::null_mut());
         let warn_nrsc = CreateWindowExW(0, wide("STATIC").as_ptr(), wide("!").as_ptr(), WS_CHILD | SS_ICON, 672, 470, 20, 20, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
         let icon = LoadIconW(std::ptr::null_mut(), 32515 as *const u16);
         SendMessageW(warn_nrsc, 0x0170, icon as usize, 0);
+        CreateWindowExW(0, button.as_ptr(), wide("Options").as_ptr(), WS_CHILD | WS_VISIBLE, 280, 476, 200, 28, win, OPTIONS, std::ptr::null_mut(), std::ptr::null_mut());
         CreateWindowExW(0, button.as_ptr(), wide("Launch").as_ptr(), WS_CHILD | WS_VISIBLE, 280, 516, 200, 42, win, LAUNCH, std::ptr::null_mut(), std::ptr::null_mut());
         let mut app = App { log, cmd, host, slot, pass, nrsc, warn_nrsc, dir, log_off: 0 };
         set_text(nrsc, &default_nrsc().display().to_string());
