@@ -1,6 +1,6 @@
 # Install
 
-Seamless Coop is the launch path. It is tested. The host is the only Archipelago client.
+Seamless Coop is the launch path. It is tested with more than one Archipelago slot in the same session. A player who is not on the Archipelago server can still join and help a slot.
 
 1. Install Seamless Coop for Nightreign and me3.
 2. Unzip the release to `C:/Mods/nightreign-ap/`.

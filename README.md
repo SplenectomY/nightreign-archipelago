@@ -4,7 +4,7 @@ Archipelago world for *Elden Ring Nightreign*, version 0.5.0. Vanilla game files
 
 ## In this build
 
-- Seamless Coop launch path, tested. `nrsc.dll` loads from the me3 profile and writes `.co2` saves. One AP slot. The host client submits checks. A player in another world can join the Seamless session and help.
+- Seamless Coop launch path, tested with more than one Archipelago slot in the same session. `nrsc.dll` loads from the me3 profile and writes `.co2` saves. Each connected client submits its own checks. A player who is not on the Archipelago server can still join the Seamless session and help a slot.
 - Expedition board gated per unlock, including Tricephalos. One random expedition and one random Nightfarer are granted at start. Heolstor stays out of the pool unless `heolstor_in_pool` is set, and unlocks locally after `heolstor_unlock_count` Nightlord defeats.
 - Nightlord and Everdark defeat checks. A Nightlord defeat counts only if that expedition is unlocked.
 - Shop checks for the Small Jar Bazaar. Rows stay hidden until the item is found, then the purchase is the check. A random 3 to 6 rows start unlocked.

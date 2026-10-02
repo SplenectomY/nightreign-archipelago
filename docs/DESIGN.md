@@ -18,8 +18,8 @@ Do not invent a third Nightreign game server. AP does not sync boss HP.
 ## Slot model
 
 - Solo offline: one slot, local MultiServer.
-- Seamless party: **one slot**. Host is the AP client. Joiners do not open a second slot.
-- Multiworld with other games: Nightreign is still one slot. A player stuck in BK elsewhere may join the Seamless session and help clear Nightreign checks for that slot.
+- Seamless party: multiple Archipelago slots in one session, tested. Each connected client submits its own checks.
+- A player who is not connected to the Archipelago server can join the Seamless session normally and help a slot. They do not submit checks.
 
 ## Locations
 
@@ -110,7 +110,7 @@ If discovery shows the fight data is simply missing offline and cannot be enable
 
 ## Shipped in 0.5.0
 
-Seamless Coop is the tested launch path. One slot. Expedition and Nightfarer gating, shop checks, murk, day-boss and evergaol and tower counters, and the Heolstor gate are in.
+Seamless Coop is the tested launch path, including more than one Archipelago slot in one session. Expedition and Nightfarer gating, shop checks, murk, day-boss and evergaol and tower counters, and the Heolstor gate are in.
 
 ## Planned
 
@@ -126,4 +126,3 @@ Seamless Coop is the tested launch path. One slot. Expedition and Nightfarer gat
 - In-run weapon shuffle
 - DeathLink
 - Official online
-- Multiple AP slots in one Seamless session
