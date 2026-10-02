@@ -151,6 +151,7 @@ pub fn location_label(id: i64) -> Option<String> {
         9 => "Nightlord - Harmonia",
         10 => "Nightlord - Straghess",
         100 => "Board unlock after first Nightlord",
+        210 => "Defeat Tutorial Margit",
         101 => "Everdark - Gladius",
         102 => "Everdark - Adel",
         103 => "Everdark - Gnoster",

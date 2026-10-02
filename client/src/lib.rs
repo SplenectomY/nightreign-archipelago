@@ -378,7 +378,18 @@ fn worker() {
         let count = text.lines().find_map(|l| l.trim().strip_prefix("heolstor_unlock_count = ").and_then(|v| v.parse().ok())).unwrap_or(4);
         flag_write::configure_heolstor(in_pool, count);
     }
-    let watches = text.as_deref().map(parse_watches).unwrap_or_default();
+    let mut watches = text.as_deref().map(parse_watches).unwrap_or_default();
+    if !watches.iter().any(|w| w.flag == 5901) {
+        watches.push(Watch {
+            location: "Defeat Tutorial Margit".into(),
+            location_id: 839000210,
+            flag: 5901,
+            last: None,
+            miss_logged: false,
+            submitted: false,
+            ignored: false,
+        });
+    }
     if watches.is_empty() {
         log_line(&dir, "NRAP no event_flag_id values in flags.toml");
     } else {

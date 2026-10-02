@@ -15,6 +15,7 @@ LOCATION_NAME_TO_ID: Dict[str, int] = {
     "Nightlord - Harmonia": LOCATION_ID_BASE + 9,
     "Nightlord - Straghess": LOCATION_ID_BASE + 10,
     "Board unlock after first Nightlord": LOCATION_ID_BASE + 100,
+    "Defeat Tutorial Margit": LOCATION_ID_BASE + 210,
     "Unlock Duchess": LOCATION_ID_BASE + 401,
     "Unlock Revenant": LOCATION_ID_BASE + 402,
     "Unlock Scholar": LOCATION_ID_BASE + 403,
