@@ -203,8 +203,7 @@ unsafe extern "system" fn wnd_proc(hwnd: HWND, msg: u32, w: usize, l: isize) -> 
             let face = wide("Consolas");
             let font = CreateFontW(-(FONT_SIZE.load(Ordering::SeqCst) as i32), 0, 0, 0, 400, 0, 0, 0, 1, 0, 0, 5, 0, face.as_ptr());
             let old = SelectObject(hdc, font);
-            let text = LINES.lock().map(|q| q.iter().cloned().collect::<Vec<_>>().join("
-")).unwrap_or_default();
+            let text = LINES.lock().map(|q| q.iter().cloned().collect::<Vec<_>>().join("\n")).unwrap_or_default();
             let wide_text = wide(&text);
             let mut box_rc = Rect { left: 8, top: 6, right: rc.right - 8, bottom: rc.bottom - 6 };
             if wide_text.len() > 1 {
