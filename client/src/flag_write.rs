@@ -554,7 +554,7 @@ pub fn remember_unlock(item_id: i64) {
 }
 
 fn is_sticky(flag: u32) -> bool {
-    matches!(flag, 115 | 135 | 136 | 189..=195 | 212..=219) || is_nightfarer(flag)
+    matches!(flag, 115 | 130 | 135 | 136 | 189..=195 | 212..=219) || is_nightfarer(flag)
 }
 
 pub fn reapply_cached() -> Option<String> {
@@ -615,6 +615,7 @@ pub fn flag_for_item(item_id: i64) -> Option<u32> {
         839_100_008 => Some(115),
         839_100_009 => Some(135),
         839_100_010 => Some(136),
+        839_100_011 => Some(130),
         839_100_111 => Some(212),
         839_100_112 => Some(213),
         839_100_113 => Some(214),

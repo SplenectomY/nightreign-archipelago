@@ -10,6 +10,7 @@ pub fn item_label(id: i64) -> Option<&'static str> {
         8 => "Expedition Unlock - Heolstor",
         9 => "Expedition Unlock - Harmonia",
         10 => "Expedition Unlock - Straghess",
+        11 => "Expedition Unlock - Deep of Night",
         111 => "Everdark Unlock - Gladius",
         112 => "Everdark Unlock - Adel",
         113 => "Everdark Unlock - Gnoster",

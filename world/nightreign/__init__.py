@@ -13,6 +13,7 @@ from .Items import (
     BASE_UNLOCKS,
     DLC_NIGHTFARERS,
     DLC_UNLOCKS,
+    DEPTH_UNLOCKS,
     ITEM_NAME_TO_ID,
     item_table,
 )
@@ -76,6 +77,7 @@ class NightreignWorld(World):
             names += DLC_UNLOCKS
         if self.options.heolstor_in_pool:
             names.append("Expedition Unlock - Heolstor")
+        names += DEPTH_UNLOCKS
         return names
 
     def _nightfarers(self) -> List[str]:
@@ -130,7 +132,7 @@ class NightreignWorld(World):
     def create_items(self) -> None:
         unlocks = self._unlocks()
         everdark = [item for _loc, item in self._everdark()]
-        start = self.random.choice([n for n in unlocks if n != "Expedition Unlock - Heolstor"] or unlocks)
+        start = self.random.choice([n for n in unlocks if n not in ("Expedition Unlock - Heolstor", "Expedition Unlock - Deep of Night")] or unlocks)
         self.push_precollected(self.create_item(start))
         roster = self._nightfarers()
         self.random.shuffle(roster)
