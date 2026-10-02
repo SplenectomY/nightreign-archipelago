@@ -103,7 +103,3 @@ pub fn rip_rel(span: ModuleSpan, instr_off: usize, disp_at: usize, next_at: usiz
     let disp = i32::from_le_bytes(hay[instr_off + disp_at..instr_off + disp_at + 4].try_into().ok()?);
     Some((span.base + instr_off + next_at).wrapping_add(disp as isize as usize))
 }
-
-pub fn find_ascii(hay: &[u8], needle: &[u8]) -> Option<usize> {
-    hay.windows(needle.len()).position(|w| w == needle)
-}

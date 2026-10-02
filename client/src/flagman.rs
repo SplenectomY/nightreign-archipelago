@@ -20,7 +20,6 @@ const VMF_GET_FLAG_RVA: usize = 0x60CE40;
 const VMF_GET_FLAG_SIG: &[u8] = &[0x44, 0x8B, 0x41, 0x1C, 0x44, 0x8B, 0xDA];
 
 // 110, 150, Delicate Burning, Polite Bow, Warm Welcome, Strength, Heartening Cry, Calm Down
-const SHOP_PROBE: &[u32] = &[110, 150, 67000, 67600, 67640, 67650, 67700, 67670];
 
 type GetFlagFn = unsafe extern "C" fn(inst: usize, flag: u32) -> u8;
 
@@ -115,14 +114,6 @@ fn bit_at(base: usize, bit: u32, msb: bool) -> Option<bool> {
     Some((v >> shift) & 1 == 1)
 }
 
-fn fmt_bit(v: Option<bool>) -> char {
-    match v {
-        Some(true) => '1',
-        Some(false) => '0',
-        None => '-',
-    }
-}
-
 fn game_get_fn() -> Option<GetFlagFn> {
     let span = ModuleSpan::nightreign()?;
     let addr = span.base + VMF_GET_FLAG_RVA;
@@ -154,7 +145,6 @@ fn game_get(inst: usize, flag: u32) -> Option<bool> {
 pub struct FlagMan {
     pub singleton_slot: usize,
     pub instance: usize,
-    pub bits: usize,
     pub layout: &'static str,
     pub pattern: &'static str,
     pub divisor: u32,
@@ -185,11 +175,6 @@ impl FlagMan {
 
     pub fn get_unlocked(&self, flag: u32) -> Option<bool> {
         game_get(self.instance, flag).or_else(|| self.read_flag(flag, true, false))
-    }
-
-    /// Slab read only. GetFlag takes the game lock, and a menu holds that lock.
-    pub fn get_local(&self, flag: u32) -> Option<bool> {
-        self.read_flag(flag, true, false)
     }
 
     /// Copy each group slab and return flag ids that went 0 to 1 since the last call.
@@ -282,29 +267,6 @@ impl FlagMan {
         let (base, bit) = self.group_base(flag, ptr_table)?;
         bit_at(base, bit, msb)
     }
-
-    fn probe_line(&self) -> String {
-        let mut s = format!("inst=0x{:X} {}", self.instance, self.pattern);
-        s.push_str(" game=");
-        for flag in SHOP_PROBE {
-            s.push(fmt_bit(game_get(self.instance, *flag)));
-        }
-        for (name, msb, ptrs) in [
-            ("slab_msb", true, false),
-            ("slab_lsb", false, false),
-            ("ptr_msb", true, true),
-            ("ptr_lsb", false, true),
-        ] {
-            s.push(' ');
-            s.push_str(name);
-            s.push('=');
-            for flag in SHOP_PROBE {
-                s.push(fmt_bit(self.read_flag(*flag, msb, ptrs)));
-            }
-        }
-        s
-    }
-}
 
 fn looks_like_flagman(span: ModuleSpan, inst: usize) -> Option<(u32, u32, u32, usize)> {
     if !heap_ptr(span, inst, 0x48) {
@@ -404,7 +366,6 @@ pub fn collect_all() -> Vec<FlagMan> {
             out.push(FlagMan {
                 singleton_slot: slot,
                 instance: inst,
-                bits: holder,
                 layout: "CSFD4 holder[group]",
                 pattern: pat.name,
                 divisor,

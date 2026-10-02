@@ -18,7 +18,6 @@ const WS_EX_TOOLWINDOW: u32 = 0x00000080;
 const WS_EX_LAYERED: u32 = 0x00080000;
 const WS_EX_TRANSPARENT: u32 = 0x00000020;
 const WS_EX_NOACTIVATE: u32 = 0x08000000;
-const LWA_ALPHA: u32 = 0x2;
 const ULW_ALPHA: u32 = 0x2;
 const SM_CYSCREEN: i32 = 1;
 const HWND_TOPMOST: isize = -1;
@@ -114,24 +113,20 @@ extern "system" {
     fn RegisterClassW(class: *const WndClass) -> u16;
     fn CreateWindowExW(ex: u32, class: *const u16, title: *const u16, style: u32, x: i32, y: i32, w: i32, h: i32, parent: HWND, menu: *mut c_void, instance: *mut c_void, param: *mut c_void) -> HWND;
     fn DefWindowProcW(hwnd: HWND, msg: u32, w: usize, l: isize) -> isize;
-    fn SetLayeredWindowAttributes(hwnd: HWND, key: u32, alpha: u8, flags: u32) -> i32;
     fn SetWindowPos(hwnd: HWND, after: isize, x: i32, y: i32, w: i32, h: i32, flags: u32) -> i32;
     fn ShowWindow(hwnd: HWND, cmd: i32) -> i32;
     fn InvalidateRect(hwnd: HWND, rect: *const c_void, erase: i32) -> i32;
     fn BeginPaint(hwnd: HWND, paint: *mut Paint) -> HDC;
     fn EndPaint(hwnd: HWND, paint: *const Paint) -> i32;
-    fn FillRect(hdc: HDC, rect: *const Rect, brush: *mut c_void) -> i32;
     fn SetTimer(hwnd: HWND, id: usize, ms: u32, proc: *mut c_void) -> usize;
     fn GetMessageW(msg: *mut Msg, hwnd: HWND, min: u32, max: u32) -> i32;
     fn TranslateMessage(msg: *const Msg) -> i32;
     fn DispatchMessageW(msg: *const Msg) -> isize;
-    fn GetClientRect(hwnd: HWND, rect: *mut Rect) -> i32;
     fn PostQuitMessage(code: i32);
 }
 
 #[link(name = "gdi32")]
 extern "system" {
-    fn CreateSolidBrush(color: u32) -> *mut c_void;
     fn CreateFontW(height: i32, width: i32, esc: i32, orient: i32, weight: i32, italic: u32, underline: u32, strike: u32, charset: u32, out: u32, clip: u32, quality: u32, pitch: u32, face: *const u16) -> HFONT;
     fn SelectObject(hdc: HDC, obj: HGDIOBJ) -> HGDIOBJ;
     fn SetTextColor(hdc: HDC, color: u32) -> u32;

@@ -78,14 +78,6 @@ extern "system" {
         flags: DWORD,
         template: HANDLE,
     ) -> HANDLE;
-    fn GetNumberOfConsoleInputEvents(handle: *mut c_void, count: *mut u32) -> i32;
-    fn ReadFile(
-        file: HANDLE,
-        buf: *mut u8,
-        len: DWORD,
-        read: *mut DWORD,
-        overlapped: LPVOID,
-    ) -> BOOL;
     fn SetConsoleMode(handle: HANDLE, mode: DWORD) -> BOOL;
     fn WriteFile(
         file: HANDLE,
@@ -181,26 +173,6 @@ fn take_command_file(dir: &Option<PathBuf>) -> Option<String> {
     let rest: String = text.lines().skip_while(|l| l.trim().is_empty()).skip(1).collect::<Vec<_>>().join("\n");
     let _ = std::fs::write(&path, if rest.is_empty() { String::new() } else { rest + "\n" });
     Some(line)
-}
-
-fn read_console_line() -> Option<String> {
-    unsafe {
-        let h = GetStdHandle(-10i32 as DWORD);
-        if h.is_null() || h == INVALID_HANDLE_VALUE {
-            return None;
-        }
-        let mut waiting = 0u32;
-        if GetNumberOfConsoleInputEvents(h, &mut waiting) == 0 || waiting == 0 {
-            return None;
-        }
-        let mut buf = [0u8; 512];
-        let mut n = 0u32;
-        if ReadFile(h, buf.as_mut_ptr(), buf.len() as DWORD, &mut n, std::ptr::null_mut()) == 0 || n == 0 {
-            return None;
-        }
-        let line = String::from_utf8_lossy(&buf[..n as usize]).trim().to_string();
-        if line.is_empty() { None } else { Some(line) }
-    }
 }
 
 static CONOUT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);

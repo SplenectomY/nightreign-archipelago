@@ -400,20 +400,6 @@ pub fn load_boss_kills(dir: Option<&std::path::PathBuf>) -> String {
     format!("NRAP boss kills loaded {count} day1={} day2={} seed={seed}", *DAY1_KILLS.lock().unwrap(), *DAY2_KILLS.lock().unwrap())
 }
 
-pub fn note_boss_kill() -> Option<String> {
-    if !ARMED.load(std::sync::atomic::Ordering::SeqCst) {
-        return Some("NRAP boss kill ignored, seed not armed".into());
-    }
-    let mut count = BOSS_KILLS.lock().unwrap();
-    *count += 1;
-    let n = *count;
-    if let Some(path) = BOSS_PATH.lock().unwrap().as_ref() {
-        let seed = CACHE_SEED.lock().unwrap().clone();
-        let _ = std::fs::write(path, format!("seed={seed}\ncount={n}\n"));
-    }
-    Some(format!("NRAP boss kills {n}"))
-}
-
 pub fn boss_kill_count() -> u32 {
     *BOSS_KILLS.lock().unwrap()
 }

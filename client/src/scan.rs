@@ -20,7 +20,7 @@ struct Mbi {
 
 #[link(name = "kernel32")]
 extern "system" {
-    fn VirtualQuery(addr: *const u8, info: *mut Mbi, len: usize) -> usize;
+    fn ScanScanVirtualQuery(addr: *const u8, info: *mut Mbi, len: usize) -> usize;
 }
 
 const MEM_COMMIT: u32 = 0x1000;
@@ -36,7 +36,7 @@ fn page_readable(p: usize) -> bool {
     }
     unsafe {
         let mut mbi = std::mem::zeroed::<Mbi>();
-        if VirtualQuery(p as *const u8, &mut mbi, std::mem::size_of::<Mbi>()) == 0 {
+        if ScanVirtualQuery(p as *const u8, &mut mbi, std::mem::size_of::<Mbi>()) == 0 {
             return false;
         }
         mbi.state == MEM_COMMIT
@@ -90,7 +90,7 @@ fn readable_regions() -> Vec<(usize, usize)> {
     let mut scanned = 0usize;
     while addr < 0x0000_7FFF_FFFF_0000 && scanned < MAX_BYTES {
         let mut mbi = unsafe { std::mem::zeroed::<Mbi>() };
-        let n = unsafe { VirtualQuery(addr as *const u8, &mut mbi, std::mem::size_of::<Mbi>()) };
+        let n = unsafe { ScanVirtualQuery(addr as *const u8, &mut mbi, std::mem::size_of::<Mbi>()) };
         if n == 0 {
             break;
         }
