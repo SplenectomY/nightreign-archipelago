@@ -43,10 +43,17 @@ const PASS: isize = 105;
 const SAVE: isize = 106;
 const LAUNCH: isize = 107;
 const DEBUG: isize = 108;
+const BROWSE_NRAP: isize = 109;
+const BROWSE_REG: isize = 110;
+const BROWSE_NRSC: isize = 111;
+const SS_ICON: u32 = 0x0003;
+const SW_HIDE: i32 = 0;
+const SW_SHOW: i32 = 5;
 
 static mut APP: *mut App = std::ptr::null_mut();
 static mut FIELD_BRUSH: isize = 0;
 static mut LABEL_BRUSH: isize = 0;
+static mut WARN_BRUSH: isize = 0;
 static mut SCROLLED: bool = false;
 
 struct App {
@@ -56,6 +63,12 @@ struct App {
     slot: HWND,
     pass: HWND,
     debug: HWND,
+    nrap: HWND,
+    reg: HWND,
+    nrsc: HWND,
+    warn_nrap: HWND,
+    warn_reg: HWND,
+    warn_nrsc: HWND,
     dir: PathBuf,
     log_off: u64,
 }
@@ -74,6 +87,56 @@ extern "system" {
     fn SetWindowTextW(hwnd: HWND, text: *const u16) -> i32;
     fn GetWindowTextW(hwnd: HWND, buf: *mut u16, max: i32) -> i32;
     fn LoadLibraryW(name: *const u16) -> *mut c_void;
+    fn ShowWindow(hwnd: HWND, cmd: i32) -> i32;
+    fn InvalidateRect(hwnd: HWND, rect: *const c_void, erase: i32) -> i32;
+    fn LoadIconW(instance: HINSTANCE, name: *const u16) -> *mut c_void;
+    fn GetParent(hwnd: HWND) -> HWND;
+}
+#[link(name = "comdlg32")]
+extern "system" {
+    fn GetOpenFileNameW(ofn: *mut OpenFile) -> i32;
+}
+#[link(name = "shell32")]
+extern "system" {
+    fn SHBrowseForFolderW(info: *mut BrowseInfo) -> *mut c_void;
+    fn SHGetPathFromIDListW(pidl: *mut c_void, path: *mut u16) -> i32;
+}
+#[repr(C)]
+struct OpenFile {
+    size: u32,
+    owner: HWND,
+    instance: HINSTANCE,
+    filter: *const u16,
+    custom: *mut u16,
+    max_custom: u32,
+    filter_index: u32,
+    file: *mut u16,
+    max_file: u32,
+    title_buf: *mut u16,
+    max_title: u32,
+    initial: *const u16,
+    title: *const u16,
+    flags: u32,
+    file_offset: u16,
+    ext_offset: u16,
+    def_ext: *const u16,
+    cust: usize,
+    hook: usize,
+    template: *const u16,
+    reserved: *mut c_void,
+    reserved_n: u32,
+    flags_ex: u32,
+}
+#[repr(C)]
+struct BrowseInfo {
+    owner: HWND,
+    root: *mut c_void,
+    display: *mut u16,
+    title: *const u16,
+    flags: u32,
+    callback: usize,
+    param: isize,
+    image: i32,
 }
 #[link(name = "gdi32")]
 extern "system" {
@@ -368,6 +431,116 @@ fn profile_path() -> Option<PathBuf> {
     shipped.exists().then_some(shipped)
 }
 
+fn exe_dir() -> PathBuf {
+    std::env::current_exe().ok().and_then(|p| p.parent().map(|p| p.to_path_buf())).unwrap_or_else(mod_dir)
+}
+
+fn steam_nrsc() -> Option<PathBuf> {
+    let mut roots = vec![
+        PathBuf::from(r"C:\Program Files (x86)\Steam"),
+        PathBuf::from(r"C:\Program Files\Steam"),
+    ];
+    if let Ok(local) = std::env::var("PROGRAMFILES(X86)") {
+        roots.push(PathBuf::from(local).join("Steam"));
+    }
+    let libraries = roots.iter().map(|r| r.join(r"steamapps\libraryfolders.vdf")).collect::<Vec<_>>();
+    for vdf in libraries {
+        if let Ok(text) = fs::read_to_string(&vdf) {
+            for line in text.lines() {
+                let line = line.trim().trim_matches('"');
+                if line.contains(":\\") || line.contains(":/") {
+                    roots.push(PathBuf::from(line.replace("\\", "\")));
+                }
+            }
+        }
+    }
+    for root in roots {
+        let dll = root.join(r"steamapps\common\ELDEN RING NIGHTREIGN\Game\SeamlessCoop
+rsc.dll");
+        if dll.is_file() {
+            return Some(dll);
+        }
+    }
+    None
+}
+
+fn default_nrap() -> PathBuf { exe_dir().join("nightreign_ap.dll") }
+fn default_reg() -> PathBuf { exe_dir().join("regulation") }
+fn default_nrsc() -> PathBuf {
+    steam_nrsc().unwrap_or_else(|| PathBuf::from(r"C:\Program Files (x86)\Steam\steamapps\common\ELDEN RING NIGHTREIGN\Game\SeamlessCoop
+rsc.dll"))
+}
+
+fn slash(path: &str) -> String { path.replace('\', "/") }
+
+fn pick_file(owner: HWND, title: &str) -> Option<String> {
+    let mut buf = [0u16; 520];
+    let filter = wide("DLL *.dll All *.*  ");
+    let title = wide(title);
+    let mut ofn = unsafe { std::mem::zeroed::<OpenFile>() };
+    ofn.size = std::mem::size_of::<OpenFile>() as u32;
+    ofn.owner = owner;
+    ofn.filter = filter.as_ptr();
+    ofn.file = buf.as_mut_ptr();
+    ofn.max_file = buf.len() as u32;
+    ofn.title = title.as_ptr();
+    ofn.flags = 0x00080000 | 0x00001000; // OFN_EXPLORER | OFN_FILEMUSTEXIST
+    if unsafe { GetOpenFileNameW(&mut ofn) } == 0 { return None; }
+    let n = buf.iter().position(|c| *c == 0).unwrap_or(buf.len());
+    Some(String::from_utf16_lossy(&buf[..n]))
+}
+
+fn pick_dir(owner: HWND) -> Option<String> {
+    let title = wide("Regulation folder");
+    let mut display = [0u16; 520];
+    let mut info = BrowseInfo { owner, root: std::ptr::null_mut(), display: display.as_mut_ptr(), title: title.as_ptr(), flags: 0x41, callback: 0, param: 0, image: 0 };
+    let pidl = unsafe { SHBrowseForFolderW(&mut info) };
+    if pidl.is_null() { return None; }
+    let mut path = [0u16; 520];
+    let ok = unsafe { SHGetPathFromIDListW(pidl, path.as_mut_ptr()) };
+    if ok == 0 { return None; }
+    let n = path.iter().position(|c| *c == 0).unwrap_or(path.len());
+    Some(String::from_utf16_lossy(&path[..n]))
+}
+
+fn mark(edit: HWND, warn: HWND, ok: bool) {
+    unsafe { ShowWindow(warn, if ok { SW_HIDE } else { SW_SHOW }); }
+    unsafe { InvalidateRect(edit, std::ptr::null(), 1); }
+}
+
+fn refresh_paths(app: &App) {
+    mark(app.nrap, app.warn_nrap, PathBuf::from(text_of(app.nrap)).is_file());
+    mark(app.reg, app.warn_reg, PathBuf::from(text_of(app.reg)).is_dir());
+    mark(app.nrsc, app.warn_nrsc, PathBuf::from(text_of(app.nrsc)).is_file());
+}
+
+fn write_profile_paths(app: &App) -> Result<(), String> {
+    let Some(path) = profile_path() else { return Err("profile missing".into()); };
+    let text = fs::read_to_string(&path).map_err(|e| e.to_string())?;
+    let nrap = slash(&text_of(app.nrap));
+    let nrsc = slash(&text_of(app.nrsc));
+    let reg = slash(&text_of(app.reg));
+    let mut seen = 0;
+    let mut out = Vec::new();
+    for line in text.lines() {
+        if line.trim_start().starts_with("path") {
+            seen += 1;
+            let value = match seen {
+                1 => &nrsc,
+                2 => &nrap,
+                _ => &reg,
+            };
+            let indent = &line[..line.len() - line.trim_start().len()];
+            out.push(format!("{indent}path = '{value}'"));
+        } else {
+            out.push(line.to_string());
+        }
+    }
+    fs::write(&path, out.join("
+") + "
+").map_err(|e| e.to_string())
+}
+
 fn launch(app: &App) {
     save_settings(app);
     let exe = me3_exe();
@@ -379,6 +552,10 @@ fn launch(app: &App) {
         append_log(app, r"nightreign-ap.me3 was not found in the me3 profiles folder or C:/Mods/nightreign-ap");
         return;
     };
+    if let Err(e) = write_profile_paths(app) {
+        append_log(app, &format!("Could not write me3 paths: {e}"));
+        return;
+    }
     let profile = profile.display().to_string().replace('\\', "/");
     match Command::new(&exe)
         .arg("launch")
@@ -396,9 +573,17 @@ fn launch(app: &App) {
 unsafe extern "system" fn wnd_proc(hwnd: HWND, msg: u32, w: usize, l: isize) -> isize {
     match msg {
         WM_CTLCOLOREDIT => {
-            SetBkColor(w as *mut std::ffi::c_void, 0x00FFFFFF);
+            let bad = !APP.is_null() && {
+                let app = &*APP;
+                let target = l as HWND;
+                (target == app.nrap && !PathBuf::from(text_of(app.nrap)).is_file())
+                    || (target == app.reg && !PathBuf::from(text_of(app.reg)).is_dir())
+                    || (target == app.nrsc && !PathBuf::from(text_of(app.nrsc)).is_file())
+            };
+            let color = if bad { 0x006464FF } else { 0x00FFFFFF };
+            SetBkColor(w as *mut std::ffi::c_void, color);
             SetTextColor(w as *mut std::ffi::c_void, 0x00111111);
-            FIELD_BRUSH
+            if bad { WARN_BRUSH } else { FIELD_BRUSH }
         }
         WM_CTLCOLORSTATIC => {
             SetBkColor(w as *mut std::ffi::c_void, 0x00F2F2F2);
@@ -412,12 +597,16 @@ unsafe extern "system" fn wnd_proc(hwnd: HWND, msg: u32, w: usize, l: isize) -> 
                 SEND => send_command(app),
                 SAVE => save_settings(app),
                 LAUNCH => launch(app),
+                BROWSE_NRAP => { if let Some(path) = pick_file(hwnd, "NRAP DLL") { set_text(app.nrap, &path); refresh_paths(app); } }
+                BROWSE_REG => { if let Some(path) = pick_dir(hwnd) { set_text(app.reg, &path); refresh_paths(app); } }
+                BROWSE_NRSC => { if let Some(path) = pick_file(hwnd, "Seamless Coop DLL") { set_text(app.nrsc, &path); refresh_paths(app); } }
                 _ => {}
             }
             0
         }
         WM_TIMER => {
             tail(&mut *APP);
+            refresh_paths(&*APP);
             if !SCROLLED {
                 scroll_bottom((*APP).log);
                 SCROLLED = true;
@@ -453,7 +642,8 @@ fn main() {
         RegisterClassW(&wc);
         FIELD_BRUSH = CreateSolidBrush(0x00FFFFFF) as isize;
         LABEL_BRUSH = CreateSolidBrush(0x00F2F2F2) as isize;
-        let win = CreateWindowExW(0, class.as_ptr(), title.as_ptr(), WS_OVERLAPPEDWINDOW | WS_VISIBLE, 80, 80, 760, 640, std::ptr::null_mut(), 0, std::ptr::null_mut(), std::ptr::null_mut());
+        WARN_BRUSH = CreateSolidBrush(0x006464FF) as isize;
+        let win = CreateWindowExW(0, class.as_ptr(), title.as_ptr(), WS_OVERLAPPEDWINDOW | WS_VISIBLE, 80, 80, 760, 740, std::ptr::null_mut(), 0, std::ptr::null_mut(), std::ptr::null_mut());
         LoadLibraryW(wide("Msftedit.dll").as_ptr());
         let edit = wide("EDIT");
         let rich = wide("RICHEDIT50W");
@@ -470,8 +660,28 @@ fn main() {
         let pass = CreateWindowExW(WS_EX_CLIENTEDGE, edit.as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE | ES_PASSWORD, 80, 434, 240, 24, win, PASS, std::ptr::null_mut(), std::ptr::null_mut());
         let debug = CreateWindowExW(0, button.as_ptr(), wide("Debug log").as_ptr(), WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX, 340, 434, 120, 24, win, DEBUG, std::ptr::null_mut(), std::ptr::null_mut());
         CreateWindowExW(0, button.as_ptr(), wide("Save settings").as_ptr(), WS_CHILD | WS_VISIBLE, 480, 432, 130, 28, win, SAVE, std::ptr::null_mut(), std::ptr::null_mut());
-        CreateWindowExW(0, button.as_ptr(), wide("Launch").as_ptr(), WS_CHILD | WS_VISIBLE, 280, 500, 200, 42, win, LAUNCH, std::ptr::null_mut(), std::ptr::null_mut());
-        let mut app = App { log, cmd, host, slot, pass, debug, dir, log_off: 0 };
+        CreateWindowExW(0, wide("STATIC").as_ptr(), wide("NRAP DLL").as_ptr(), WS_CHILD | WS_VISIBLE, 12, 478, 70, 20, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
+        let nrap = CreateWindowExW(WS_EX_CLIENTEDGE, edit.as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE, 88, 474, 500, 24, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
+        CreateWindowExW(0, button.as_ptr(), wide("Browse").as_ptr(), WS_CHILD | WS_VISIBLE, 596, 474, 70, 24, win, BROWSE_NRAP, std::ptr::null_mut(), std::ptr::null_mut());
+        let warn_nrap = CreateWindowExW(0, wide("STATIC").as_ptr(), wide("!").as_ptr(), WS_CHILD | WS_VISIBLE | SS_ICON, 672, 474, 20, 20, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
+        CreateWindowExW(0, wide("STATIC").as_ptr(), wide("Regulation").as_ptr(), WS_CHILD | WS_VISIBLE, 12, 508, 74, 20, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
+        let reg = CreateWindowExW(WS_EX_CLIENTEDGE, edit.as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE, 88, 504, 500, 24, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
+        CreateWindowExW(0, button.as_ptr(), wide("Browse").as_ptr(), WS_CHILD | WS_VISIBLE, 596, 504, 70, 24, win, BROWSE_REG, std::ptr::null_mut(), std::ptr::null_mut());
+        let warn_reg = CreateWindowExW(0, wide("STATIC").as_ptr(), wide("!").as_ptr(), WS_CHILD | WS_VISIBLE | SS_ICON, 672, 504, 20, 20, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
+        CreateWindowExW(0, wide("STATIC").as_ptr(), wide("Seamless").as_ptr(), WS_CHILD | WS_VISIBLE, 12, 538, 74, 20, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
+        let nrsc = CreateWindowExW(WS_EX_CLIENTEDGE, edit.as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE, 88, 534, 500, 24, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
+        CreateWindowExW(0, button.as_ptr(), wide("Browse").as_ptr(), WS_CHILD | WS_VISIBLE, 596, 534, 70, 24, win, BROWSE_NRSC, std::ptr::null_mut(), std::ptr::null_mut());
+        let warn_nrsc = CreateWindowExW(0, wide("STATIC").as_ptr(), wide("!").as_ptr(), WS_CHILD | WS_VISIBLE | SS_ICON, 672, 534, 20, 20, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
+        let icon = LoadIconW(std::ptr::null_mut(), 32515 as *const u16);
+        SendMessageW(warn_nrap, 0x0170, icon as usize, 0);
+        SendMessageW(warn_reg, 0x0170, icon as usize, 0);
+        SendMessageW(warn_nrsc, 0x0170, icon as usize, 0);
+        CreateWindowExW(0, button.as_ptr(), wide("Launch").as_ptr(), WS_CHILD | WS_VISIBLE, 280, 580, 200, 42, win, LAUNCH, std::ptr::null_mut(), std::ptr::null_mut());
+        let mut app = App { log, cmd, host, slot, pass, debug, nrap, reg, nrsc, warn_nrap, warn_reg, warn_nrsc, dir, log_off: 0 };
+        set_text(nrap, &default_nrap().display().to_string());
+        set_text(reg, &default_reg().display().to_string());
+        set_text(nrsc, &default_nrsc().display().to_string());
+        refresh_paths(&app);
         load_settings(&app);
         append_log(&app, "NRAP Host. Alt-tab here to send !commands or /debug on. Launch starts me3.");
         APP = &mut app;
