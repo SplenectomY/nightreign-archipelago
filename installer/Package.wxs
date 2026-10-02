@@ -12,7 +12,7 @@
   </Package>
 
   <Fragment>
-    <StandardDirectory Id="WindowsVolume">
+    <StandardDirectory Id="TARGETDIR">
       <Directory Id="INSTALLFOLDER" Name="NRAP" />
     </StandardDirectory>
     <StandardDirectory Id="ProgramMenuFolder">
