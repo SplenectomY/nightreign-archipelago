@@ -379,11 +379,11 @@ fn worker() {
         flag_write::configure_heolstor(in_pool, count);
     }
     let mut watches = text.as_deref().map(parse_watches).unwrap_or_default();
-    if crate::ap::tutorial_margit() && !watches.iter().any(|w| w.flag == 5901) {
+    if crate::ap::tutorial_margit() && !watches.iter().any(|w| w.flag == 6012) {
         watches.push(Watch {
             location: "Defeat Tutorial Margit".into(),
             location_id: 839000210,
-            flag: 5901,
+            flag: 6012,
             last: None,
             miss_logged: false,
             submitted: false,
@@ -575,7 +575,7 @@ fn worker() {
                                 }
                             }
                         }
-                        if on && !w.submitted && !w.ignored && w.location_id != 0 && (w.flag != 5901 || crate::ap::tutorial_margit()) {
+                        if on && !w.submitted && !w.ignored && w.location_id != 0 && (w.flag != 6012 || crate::ap::tutorial_margit()) {
                             let _ = watch_tx.send(w.location_id);
                             w.submitted = true;
                         }

@@ -56,7 +56,7 @@ verified_version = "1.3.3.0"
 location = "Defeat Tutorial Margit"
 location_id = 839000210
 kind = "event_flag"
-event_flag_id = 5901
+event_flag_id = 6012
 verified_version = "1.3.3.0"
 
 [[flag]]

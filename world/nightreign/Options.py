@@ -69,7 +69,7 @@ class IncludeDlc(Toggle):
 
 
 class TutorialMargit(Toggle):
-    """Defeat Tutorial Margit is a location. Flag 5901."""
+    """Defeat Tutorial Margit is a location. Flag 6012."""
     display_name = "Tutorial Margit"
     default = True
 

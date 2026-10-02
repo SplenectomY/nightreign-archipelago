@@ -64,7 +64,7 @@ Elden Ring Nightreign:
   # false: base game roster only.
   include_dlc: true
 
-  # true: Defeat Tutorial Margit is a location (flag 5901).
+  # true: Defeat Tutorial Margit is a location (flag 6012).
   # false: the tutorial fight is not a check.
   tutorial_margit: true
 
