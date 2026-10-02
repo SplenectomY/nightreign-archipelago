@@ -72,7 +72,7 @@ fn escape(s: &str) -> String {
 }
 
 fn item_name(id: i64) -> String {
-    crate::names::item_label(id).unwrap_or_else(|| format!("item {id}"))
+    crate::names::item_label(id).map(str::to_string).unwrap_or_else(|| format!("item {id}"))
 }
 
 fn parse_seed(text: &str) -> Option<String> {
