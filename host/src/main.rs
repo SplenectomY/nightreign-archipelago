@@ -611,12 +611,26 @@ fn write_command(path: &PathBuf, line: &str) {
     let _ = fs::write(path, existing);
 }
 
+fn command_dirs(app: &App) -> Vec<PathBuf> {
+    let mut dirs = vec![app.dir.clone()];
+    let legacy = PathBuf::from(r"C:/Mods/nightreign-ap");
+    if legacy.is_dir() && legacy != app.dir { dirs.push(legacy); }
+    dirs
+}
+
 fn queue_command(app: &App, line: &str) {
-    write_command(&app.dir.join("commands.txt"), line);
-    let legacy = PathBuf::from(r"C:/Mods/nightreign-ap/commands.txt");
-    if legacy.parent() != Some(app.dir.as_path()) && legacy.parent().is_some_and(|p| p.is_dir()) {
-        write_command(&legacy, line);
+    for dir in command_dirs(app) {
+        write_command(&dir.join("commands.txt"), line);
     }
+}
+
+fn request_reconnect(app: &App) {
+    save_connection(app);
+    for dir in command_dirs(app) {
+        let _ = fs::write(dir.join("reconnect.trigger"), "1");
+        write_command(&dir.join("commands.txt"), "/reconnect");
+    }
+    append_log(app, "Reconnect requested");
 }
 
 const CMD_HINT: &str = "!hint, !help ...";
@@ -888,7 +902,7 @@ unsafe extern "system" fn wnd_proc(hwnd: HWND, msg: u32, w: usize, l: isize) -> 
             match id {
                 SEND => send_command(app),
                 OPTIONS => open_options(app),
-                RECONNECT => { save_connection(app); queue_command(app, "/reconnect"); append_log(app, "Reconnect requested"); }
+                RECONNECT => request_reconnect(app),
                 LAUNCH => launch(app),
                 BROWSE_NRSC => { if let Some(path) = pick_file(hwnd, "Seamless Coop DLL") { set_text(app.nrsc, &path); refresh_paths(app); save_connection(app); } }
                 _ => {}

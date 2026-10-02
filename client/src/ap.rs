@@ -415,11 +415,15 @@ pub fn run(mut cfg: ApConfig, rx: Receiver<i64>, say_rx: Receiver<String>, drop_
     log(&format!("NRAP AP targeting {} slot {}", cfg.host, cfg.slot));
     let mut pending: Vec<i64> = Vec::new();
     loop {
-        if RECONNECT.swap(false, Ordering::SeqCst) {
+        let trigger = config_path.parent().map(|p| p.join("reconnect.trigger"));
+        let triggered = RECONNECT.swap(false, Ordering::SeqCst)
+            || trigger.as_ref().is_some_and(|p| p.is_file());
+        if triggered {
+            if let Some(path) = &trigger { let _ = std::fs::remove_file(path); }
             if let Ok(text) = std::fs::read_to_string(&config_path) {
                 cfg = ApConfig::from_toml(&text);
-                log(&format!("NRAP AP reconnecting to {} slot {}", cfg.host, cfg.slot));
             }
+            log(&format!("NRAP AP reconnecting to {} slot {}", cfg.host, cfg.slot));
         }
         let mut next_index = 0i64;
         match connect_and_handshake(&cfg, &log, &mut next_index, drop_goods) {
@@ -444,8 +448,10 @@ pub fn run(mut cfg: ApConfig, rx: Receiver<i64>, say_rx: Receiver<String>, drop_
                             Err(e) => log(&format!("NRAP AP say failed: {e}")),
                         }
                     }
-                    if RECONNECT.load(Ordering::SeqCst) {
+                    let trigger = config_path.parent().map(|p| p.join("reconnect.trigger"));
+                    if RECONNECT.load(Ordering::SeqCst) || trigger.as_ref().is_some_and(|p| p.is_file()) {
                         log("NRAP AP disconnecting for reconnect");
+                        let _ = socket.close(None);
                         break;
                     }
                     match rx.recv_timeout(Duration::from_millis(250)) {
