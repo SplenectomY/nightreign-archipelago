@@ -47,6 +47,7 @@ const DEBUG: isize = 108;
 static mut APP: *mut App = std::ptr::null_mut();
 static mut FIELD_BRUSH: isize = 0;
 static mut LABEL_BRUSH: isize = 0;
+static mut SCROLLED: bool = false;
 
 struct App {
     log: HWND,
