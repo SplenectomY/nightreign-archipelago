@@ -68,6 +68,11 @@ pub fn suppress_flag(flag: u32) {
 }
 
 pub fn set_flag(flag: u32, on: bool) -> Result<String, String> {
+    set_flag_from(flag, on, "direct")
+}
+
+pub fn set_flag_from(flag: u32, on: bool, why: &str) -> Result<String, String> {
+    let started = std::time::Instant::now();
     let span = ModuleSpan::nightreign().ok_or_else(|| "no nightreign module".to_string())?;
     let fn_addr = find_setter(span).ok_or_else(|| "EventFlagBaseA AOB not found".to_string())?;
     let man = flagman::resolve().map_err(|e| format!("flagman: {e}"))?;
@@ -81,8 +86,9 @@ pub fn set_flag(flag: u32, on: bool) -> Result<String, String> {
     }
     let after = man.get(flag);
     Ok(format!(
-        "NRAP SetEventFlag {flag} {} fn=0x{fn_addr:X} inst=0x{:X} before={before:?} after={after:?}",
+        "NRAP SetEventFlag {flag} {} why={why} {}ms fn=0x{fn_addr:X} inst=0x{:X} before={before:?} after={after:?}",
         on as u8,
+        started.elapsed().as_millis(),
         man.instance
     ))
 }
@@ -499,7 +505,7 @@ pub fn reapply_cached() -> Option<String> {
     let Some(flag) = flags.into_iter().find(|flag| !done.contains(flag)) else {
         return None;
     };
-    match set_flag(flag, true) {
+    match set_flag_from(flag, true, "reapply") {
         Ok(msg) if msg.contains("after=Some(true)") => {
             APPLIED.lock().unwrap().push(flag);
             Some(msg)
@@ -560,7 +566,7 @@ pub fn note_defeat(flag: u32) -> Option<String> {
             need
         ));
     }
-    match set_flag(115, true) {
+    match set_flag_from(115, true, "heolstor") {
         Ok(msg) => Some(format!("{msg} after {} Nightlord defeats", got.len())),
         Err(e) => {
             let mut q = PENDING.lock().unwrap();
@@ -591,11 +597,12 @@ fn reapply_nightfarers() -> Option<String> {
     }
     let mut out = Vec::new();
     for flag in flags {
-        match set_flag(flag, true) {
+        match set_flag_from(flag, true, "nightfarer") {
             Ok(msg) if msg.contains("after=Some(true)") && msg.contains("before=Some(false)") => {
                 out.push(msg);
             }
-            Ok(_) => {}
+            Ok(msg) if msg.contains("after=Some(true)") => {}
+            Ok(msg) => out.push(format!("NRAP nightfarer rewrite {msg}")),
             Err(e) => return Some(format!("NRAP nightfarer grant waiting flag={flag} ({e})")),
         }
     }
@@ -609,7 +616,7 @@ fn reapply_nightfarers() -> Option<String> {
 
 pub fn apply_item(item_id: i64) -> Option<String> {
     if let Some(release) = shop_release(item_id) {
-        return Some(match set_flag(release, true) {
+        return Some(match set_flag_from(release, true, "shop") {
             Ok(msg) => format!("{msg} (shop row unlocked)"),
             Err(e) => format!("NRAP shop release queued flag={release} ({e})"),
         });
@@ -619,7 +626,7 @@ pub fn apply_item(item_id: i64) -> Option<String> {
         return gate.or_else(|| Some(format!("NRAP grant {item_id} (no unlock flag)")));
     };
     remember_nightfarer(flag);
-    let msg = match set_flag(flag, true) {
+    let msg = match set_flag_from(flag, true, "item") {
         Ok(msg) => msg,
         Err(e) => {
             let mut q = PENDING.lock().unwrap();
@@ -642,7 +649,7 @@ pub fn retry_pending() -> Option<String> {
         return reapplied;
     }
     let flag = q[0];
-    match set_flag(flag, true) {
+    match set_flag_from(flag, true, "pending") {
         Ok(msg) => {
             q.remove(0);
             remember_nightfarer(flag);

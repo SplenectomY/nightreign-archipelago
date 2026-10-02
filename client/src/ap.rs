@@ -234,8 +234,8 @@ fn read_text(socket: &mut Socket) -> Result<Option<String>, String> {
         }
         Ok(Message::Pong(_)) | Ok(Message::Frame(_)) => Ok(None),
         Ok(Message::Binary(_)) => Ok(None),
-        Ok(Message::Close(_)) => Err("server closed".into()),
-        Err(_) => Ok(None),
+        Ok(Message::Close(frame)) => Err(format!("close frame {frame:?}")),
+        Err(e) => Err(format!("read: {e}")),
     }
 }
 
@@ -341,7 +341,7 @@ pub fn run(cfg: ApConfig, rx: Receiver<i64>, say_rx: Receiver<String>, drop_good
                 log("NRAP AP connected");
                 for _ in 0..20 {
                     if drain_server(&mut socket, &log, &mut next_index, drop_goods).is_err() {
-                        log("NRAP AP server closed");
+                        log(&format!("NRAP AP socket ended: {e}"));
                         break;
                     }
                     std::thread::sleep(Duration::from_millis(50));
@@ -370,7 +370,7 @@ pub fn run(cfg: ApConfig, rx: Receiver<i64>, say_rx: Receiver<String>, drop_good
                             log(&format!("NRAP AP LocationChecks {id}"));
                             if drain_server(&mut socket, &log, &mut next_index, drop_goods).is_err()
                             {
-                                log("NRAP AP server closed");
+                                log(&format!("NRAP AP socket ended: {e}"));
                                 break;
                             }
                             match send_goal(&mut socket) {
@@ -382,7 +382,7 @@ pub fn run(cfg: ApConfig, rx: Receiver<i64>, say_rx: Receiver<String>, drop_good
                         Err(RecvTimeoutError::Timeout) => {
                             if drain_server(&mut socket, &log, &mut next_index, drop_goods).is_err()
                             {
-                                log("NRAP AP server closed");
+                                log(&format!("NRAP AP socket ended: {e}"));
                                 break;
                             }
                             match send_goal(&mut socket) {
