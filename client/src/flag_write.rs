@@ -302,6 +302,7 @@ fn unlock_flag(item_id: i64) -> Option<u32> {
     flag_for_item(item_id)
 }
 
+static APPLIED: Mutex<Vec<u32>> = Mutex::new(Vec::new());
 static CACHED: Mutex<Vec<u32>> = Mutex::new(Vec::new());
 static CACHE_PATH: Mutex<Option<std::path::PathBuf>> = Mutex::new(None);
 static CACHE_SEED: Mutex<String> = Mutex::new(String::new());
@@ -494,19 +495,18 @@ pub fn reapply_cached() -> Option<String> {
         return None;
     }
     let flags = CACHED.lock().unwrap().clone();
-    if flags.is_empty() {
+    let done = APPLIED.lock().unwrap().clone();
+    let Some(flag) = flags.into_iter().find(|flag| !done.contains(flag)) else {
         return None;
-    }
-    let mut set = 0u32;
-    for flag in flags {
-        if set_flag(flag, true).is_ok() {
-            set += 1;
+    };
+    match set_flag(flag, true) {
+        Ok(msg) if msg.contains("after=Some(true)") => {
+            APPLIED.lock().unwrap().push(flag);
+            Some(msg)
         }
+        Ok(msg) => Some(msg),
+        Err(e) => Some(format!("NRAP reapply {flag} waiting ({e})")),
     }
-    if set == 0 {
-        return None;
-    }
-    None
 }
 
 pub fn flag_for_item(item_id: i64) -> Option<u32> {

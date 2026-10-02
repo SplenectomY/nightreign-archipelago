@@ -513,19 +513,6 @@ fn worker() {
                 }
             }
         }
-        if let Some(msg) = flag_write::retry_pending() {
-            log_line(&watch_dir, &msg);
-        }
-        let _ = flag_write::reapply_cached();
-        if let Some(msg) = hero::apply() {
-            log_line(&watch_dir, &msg);
-        }
-        if let Some(msg) = grant::retry() {
-            log_line(&watch_dir, &msg);
-        }
-        if let Some(msg) = drop::retry_pending() {
-            log_line(&watch_dir, &msg);
-        }
         if FLAG_DIFF.load(Ordering::SeqCst) {
             if let Some(found) = man {
                 static LAST: std::sync::Mutex<Option<std::time::Instant>> = std::sync::Mutex::new(None);
@@ -553,6 +540,19 @@ fn worker() {
     let mut last_clear_flag = 0u32;
     let mut last_debug_drop = 0i32;
     loop {
+        if let Some(msg) = flag_write::retry_pending() {
+            log_line(&dir, &msg);
+        }
+        let _ = flag_write::reapply_cached();
+        if let Some(msg) = hero::apply() {
+            log_line(&dir, &msg);
+        }
+        if let Some(msg) = grant::retry() {
+            log_line(&dir, &msg);
+        }
+        if let Some(msg) = drop::retry_pending() {
+            log_line(&dir, &msg);
+        }
         static TOML_AT: std::sync::Mutex<Option<std::time::Instant>> = std::sync::Mutex::new(None);
         static TOML: std::sync::Mutex<String> = std::sync::Mutex::new(String::new());
         let due = TOML_AT.lock().unwrap().map(|t| t.elapsed().as_millis() >= 1000).unwrap_or(true);
