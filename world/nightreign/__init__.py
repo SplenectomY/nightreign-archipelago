@@ -179,25 +179,12 @@ class NightreignWorld(World):
                 self.get_location(loc_name),
                 lambda state, item_name=item_name: state.has(item_name, player),
             )
-        quests = {
-            "Unlock Duchess": "Nightfarer - Duchess",
-            "Unlock Revenant": "Nightfarer - Revenant",
-        }
-        if self.options.include_dlc:
-            quests["Unlock Scholar"] = "Nightfarer - Scholar"
-            quests["Unlock Undertaker"] = "Nightfarer - Undertaker"
-        for loc_name, item_name in quests.items():
-            if loc_name == "Unlock Revenant" and self.options.shop_checks.current_key != "none":
-                set_rule(
-                    self.get_location(loc_name),
-                    lambda state, item_name=item_name: state.has(item_name, player)
-                    and state.has("Shop - Besmirched Frame", player),
-                )
-            else:
-                set_rule(
-                    self.get_location(loc_name),
-                    lambda state, item_name=item_name: state.has(item_name, player),
-                )
+        # Quest checks are in-game tasks. They do not require the Nightfarer item.
+        if self.options.shop_checks.current_key != "none":
+            set_rule(
+                self.get_location("Unlock Revenant"),
+                lambda state: state.has("Shop - Besmirched Frame", player),
+            )
         set_rule(self.get_location("Nightlord - Heolstor"), heolstor_gate)
 
         goal = self.options.goal.current_key
