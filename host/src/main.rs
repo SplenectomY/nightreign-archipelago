@@ -70,6 +70,7 @@ struct App {
     pass: HWND,
     nrsc: HWND,
     warn_nrsc: HWND,
+    reconnect: HWND,
     dir: PathBuf,
     log_off: u64,
 }
@@ -109,6 +110,7 @@ extern "system" {
     fn FillRect(hdc: *mut c_void, rect: *const [i32; 4], brush: *mut c_void) -> i32;
     fn LoadIconW(instance: HINSTANCE, name: *const u16) -> *mut c_void;
     fn GetParent(hwnd: HWND) -> HWND;
+    fn GetFocus() -> HWND;
 }
 #[link(name = "comdlg32")]
 extern "system" {
@@ -558,9 +560,11 @@ fn queue_command(app: &App, line: &str) {
     let _ = fs::write(&path, existing);
 }
 
+const CMD_HINT: &str = "!hint, !help ...";
+
 fn send_command(app: &App) {
     let line = text_of(app.cmd);
-    if line.is_empty() {
+    if line.is_empty() || line == CMD_HINT {
         return;
     }
     let path = app.dir.join("commands.txt");
@@ -726,7 +730,7 @@ fn launch(app: &App) {
         .arg(&profile)
         .spawn()
     {
-        Ok(_) => append_log(app, &format!("Launched me3 -p {profile}")),
+        Ok(_) => { ShowWindow(app.reconnect, 5); append_log(app, &format!("Launched me3 -p {profile}")); }
         Err(e) => append_log(app, &format!("Launch failed: {e}")),
     }
 }
@@ -774,9 +778,10 @@ unsafe extern "system" fn wnd_proc(hwnd: HWND, msg: u32, w: usize, l: isize) -> 
                 let app = &*APP;
                 l as HWND == app.nrsc && !PathBuf::from(text_of(app.nrsc)).is_file()
             };
+            let hint = !APP.is_null() && l as HWND == (*APP).cmd && text_of((*APP).cmd) == CMD_HINT;
             let color = if bad { 0x006464FF } else { 0x00FFFFFF };
             SetBkColor(w as *mut std::ffi::c_void, color);
-            SetTextColor(w as *mut std::ffi::c_void, 0x00111111);
+            SetTextColor(w as *mut std::ffi::c_void, if hint { 0x00888888 } else { 0x00111111 });
             if bad { WARN_BRUSH } else { FIELD_BRUSH }
         }
         WM_CTLCOLORSTATIC => {
@@ -788,6 +793,8 @@ unsafe extern "system" fn wnd_proc(hwnd: HWND, msg: u32, w: usize, l: isize) -> 
             let id = (w & 0xffff) as isize;
             let note = (w >> 16) as u16;
             let app = &mut *APP;
+            if id == CMD && note == 0x0100 && text_of(app.cmd) == CMD_HINT { set_text(app.cmd, ""); }
+            if id == CMD && note == 0x0200 && text_of(app.cmd).is_empty() { set_text(app.cmd, CMD_HINT); }
             if note == EN_KILLFOCUS && matches!(id, HOST | SLOT | PASS | SEAMLESS) {
                 save_connection(app);
                 return 0;
@@ -859,7 +866,7 @@ fn main() {
         let slot = CreateWindowExW(WS_EX_CLIENTEDGE, edit.as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE, 384, 424, 180, 24, win, SLOT, std::ptr::null_mut(), std::ptr::null_mut());
         CreateWindowExW(0, wide("STATIC").as_ptr(), wide("Password").as_ptr(), WS_CHILD | WS_VISIBLE, 12, 462, 64, 20, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
         let pass = CreateWindowExW(WS_EX_CLIENTEDGE, edit.as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE | ES_PASSWORD, 80, 458, 240, 24, win, PASS, std::ptr::null_mut(), std::ptr::null_mut());
-        CreateWindowExW(0, button.as_ptr(), wide("Reconnect").as_ptr(), WS_CHILD | WS_VISIBLE, 336, 456, 120, 28, win, RECONNECT, std::ptr::null_mut(), std::ptr::null_mut());
+        let reconnect = CreateWindowExW(0, button.as_ptr(), wide("Reconnect").as_ptr(), WS_CHILD, 336, 456, 120, 28, win, RECONNECT, std::ptr::null_mut(), std::ptr::null_mut());
         CreateWindowExW(0, wide("STATIC").as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE | SS_ETCHEDHORZ, 12, 500, 720, 2, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
         CreateWindowExW(0, wide("STATIC").as_ptr(), wide("Must point to nrsc.dll").as_ptr(), WS_CHILD | WS_VISIBLE, 88, 514, 220, 18, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
         CreateWindowExW(0, wide("STATIC").as_ptr(), wide("Seamless").as_ptr(), WS_CHILD | WS_VISIBLE, 12, 542, 74, 20, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
@@ -871,15 +878,20 @@ fn main() {
         CreateWindowExW(0, wide("STATIC").as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE | SS_ETCHEDHORZ, 12, 578, 720, 2, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
         CreateWindowExW(0, button.as_ptr(), wide("Options").as_ptr(), WS_CHILD | WS_VISIBLE, 280, 596, 200, 28, win, OPTIONS, std::ptr::null_mut(), std::ptr::null_mut());
         CreateWindowExW(0, button.as_ptr(), wide("Launch").as_ptr(), WS_CHILD | WS_VISIBLE, 280, 636, 200, 42, win, LAUNCH, std::ptr::null_mut(), std::ptr::null_mut());
-        let mut app = App { log, cmd, host, slot, pass, nrsc, warn_nrsc, dir, log_off: 0 };
+        let mut app = App { log, cmd, host, slot, pass, nrsc, warn_nrsc, reconnect, dir, log_off: 0 };
         set_text(nrsc, &default_nrsc().display().to_string());
         refresh_paths(&app);
+        set_text(cmd, CMD_HINT);
         load_settings(&app);
         append_log(&app, "NRAP Host. Alt-tab here to send !commands or /debug on. Launch starts me3.");
         APP = &mut app;
         SetTimer(win, 1, 400, std::ptr::null_mut());
         let mut msg = [0usize; 7];
         while GetMessageW(&mut msg, std::ptr::null_mut(), 0, 0) > 0 {
+            if msg[1] == 0x0100 && msg[2] == 0x0D && GetFocus() == app.cmd {
+                send_command(&app);
+                continue;
+            }
             TranslateMessage(&msg);
             DispatchMessageW(&msg);
         }
