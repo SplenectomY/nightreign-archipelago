@@ -50,7 +50,7 @@ struct App {
 
 #[link(name = "user32")]
 extern "system" {
-    fn RegisterClassW(class: *const [usize; 12]) -> u16;
+    fn RegisterClassW(class: *const WndClass) -> u16;
     fn CreateWindowExW(ex: u32, class: *const u16, title: *const u16, style: u32, x: i32, y: i32, w: i32, h: i32, parent: HWND, menu: isize, instance: HINSTANCE, param: *mut c_void) -> HWND;
     fn DefWindowProcW(hwnd: HWND, msg: u32, w: usize, l: isize) -> isize;
     fn GetMessageW(msg: *mut [usize; 7], hwnd: HWND, min: u32, max: u32) -> i32;
@@ -61,6 +61,20 @@ extern "system" {
     fn SendMessageW(hwnd: HWND, msg: u32, w: usize, l: isize) -> isize;
     fn SetWindowTextW(hwnd: HWND, text: *const u16) -> i32;
     fn GetWindowTextW(hwnd: HWND, buf: *mut u16, max: i32) -> i32;
+}
+
+#[repr(C)]
+struct WndClass {
+    style: u32,
+    wnd_proc: Option<unsafe extern "system" fn(HWND, u32, usize, isize) -> isize>,
+    cls_extra: i32,
+    wnd_extra: i32,
+    instance: HINSTANCE,
+    icon: *mut c_void,
+    cursor: *mut c_void,
+    background: *mut c_void,
+    menu_name: *const u16,
+    class_name: *const u16,
 }
 
 fn wide(s: &str) -> Vec<u16> {
@@ -240,20 +254,18 @@ fn main() {
     unsafe {
         let class = wide("NRAPHost");
         let title = wide("NRAP Host");
-        let wc: [usize; 12] = [
-            0,
-            wnd_proc as usize,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            class.as_ptr() as usize,
-            0,
-            0,
-        ];
+        let wc = WndClass {
+            style: 0,
+            wnd_proc: Some(wnd_proc),
+            cls_extra: 0,
+            wnd_extra: 0,
+            instance: std::ptr::null_mut(),
+            icon: std::ptr::null_mut(),
+            cursor: std::ptr::null_mut(),
+            background: std::ptr::null_mut(),
+            menu_name: std::ptr::null(),
+            class_name: class.as_ptr(),
+        };
         RegisterClassW(&wc);
         let win = CreateWindowExW(0, class.as_ptr(), title.as_ptr(), WS_OVERLAPPEDWINDOW | WS_VISIBLE, 80, 80, 760, 640, std::ptr::null_mut(), 0, std::ptr::null_mut(), std::ptr::null_mut());
         let edit = wide("EDIT");
