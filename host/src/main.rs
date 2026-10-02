@@ -16,6 +16,7 @@ const WS_VSCROLL: u32 = 0x00200000;
 const ES_MULTILINE: u32 = 0x0004;
 const ES_AUTOVSCROLL: u32 = 0x0040;
 const ES_READONLY: u32 = 0x0800;
+const ES_PASSWORD: u32 = 0x0020;
 const BS_AUTOCHECKBOX: u32 = 0x0003;
 const WM_COMMAND: u32 = 0x0111;
 const WM_TIMER: u32 = 0x0113;
@@ -211,14 +212,36 @@ fn send_command(app: &App) {
     set_text(app.cmd, "");
 }
 
+fn profile_path() -> Option<PathBuf> {
+    let local = std::env::var("LOCALAPPDATA").unwrap_or_default();
+    let installed = PathBuf::from(local).join(r"garyttierney\me3\config\profiles\nightreign-ap.me3");
+    if installed.exists() {
+        return Some(installed);
+    }
+    let shipped = mod_dir().join("nightreign-ap.me3");
+    shipped.exists().then_some(shipped)
+}
+
 fn launch(app: &App) {
     let exe = me3_exe();
     if !exe.exists() {
         append_log(app, &format!("me3 not found at {}", exe.display()));
         return;
     }
-    match Command::new(&exe).arg("launch").arg("nightreign-ap").spawn() {
-        Ok(_) => append_log(app, "Launched me3 profile nightreign-ap."),
+    let Some(profile) = profile_path() else {
+        append_log(app, "nightreign-ap.me3 was not found in the me3 profiles folder or C:\\Mods\\nightreign-ap");
+        return;
+    };
+    let profile = profile.display().to_string().replace('\\', "/");
+    match Command::new(&exe)
+        .arg("launch")
+        .arg("--game")
+        .arg("nightreign")
+        .arg("-p")
+        .arg(&profile)
+        .spawn()
+    {
+        Ok(_) => append_log(app, &format!("Launched me3 -p {profile}")),
         Err(e) => append_log(app, &format!("Launch failed: {e}")),
     }
 }
@@ -279,7 +302,7 @@ fn main() {
         CreateWindowExW(0, wide("STATIC").as_ptr(), wide("Slot").as_ptr(), WS_CHILD | WS_VISIBLE, 330, 420, 40, 20, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
         let slot = CreateWindowExW(0, edit.as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE, 372, 418, 160, 22, win, SLOT, std::ptr::null_mut(), std::ptr::null_mut());
         CreateWindowExW(0, wide("STATIC").as_ptr(), wide("Password").as_ptr(), WS_CHILD | WS_VISIBLE, 12, 450, 64, 20, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
-        let pass = CreateWindowExW(0, edit.as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE, 80, 448, 240, 22, win, PASS, std::ptr::null_mut(), std::ptr::null_mut());
+        let pass = CreateWindowExW(0, edit.as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE | ES_PASSWORD, 80, 448, 240, 22, win, PASS, std::ptr::null_mut(), std::ptr::null_mut());
         let debug = CreateWindowExW(0, button.as_ptr(), wide("Debug log").as_ptr(), WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX, 340, 448, 120, 22, win, DEBUG, std::ptr::null_mut(), std::ptr::null_mut());
         CreateWindowExW(0, button.as_ptr(), wide("Save settings").as_ptr(), WS_CHILD | WS_VISIBLE, 480, 446, 120, 26, win, SAVE, std::ptr::null_mut(), std::ptr::null_mut());
         let mut app = App { log, cmd, host, slot, pass, debug, dir, log_off: 0 };
