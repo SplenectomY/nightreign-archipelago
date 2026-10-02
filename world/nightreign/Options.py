@@ -135,6 +135,14 @@ class TowerCount(Range):
     default = 10
 
 
+class InvaderCount(Range):
+    """How many invader defeats become locations. Flag 8155 toggles, so both edges count."""
+    display_name = "Invader Count"
+    range_start = 0
+    range_end = 20
+    default = 3
+
+
 class DeathLink(Toggle):
     """Not implemented. Leave off. A death does not kill other players."""
     display_name = "Death Link"
@@ -159,4 +167,5 @@ class NightreignOptions(PerGameCommonOptions):
     day2_boss_count: Day2BossCount
     evergaol_count: EvergaolCount
     tower_count: TowerCount
+    invader_count: InvaderCount
     death_link: DeathLink

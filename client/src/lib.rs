@@ -496,7 +496,7 @@ fn worker() {
                         log_line(&watch_dir, &format!("NRAP dayflag {flag} {}->{}", last.map(|v| if v {"1"} else {"0"}).unwrap_or("?"), if on {"1"} else {"0"}));
                         if last.is_some() && on && matches!(*flag, 7512 | 7001 | 2000) {
                             let mut latched = Vec::new();
-                            for counter in [8140u32, 8145] {
+                            for counter in [8140u32, 8145, 8155] {
                                 if found.get(counter) == Some(true) {
                                     flag_write::note_return(counter);
                                     latched.push(counter);
@@ -510,7 +510,7 @@ fn worker() {
                                 log_line(&watch_dir, &format!("NRAP day boss {flag} count {n} loc {loc}"));
                             }
                         }
-                        if last.is_some() && matches!(*flag, 8140 | 8145) {
+                        if last.is_some() && matches!(*flag, 8140 | 8145 | 8155) {
                             if let Some((n, loc)) = flag_write::note_toggle(*flag, on) {
                                 let _ = watch_tx.send(loc);
                                 log_line(&watch_dir, &format!("NRAP toggle {flag} count {n} loc {loc}"));

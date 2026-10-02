@@ -111,6 +111,8 @@ class NightreignWorld(World):
             hold_locs[f"Seal Evergaol {n}"] = LOCATION_NAME_TO_ID[f"Seal Evergaol {n}"]
         for n in range(1, int(self.options.tower_count) + 1):
             hold_locs[f"Open Magician Tower {n}"] = LOCATION_NAME_TO_ID[f"Open Magician Tower {n}"]
+        for n in range(1, int(self.options.invader_count) + 1):
+            hold_locs[f"Defeat Invaders {n}"] = LOCATION_NAME_TO_ID[f"Defeat Invaders {n}"]
         for loc_name, _item in self._nightlords() + self._everdark():
             hold_locs[loc_name] = LOCATION_NAME_TO_ID[loc_name]
         for name in ("Unlock Duchess", "Unlock Revenant"):
