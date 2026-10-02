@@ -607,7 +607,9 @@ fn worker() {
         if let Some(msg) = flag_write::retry_pending() {
             log_line(&dir, &msg);
         }
-        let _ = flag_write::reapply_cached();
+        if let Some(msg) = flag_write::reapply_cached() {
+            log_line(&dir, &msg);
+        }
         if let Some(msg) = hero::apply() {
             log_line(&dir, &msg);
         }

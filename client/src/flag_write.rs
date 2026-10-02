@@ -540,23 +540,42 @@ pub fn remember_unlock(item_id: i64) {
     }
 }
 
+fn is_sticky(flag: u32) -> bool {
+    matches!(flag, 115 | 135 | 136 | 189..=195 | 212..=219) || is_nightfarer(flag)
+}
+
 pub fn reapply_cached() -> Option<String> {
     if !ARMED.load(std::sync::atomic::Ordering::SeqCst) {
         return None;
     }
     let flags = CACHED.lock().unwrap().clone();
     let done = APPLIED.lock().unwrap().clone();
-    let Some(flag) = flags.into_iter().find(|flag| !done.contains(flag)) else {
-        return None;
-    };
-    match set_flag_from(flag, true, "reapply") {
-        Ok(msg) if msg.contains("after=Some(true)") => {
-            APPLIED.lock().unwrap().push(flag);
-            Some(msg)
+    if let Some(flag) = flags.iter().copied().find(|flag| !is_sticky(*flag) && !done.contains(flag)) {
+        match set_flag_from(flag, true, "reapply") {
+            Ok(msg) if msg.contains("after=Some(true)") => {
+                APPLIED.lock().unwrap().push(flag);
+                return Some(msg);
+            }
+            Ok(msg) if !msg.contains("skip already") => return Some(msg),
+            Err(e) => return Some(format!("NRAP reapply {flag} waiting ({e})")),
+            _ => {}
         }
-        Ok(msg) => Some(msg),
-        Err(e) => Some(format!("NRAP reapply {flag} waiting ({e})")),
     }
+    static LAST: Mutex<Option<std::time::Instant>> = Mutex::new(None);
+    let due = LAST.lock().unwrap().map(|t| t.elapsed().as_millis() >= 1000).unwrap_or(true);
+    if !due {
+        return None;
+    }
+    *LAST.lock().unwrap() = Some(std::time::Instant::now());
+    let mut notes = Vec::new();
+    for flag in flags.into_iter().filter(|flag| is_sticky(*flag)) {
+        match set_flag_from(flag, true, "sticky") {
+            Ok(msg) if !msg.contains("skip already") => notes.push(msg),
+            Err(e) => notes.push(format!("NRAP sticky {flag} waiting ({e})")),
+            _ => {}
+        }
+    }
+    if notes.is_empty() { None } else { Some(notes.join("; ")) }
 }
 
 pub fn flag_for_item(item_id: i64) -> Option<u32> {
