@@ -198,7 +198,7 @@ pub fn start(toml: &str) {
     COLOR_REMOTE.store(cfg.remote as usize, Ordering::SeqCst);
     COLOR_ITEM.store(cfg.item as usize, Ordering::SeqCst);
     COLOR_LOCATION.store(cfg.location as usize, Ordering::SeqCst);
-    if let Ok(mut slot) = SLOT.lock() { *slot = cfg.slot; }
+    if let Ok(mut slot) = SLOT.lock() { *slot = cfg.slot.clone(); }
     thread::spawn(move || run(cfg));
 }
 
@@ -285,7 +285,7 @@ fn paint_wrapped(hdc: HDC, rc: &Rect, lines: &[String]) {
             for word in text.split_inclusive(' ') {
                 let w = wide(word);
                 let mut box_rc = Rect { left: 0, top: 0, right: 0, bottom: 0 };
-                DrawTextW(hdc, w.as_ptr(), (w.len() as i32) - 1, &mut box_rc, DT_LEFT | DT_NOPREFIX | DT_SINGLELINE | 0x400);
+                unsafe { DrawTextW(hdc, w.as_ptr(), (w.len() as i32) - 1, &mut box_rc, DT_LEFT | DT_NOPREFIX | DT_SINGLELINE | 0x400); }
                 let word_w = box_rc.right.max(8);
                 if used > 0 && used + word_w > width {
                     draw_row(hdc, 8, y, &row);
@@ -308,10 +308,12 @@ fn paint_wrapped(hdc: HDC, rc: &Rect, lines: &[String]) {
 
 fn draw_row(hdc: HDC, mut x: i32, y: i32, row: &[(String, u32)]) {
     for (text, color) in row {
-        SetTextColor(hdc, *color);
         let w = wide(text);
         let mut box_rc = Rect { left: x, top: y, right: x + 2000, bottom: y + 40 };
-        DrawTextW(hdc, w.as_ptr(), (w.len() as i32) - 1, &mut box_rc, DT_LEFT | DT_NOPREFIX | DT_SINGLELINE);
+        unsafe {
+            SetTextColor(hdc, *color);
+            DrawTextW(hdc, w.as_ptr(), (w.len() as i32) - 1, &mut box_rc, DT_LEFT | DT_NOPREFIX | DT_SINGLELINE);
+        }
         x = box_rc.right;
     }
 }
