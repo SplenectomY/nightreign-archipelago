@@ -44,6 +44,7 @@ const SLOT: isize = 104;
 const PASS: isize = 105;
 const LAUNCH: isize = 107;
 const OPTIONS: isize = 113;
+const RECONNECT: isize = 114;
 const BROWSE_NRSC: isize = 111;
 const SEAMLESS: isize = 112;
 const EN_KILLFOCUS: u16 = 0x0200;
@@ -365,7 +366,8 @@ fn save_options(app: &App) {
     if let Err(e) = fs::write(&path, text) {
         append_log(app, &format!("Options save failed: {e}"));
     } else {
-        append_log(app, "Saved overlay options. Reconnect to apply them.");
+        append_log(app, "Saved overlay options");
+        queue_command(app, "/reload");
     }
 }
 
@@ -514,6 +516,15 @@ fn tail(app: &mut App) {
         SendMessageW(app.log, EM_REPLACESEL, 0, w.as_ptr() as isize);
         scroll_bottom(app.log);
     }
+}
+
+fn queue_command(app: &App, line: &str) {
+    let path = app.dir.join("commands.txt");
+    let mut existing = fs::read_to_string(&path).unwrap_or_default();
+    if !existing.is_empty() && !existing.ends_with('\n') { existing.push('\n'); }
+    existing.push_str(line);
+    existing.push('\n');
+    let _ = fs::write(&path, existing);
 }
 
 fn send_command(app: &App) {
@@ -753,6 +764,7 @@ unsafe extern "system" fn wnd_proc(hwnd: HWND, msg: u32, w: usize, l: isize) -> 
             match id {
                 SEND => send_command(app),
                 OPTIONS => open_options(app),
+                RECONNECT => { save_connection(app); queue_command(app, "/reconnect"); append_log(app, "Reconnect requested"); }
                 LAUNCH => launch(app),
                 BROWSE_NRSC => { if let Some(path) = pick_file(hwnd, "Seamless Coop DLL") { set_text(app.nrsc, &path); refresh_paths(app); save_connection(app); } }
                 _ => {}
@@ -813,6 +825,7 @@ fn main() {
         let slot = CreateWindowExW(WS_EX_CLIENTEDGE, edit.as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE, 384, 400, 180, 24, win, SLOT, std::ptr::null_mut(), std::ptr::null_mut());
         CreateWindowExW(0, wide("STATIC").as_ptr(), wide("Password").as_ptr(), WS_CHILD | WS_VISIBLE, 12, 438, 64, 20, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
         let pass = CreateWindowExW(WS_EX_CLIENTEDGE, edit.as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE | ES_PASSWORD, 80, 434, 240, 24, win, PASS, std::ptr::null_mut(), std::ptr::null_mut());
+        CreateWindowExW(0, button.as_ptr(), wide("Reconnect").as_ptr(), WS_CHILD | WS_VISIBLE, 336, 432, 120, 28, win, RECONNECT, std::ptr::null_mut(), std::ptr::null_mut());
         CreateWindowExW(0, wide("STATIC").as_ptr(), wide("Seamless").as_ptr(), WS_CHILD | WS_VISIBLE, 12, 474, 74, 20, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
         let nrsc = CreateWindowExW(WS_EX_CLIENTEDGE, edit.as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE, 88, 470, 500, 24, win, SEAMLESS, std::ptr::null_mut(), std::ptr::null_mut());
         CreateWindowExW(0, button.as_ptr(), wide("Browse").as_ptr(), WS_CHILD | WS_VISIBLE, 596, 470, 70, 24, win, BROWSE_NRSC, std::ptr::null_mut(), std::ptr::null_mut());

@@ -13,6 +13,12 @@ const GAME: &str = "Elden Ring Nightreign";
 const ITEMS_HANDLING: u8 = 0b111;
 
 #[derive(Clone)]
+pub static RECONNECT: AtomicBool = AtomicBool::new(false);
+
+pub fn request_reconnect() {
+    RECONNECT.store(true, Ordering::SeqCst);
+}
+
 pub struct ApConfig {
     pub host: String,
     pub slot: String,
@@ -405,10 +411,16 @@ fn send_checks(socket: &mut Socket, ids: &[i64]) -> Result<(), String> {
         .map_err(|e| format!("LocationChecks: {e}"))
 }
 
-pub fn run(cfg: ApConfig, rx: Receiver<i64>, say_rx: Receiver<String>, drop_goods: i32, log: impl Fn(&str)) {
+pub fn run(mut cfg: ApConfig, rx: Receiver<i64>, say_rx: Receiver<String>, drop_goods: i32, config_path: std::path::PathBuf, log: impl Fn(&str)) {
     log(&format!("NRAP AP targeting {} slot {}", cfg.host, cfg.slot));
     let mut pending: Vec<i64> = Vec::new();
     loop {
+        if RECONNECT.swap(false, Ordering::SeqCst) {
+            if let Ok(text) = std::fs::read_to_string(&config_path) {
+                cfg = ApConfig::from_toml(&text);
+                log(&format!("NRAP AP reconnecting to {} slot {}", cfg.host, cfg.slot));
+            }
+        }
         let mut next_index = 0i64;
         match connect_and_handshake(&cfg, &log, &mut next_index, drop_goods) {
             Ok(mut socket) => {
@@ -431,6 +443,10 @@ pub fn run(cfg: ApConfig, rx: Receiver<i64>, say_rx: Receiver<String>, drop_good
                             Ok(()) => log(&format!("NRAP AP say {line}")),
                             Err(e) => log(&format!("NRAP AP say failed: {e}")),
                         }
+                    }
+                    if RECONNECT.load(Ordering::SeqCst) {
+                        log("NRAP AP disconnecting for reconnect");
+                        break;
                     }
                     match rx.recv_timeout(Duration::from_millis(250)) {
                         Ok(id) => {
@@ -471,7 +487,8 @@ pub fn run(cfg: ApConfig, rx: Receiver<i64>, say_rx: Receiver<String>, drop_good
                 log(&format!("NRAP AP not connected: {e}"));
             }
         }
-        let wait_until = std::time::Instant::now() + Duration::from_secs(5);
+        let wait = if RECONNECT.load(Ordering::SeqCst) { Duration::from_millis(200) } else { Duration::from_secs(5) };
+        let wait_until = std::time::Instant::now() + wait;
         while std::time::Instant::now() < wait_until {
             match rx.recv_timeout(Duration::from_millis(250)) {
                 Ok(id) => {

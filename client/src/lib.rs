@@ -422,7 +422,8 @@ fn worker() {
         let dir_ap = dir.clone();
         let drop_goods = drop::drop_item_id_from_toml(text);
         thread::spawn(move || {
-            ap::run(ap_cfg, rx, say_rx, drop_goods, |msg| log_line(&dir_ap, msg));
+            let config_path = dir_ap.clone().unwrap_or_default().join("flags.toml");
+            ap::run(ap_cfg, rx, say_rx, drop_goods, config_path, |msg| log_line(&dir_ap, msg));
         });
     }
     if text.as_deref().is_some_and(|t| t.lines().any(|l| l.trim() == "flag_diff = true")) {
@@ -451,6 +452,22 @@ fn worker() {
                 continue;
             }
             let lower = line.to_ascii_lowercase();
+            if lower == "/reconnect" {
+                ap::request_reconnect();
+                log_line(&console_dir, "NRAP AP reconnect requested");
+                continue;
+            }
+            if lower == "/reload" {
+                if let Some(dir) = console_dir.as_ref() {
+                    if let Ok(text) = std::fs::read_to_string(dir.join("flags.toml")) {
+                        overlay::apply(&text);
+                        let on = text.lines().any(|l| l.trim() == "debug = true");
+                        DEBUG.store(on, Ordering::SeqCst);
+                        log_line(&console_dir, &format!("NRAP options applied, debug {}", if on { "on" } else { "off" }));
+                    }
+                }
+                continue;
+            }
             if lower.starts_with("/debug") {
                 let arg = lower.split_whitespace().nth(1).unwrap_or("");
                 let on = match arg {

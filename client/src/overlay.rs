@@ -229,8 +229,7 @@ fn parse(text: &str) -> Option<Cfg> {
     enable.then_some(cfg)
 }
 
-pub fn start(toml: &str) {
-    let Some(cfg) = parse(toml) else { return };
+fn store_cfg(cfg: &Cfg) {
     LINE_CAP.store(cfg.lines.max(1), Ordering::SeqCst);
     TEXT_COLOR.store(cfg.text as usize, Ordering::SeqCst);
     BACK_COLOR.store(cfg.back as usize, Ordering::SeqCst);
@@ -239,7 +238,24 @@ pub fn start(toml: &str) {
     COLOR_REMOTE.store(cfg.remote as usize, Ordering::SeqCst);
     COLOR_ITEM.store(cfg.item as usize, Ordering::SeqCst);
     COLOR_LOCATION.store(cfg.location as usize, Ordering::SeqCst);
+    WIDTH.store(cfg.width.max(120) as usize, Ordering::SeqCst);
+    HEIGHT.store(cfg.height.max(40) as usize, Ordering::SeqCst);
     if let Ok(mut slot) = SLOT.lock() { *slot = cfg.slot.clone(); }
+    let hwnd = HWND_SLOT.load(Ordering::SeqCst) as HWND;
+    if !hwnd.is_null() {
+        let y = if cfg.y == i32::MIN { (unsafe { GetSystemMetrics(1) } - cfg.height) / 2 } else { cfg.y };
+        unsafe { SetWindowPos(hwnd, -1, cfg.x, y, cfg.width, cfg.height, 0x0040); }
+    }
+}
+
+pub fn apply(toml: &str) {
+    let Some(cfg) = parse(toml) else { return };
+    store_cfg(&cfg);
+}
+
+pub fn start(toml: &str) {
+    let Some(cfg) = parse(toml) else { return };
+    store_cfg(&cfg);
     thread::spawn(move || run(cfg));
 }
 
