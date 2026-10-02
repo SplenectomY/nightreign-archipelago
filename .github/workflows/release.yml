@@ -46,7 +46,6 @@ jobs:
           cp client/target/x86_64-pc-windows-msvc/release/nightreign_ap.dll dist/nightreign-ap/
           cp host/target/x86_64-pc-windows-msvc/release/nrap-host.exe dist/nightreign-ap/
           cp data/flags.toml dist/nightreign-ap/
-          cp profiles/nightreign-ap.me3 dist/nightreign-ap/
           cp docs/INSTALL.md dist/nightreign-ap/
           mkdir -p dist/nightreign-ap/regulation
           cp regulation/regulation.bin dist/nightreign-ap/regulation/
@@ -56,7 +55,7 @@ jobs:
 
           1. Install Seamless Coop for Nightreign and me3.
           2. Unzip this folder to C:/Mods/nightreign-ap/. Keep nightreign_ap.dll and flags.toml together.
-          3. Copy nightreign-ap.me3 to the me3 profiles folder. Paths must use forward slashes.
+          3. Launch writes nightreign-ap.me3 into the me3 profiles folder. Paths use forward slashes.
           4. Download nightreign.apworld and Nightreign.yaml from this release. Copy the apworld to %USERPROFILE%\Archipelago\custom_worlds\ and the yaml to the Players folder.
           5. Generate, host MultiServer, then launch with me3. Do not also launch nrsc_launcher.exe.
           6. The console must print NRAP attached and NRAP AP connected.
