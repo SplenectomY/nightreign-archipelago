@@ -27,7 +27,7 @@ Archipelago world for *Elden Ring Nightreign*, version 0.5.0. Vanilla game files
 You still need Nightreign, Seamless Coop, and me3. You do not need Visual Studio or `cargo`.
 
 1. Install [Seamless Coop for Nightreign](https://www.nexusmods.com/eldenringnightreign/mods/3) and [me3](https://github.com/garyttierney/me3).
-2. Unzip a release to `C:/Mods/nightreign-ap/`. `nightreign_ap.dll` and `flags.toml` must stay in that folder.
+2. Run `NightreignArchipelago.msi`. The default folder is `C:/NRAP` and can be changed. SmartScreen will warn that the publisher is unknown. Click **More info**, then **Run anyway**. See [docs/INSTALL.md](docs/INSTALL.md).
 3. Open `nrap-host.exe`. Check the three paths, then Launch. That writes `nightreign-ap.me3` into the me3 profiles folder.
 4. Copy `nightreign.apworld` to `C:/ProgramData/Archipelago/custom_worlds/` and `Nightreign.yaml` to the Archipelago Players folder. Generate, then host.
 5. Launch with me3. Do not also launch `nrsc_launcher.exe`.
