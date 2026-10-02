@@ -497,18 +497,29 @@ pub fn bind_seed(seed: &str) -> String {
 }
 
 pub fn enqueue_item(index: i64, item_id: i64) -> bool {
-    let mut seen = SEEN.lock().unwrap();
+    let seen = SEEN.lock().unwrap();
     if seen.contains(&index) {
         return false;
     }
-    seen.push(index);
     drop(seen);
-    GRANT_Q.lock().unwrap().push((index, item_id));
+    let mut queued = GRANT_Q.lock().unwrap();
+    if queued.iter().any(|(i, _)| *i == index) {
+        return false;
+    }
+    queued.push((index, item_id));
+    true
+}
+
+pub fn mark_granted(index: i64) {
+    let mut seen = SEEN.lock().unwrap();
+    if !seen.contains(&index) {
+        seen.push(index);
+    }
+    drop(seen);
     let flags = CACHED.lock().unwrap().clone();
     if let Some(path) = CACHE_PATH.lock().unwrap().as_ref() {
         write_cache(path, &CACHE_SEED.lock().unwrap(), &flags);
     }
-    true
 }
 
 pub fn pop_queued() -> Option<(i64, i64)> {

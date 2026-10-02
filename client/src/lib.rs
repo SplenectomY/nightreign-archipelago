@@ -617,6 +617,11 @@ fn worker() {
             }
             if let Some(msg) = grant::want_once(dir.as_ref(), &flag_write::cache_seed(), index, id) {
                 log_line(&dir, &msg);
+                if msg.contains("skip already") || msg.contains("murk +") {
+                    flag_write::mark_granted(index);
+                }
+            } else {
+                flag_write::mark_granted(index);
             }
             if id != 839_100_100 {
                 let toml = TOML.lock().unwrap().clone();
