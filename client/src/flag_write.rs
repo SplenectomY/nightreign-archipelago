@@ -415,12 +415,10 @@ pub fn note_day_boss(flag: u32) -> Option<(u32, i64)> {
     Some((count, loc))
 }
 
-pub fn note_return() {
+pub fn note_return(flag: u32) {
     let mut pending = IGNORE_CLEAR.lock().unwrap();
-    for flag in [8140, 8145] {
-        if !pending.contains(&flag) {
-            pending.push(flag);
-        }
+    if !pending.contains(&flag) {
+        pending.push(flag);
     }
 }
 

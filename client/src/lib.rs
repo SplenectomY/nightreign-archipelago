@@ -426,8 +426,14 @@ fn worker() {
                     if *last != Some(on) {
                         log_line(&dir, &format!("NRAP dayflag {flag} {}->{}", last.map(|v| if v {"1"} else {"0"}).unwrap_or("?"), if on {"1"} else {"0"}));
                         if last.is_some() && on && matches!(*flag, 7512 | 7001 | 2000) {
-                            flag_write::note_return();
-                            log_line(&dir, &format!("NRAP return signal {flag}, ignoring counter clears"));
+                            let mut latched = Vec::new();
+                            for counter in [8140u32, 8145] {
+                                if found.get(counter) == Some(true) {
+                                    flag_write::note_return(counter);
+                                    latched.push(counter);
+                                }
+                            }
+                            log_line(&dir, &format!("NRAP return signal {flag}, latching clears {latched:?}"));
                         }
                         if last.is_some() && on {
                             if let Some((n, loc)) = flag_write::note_day_boss(*flag) {
