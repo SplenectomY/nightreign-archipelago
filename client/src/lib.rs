@@ -396,21 +396,22 @@ fn worker() {
         }
     });
 
-    let mut man = None;
-    let mut fail_logged = false;
-    let mut last_debug_flag = 0u32;
-    let mut last_clear_flag = 0u32;
-    let mut last_debug_drop = 0i32;
-    loop {
+    let watch_tx = tx.clone();
+    let watch_dir = dir.clone();
+    thread::spawn(move || {
+        let mut watches = watches;
+        let mut man = None;
+        let mut fail_logged = false;
+        loop {
         if man.is_none() {
             match flagman::resolve() {
                 Ok(found) => {
-                    log_line(&dir, &found.describe());
+                    log_line(&watch_dir, &found.describe());
                     man = Some(found);
                 }
                 Err(e) => {
                     if !fail_logged {
-                        log_line(&dir, &format!("NRAP flagman not ready: {e}"));
+                        log_line(&watch_dir, &format!("NRAP flagman not ready: {e}"));
                         fail_logged = true;
                     }
                 }
@@ -424,7 +425,7 @@ fn worker() {
             for (flag, last) in day.iter_mut() {
                 if let Some(on) = found.get(*flag) {
                     if *last != Some(on) {
-                        log_line(&dir, &format!("NRAP dayflag {flag} {}->{}", last.map(|v| if v {"1"} else {"0"}).unwrap_or("?"), if on {"1"} else {"0"}));
+                        log_line(&watch_dir, &format!("NRAP dayflag {flag} {}->{}", last.map(|v| if v {"1"} else {"0"}).unwrap_or("?"), if on {"1"} else {"0"}));
                         if last.is_some() && on && matches!(*flag, 7512 | 7001 | 2000) {
                             let mut latched = Vec::new();
                             for counter in [8140u32, 8145] {
@@ -433,20 +434,20 @@ fn worker() {
                                     latched.push(counter);
                                 }
                             }
-                            log_line(&dir, &format!("NRAP return signal {flag}, latching clears {latched:?}"));
+                            log_line(&watch_dir, &format!("NRAP return signal {flag}, latching clears {latched:?}"));
                         }
                         if last.is_some() && on {
                             if let Some((n, loc)) = flag_write::note_day_boss(*flag) {
-                                let _ = tx.send(loc);
-                                log_line(&dir, &format!("NRAP day boss {flag} count {n} loc {loc}"));
+                                let _ = watch_tx.send(loc);
+                                log_line(&watch_dir, &format!("NRAP day boss {flag} count {n} loc {loc}"));
                             }
                         }
                         if last.is_some() && matches!(*flag, 8140 | 8145) {
                             if let Some((n, loc)) = flag_write::note_toggle(*flag, on) {
-                                let _ = tx.send(loc);
-                                log_line(&dir, &format!("NRAP toggle {flag} count {n} loc {loc}"));
+                                let _ = watch_tx.send(loc);
+                                log_line(&watch_dir, &format!("NRAP toggle {flag} count {n} loc {loc}"));
                             } else if !on {
-                                log_line(&dir, &format!("NRAP toggle {flag} clear ignored"));
+                                log_line(&watch_dir, &format!("NRAP toggle {flag} clear ignored"));
                             }
                         }
                         *last = Some(on);
@@ -464,7 +465,7 @@ fn worker() {
                                     &format!("NRAP check: {} (flag {} 0->1)", w.location, w.flag),
                                 );
                                 if let Some(msg) = flag_write::note_defeat(w.flag) {
-                                    log_line(&dir, &msg);
+                                    log_line(&watch_dir, &msg);
                                 }
                             } else {
                                 log_line(
@@ -480,7 +481,7 @@ fn worker() {
                             w.last = Some(on);
                         }
                         if on && !w.submitted && w.location_id != 0 {
-                            let _ = tx.send(w.location_id);
+                            let _ = watch_tx.send(w.location_id);
                             w.submitted = true;
                         }
                     }
@@ -497,17 +498,17 @@ fn worker() {
             }
         }
         if let Some(msg) = flag_write::retry_pending() {
-            log_line(&dir, &msg);
+            log_line(&watch_dir, &msg);
         }
         let _ = flag_write::reapply_cached();
         if let Some(msg) = hero::apply() {
-            log_line(&dir, &msg);
+            log_line(&watch_dir, &msg);
         }
         if let Some(msg) = grant::retry() {
-            log_line(&dir, &msg);
+            log_line(&watch_dir, &msg);
         }
         if let Some(msg) = drop::retry_pending() {
-            log_line(&dir, &msg);
+            log_line(&watch_dir, &msg);
         }
         if FLAG_DIFF.load(Ordering::SeqCst) {
             if let Some(found) = man {
@@ -520,15 +521,24 @@ fn worker() {
                     let (rose, groups) = found.diff_rising(&mut PREV.lock().unwrap());
                     if !rose.is_empty() {
                         let show: Vec<_> = rose.iter().take(24).map(|f| f.to_string()).collect();
-                        log_line(&dir, &format!("NRAP flag diff +{} groups={groups} {}", rose.len(), show.join(",")));
+                        log_line(&watch_dir, &format!("NRAP flag diff +{} groups={groups} {}", rose.len(), show.join(",")));
                         *IDLE.lock().unwrap() = Some(std::time::Instant::now());
                     } else if IDLE.lock().unwrap().map(|t| t.elapsed().as_secs() >= 10).unwrap_or(true) {
                         *IDLE.lock().unwrap() = Some(std::time::Instant::now());
-                        log_line(&dir, &format!("NRAP flag diff idle groups={groups}"));
+                        log_line(&watch_dir, &format!("NRAP flag diff idle groups={groups}"));
                     }
                 }
             }
         }
+            thread::sleep(Duration::from_millis(200));
+        }
+    });
+    log_line(&dir, "NRAP watch thread started");
+
+    let mut last_debug_flag = 0u32;
+    let mut last_clear_flag = 0u32;
+    let mut last_debug_drop = 0i32;
+    loop {
         static TOML_AT: std::sync::Mutex<Option<std::time::Instant>> = std::sync::Mutex::new(None);
         static TOML: std::sync::Mutex<String> = std::sync::Mutex::new(String::new());
         let due = TOML_AT.lock().unwrap().map(|t| t.elapsed().as_millis() >= 1000).unwrap_or(true);
