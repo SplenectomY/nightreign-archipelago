@@ -51,20 +51,24 @@ jobs:
           cp regulation/regulation.bin dist/nightreign-ap/regulation/
           cp README.md dist/nightreign-ap/
           cat > dist/nightreign-ap/README.txt << 'EOF'
-          Nightreign Archipelago — tester pack
+          Nightreign Archipelago
 
           1. Install Seamless Coop for Nightreign and me3.
-          2. Unzip this folder to C:/Mods/nightreign-ap/. Keep nightreign_ap.dll and flags.toml together.
-          3. Launch writes nightreign-ap.me3 into the me3 profiles folder. Paths use forward slashes.
-          4. Download nightreign.apworld and Nightreign.yaml from this release. Copy the apworld to %USERPROFILE%\Archipelago\custom_worlds\ and the yaml to the Players folder.
-          5. Generate, host MultiServer, then launch with me3. Do not also launch nrsc_launcher.exe.
-          6. The console must print NRAP attached and NRAP AP connected.
-
-          regulation/regulation.bin is included and the profile loads it. Shop rows stay hidden until their release flag is granted. Do not open character select or the expedition board until the log shows the unlock cache armed, or the menu can exit the game. Remove the [[packages]] block to run without that override.
+          2. Run the MSI. The default folder is C:/NRAP and can be changed in the installer.
+          3. Open NRAP Host. Launch writes nightreign-ap.me3 into the me3 profiles folder.
+          4. Download nightreign.apworld and Nightreign.yaml from this release. Copy the apworld to %USERPROFILE%/Archipelago/custom_worlds and the yaml to the Players folder.
+          5. Generate, host MultiServer, then launch from NRAP Host. Do not also launch nrsc_launcher.exe.
 
           You do not need Rust or Visual Studio.
           EOF
-          powershell -Command "Compress-Archive -Path dist/nightreign-ap/* -DestinationPath dist/nightreign-ap-windows.zip -Force"
+
+      - name: Build MSI
+        shell: pwsh
+        run: |
+          dotnet tool install --global wix --version 5.0.2
+          wix extension add -g WixToolset.UI.wixext/5.0.2
+          $version = (Select-String -Path client/Cargo.toml -Pattern 'version = "(.+)"').Matches[0].Groups[1].Value
+          wix build installer/Package.wxs -ext WixToolset.UI.wixext -d Version=$version -d Stage=dist/nightreign-ap -o dist/NightreignArchipelago.msi
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
@@ -74,13 +78,13 @@ jobs:
           prerelease: ${{ github.event_name == 'workflow_dispatch' && inputs.prerelease || false }}
           generate_release_notes: true
           files: |
-            dist/nightreign-ap-windows.zip
+            dist/NightreignArchipelago.msi
             nightreign.apworld
             players/Nightreign.yaml
           body: |
             Tester pack. No Rust or MSVC required.
 
-            `nightreign.apworld` and `Nightreign.yaml` are separate downloads. The zip is the mod: `nightreign_ap.dll`, `nrap-host.exe`, `flags.toml`, me3 profile, regulation.bin, and the install notes.
+            `NightreignArchipelago.msi` installs to `C:/NRAP` by default. The installer can change that folder. `nightreign.apworld` and `Nightreign.yaml` stay separate downloads.
 
             Launch with nrap-host.exe. It saves host, slot, and password, starts me3, and shows the log. The in-game overlay is a click-through log. Local servers use ws; archipelago.gg uses wss.
 

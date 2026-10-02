@@ -1,0 +1,49 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs" xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+  <Package Name="Nightreign Archipelago" Manufacturer="NRAP" Version="$(var.Version)" UpgradeCode="A7C3E1B2-4D55-4F1A-9C20-7B6E8A1D2F40" Scope="perMachine">
+    <SummaryInformation Description="Elden Ring Nightreign Archipelago client" />
+    <MajorUpgrade DowngradeErrorMessage="A newer version of Nightreign Archipelago is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+    <Feature Id="Main" Title="Nightreign Archipelago">
+      <ComponentGroupRef Id="InstallFiles" />
+      <ComponentGroupRef Id="Shortcuts" />
+    </Feature>
+    <ui:WixUI Id="WixUI_InstallDir" InstallDirectory="INSTALLFOLDER" />
+    <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
+  </Package>
+
+  <Fragment>
+    <StandardDirectory Id="WindowsVolume">
+      <Directory Id="INSTALLFOLDER" Name="NRAP" />
+    </StandardDirectory>
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="ProgramMenuDir" Name="Nightreign Archipelago" />
+    </StandardDirectory>
+  </Fragment>
+
+  <Fragment>
+    <ComponentGroup Id="InstallFiles" Directory="INSTALLFOLDER">
+      <Component Guid="B1E2C3D4-1111-4A20-9C20-7B6E8A1D2F41">
+        <File Id="HostExe" Source="$(var.Stage)\nrap-host.exe" KeyPath="yes" />
+      </Component>
+      <Component Guid="B1E2C3D4-1111-4A20-9C20-7B6E8A1D2F42">
+        <File Source="$(var.Stage)\nightreign_ap.dll" KeyPath="yes" />
+      </Component>
+      <Component Guid="B1E2C3D4-1111-4A20-9C20-7B6E8A1D2F43">
+        <File Source="$(var.Stage)\flags.toml" KeyPath="yes" />
+      </Component>
+      <Component Guid="B1E2C3D4-1111-4A20-9C20-7B6E8A1D2F44">
+        <File Source="$(var.Stage)\README.txt" KeyPath="yes" />
+      </Component>
+      <Component Guid="B1E2C3D4-1111-4A20-9C20-7B6E8A1D2F45">
+        <File Source="$(var.Stage)\regulation\regulation.bin" KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+    <ComponentGroup Id="Shortcuts" Directory="ProgramMenuDir">
+      <Component Guid="B1E2C3D4-1111-4A20-9C20-7B6E8A1D2F46">
+        <Shortcut Name="NRAP Host" Target="[#HostExe]" WorkingDirectory="INSTALLFOLDER" />
+        <RemoveFolder Id="RemoveProgramMenuDir" On="uninstall" />
+        <RegistryValue Root="HKCU" Key="Software\NRAP" Name="installed" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+  </Fragment>
+</Wix>
