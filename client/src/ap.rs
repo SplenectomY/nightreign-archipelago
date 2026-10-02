@@ -5,6 +5,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{Receiver, RecvTimeoutError};
 use std::time::Duration;
 use tungstenite::protocol::WebSocket;
+use tungstenite::client::IntoClientRequest;
 use tungstenite::{client::client as ws_client, Message};
 
 const GAME: &str = "Elden Ring Nightreign";
@@ -266,8 +267,17 @@ fn connect_and_handshake(
         .ok();
     stream.set_nodelay(true).ok();
     let url = format!("ws://{addr}");
+    let mut request = url
+        .into_client_request()
+        .map_err(|e| format!("ws request {url}: {e}"))?;
+    request.headers_mut().insert(
+        "Sec-WebSocket-Extensions",
+        "permessage-deflate; client_max_window_bits"
+            .parse()
+            .map_err(|e| format!("deflate header: {e}"))?,
+    );
     let (mut socket, _) =
-        ws_client(&url, stream).map_err(|e| format!("ws handshake {url}: {e}"))?;
+        ws_client(request, stream).map_err(|e| format!("ws handshake {url}: {e}"))?;
     if let Ok(Some(room)) = read_text(&mut socket) {
         handle_server_text(&room, log, next_index, drop_goods);
     }

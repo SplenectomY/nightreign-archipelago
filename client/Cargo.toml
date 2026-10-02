@@ -1,6 +1,6 @@
 [package]
 name = "nightreign_ap"
-version = "0.4.11"
+version = "0.4.12"
 edition = "2021"
 description = "Archipelago runtime client for Elden Ring Nightreign"
 license = "MIT"
@@ -9,4 +9,4 @@ license = "MIT"
 crate-type = ["cdylib"]
 
 [dependencies]
-tungstenite = { version = "0.24", default-features = false, features = ["handshake"] }
+tungstenite = { version = "0.24", default-features = false, features = ["handshake", "deflate"] }
