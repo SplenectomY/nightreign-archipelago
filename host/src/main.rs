@@ -43,8 +43,6 @@ const PASS: isize = 105;
 const SAVE: isize = 106;
 const LAUNCH: isize = 107;
 const DEBUG: isize = 108;
-const BROWSE_NRAP: isize = 109;
-const BROWSE_REG: isize = 110;
 const BROWSE_NRSC: isize = 111;
 const SS_ICON: u32 = 0x0003;
 const SW_HIDE: i32 = 0;
@@ -63,11 +61,7 @@ struct App {
     slot: HWND,
     pass: HWND,
     debug: HWND,
-    nrap: HWND,
-    reg: HWND,
     nrsc: HWND,
-    warn_nrap: HWND,
-    warn_reg: HWND,
     warn_nrsc: HWND,
     dir: PathBuf,
     log_off: u64,
@@ -509,28 +503,20 @@ fn pick_dir(owner: HWND) -> Option<String> {
     Some(String::from_utf16_lossy(&path[..n]))
 }
 
-fn regulation_ok(path: &str) -> bool {
-    let path = PathBuf::from(path);
-    path.is_file() || path.join("regulation.bin").is_file()
-}
-
 fn mark(edit: HWND, warn: HWND, ok: bool) {
     unsafe { ShowWindow(warn, if ok { SW_HIDE } else { SW_SHOW }); }
     unsafe { InvalidateRect(edit, std::ptr::null(), 1); }
 }
 
 fn refresh_paths(app: &App) {
-    mark(app.nrap, app.warn_nrap, PathBuf::from(text_of(app.nrap)).is_file());
-    mark(app.reg, app.warn_reg, regulation_ok(&text_of(app.reg)));
     mark(app.nrsc, app.warn_nrsc, PathBuf::from(text_of(app.nrsc)).is_file());
 }
 
 fn write_profile_paths(app: &App) -> Result<(), String> {
     let Some(path) = profile_path() else { return Err("me3 profiles folder is not available".into()); };
-    let nrap = slash(&text_of(app.nrap));
+    let nrap = slash(&default_nrap().display().to_string());
     let nrsc = slash(&text_of(app.nrsc));
-    let picked = PathBuf::from(text_of(app.reg));
-    let reg = slash(&if picked.is_file() { picked.parent().unwrap_or(picked.as_path()).display().to_string() } else { picked.display().to_string() });
+    let reg = slash(&exe_dir().display().to_string());
     if !path.exists() {
         return fs::write(&path, profile_template(&nrap, &reg, &nrsc)).map_err(|e| e.to_string());
     }
@@ -590,10 +576,7 @@ unsafe extern "system" fn wnd_proc(hwnd: HWND, msg: u32, w: usize, l: isize) -> 
         WM_CTLCOLOREDIT => {
             let bad = !APP.is_null() && {
                 let app = &*APP;
-                let target = l as HWND;
-                (target == app.nrap && !PathBuf::from(text_of(app.nrap)).is_file())
-                    || (target == app.reg && !PathBuf::from(text_of(app.reg)).is_dir())
-                    || (target == app.nrsc && !PathBuf::from(text_of(app.nrsc)).is_file())
+                l as HWND == app.nrsc && !PathBuf::from(text_of(app.nrsc)).is_file()
             };
             let color = if bad { 0x006464FF } else { 0x00FFFFFF };
             SetBkColor(w as *mut std::ffi::c_void, color);
@@ -612,8 +595,6 @@ unsafe extern "system" fn wnd_proc(hwnd: HWND, msg: u32, w: usize, l: isize) -> 
                 SEND => send_command(app),
                 SAVE => save_settings(app),
                 LAUNCH => launch(app),
-                BROWSE_NRAP => { if let Some(path) = pick_file(hwnd, "NRAP DLL") { set_text(app.nrap, &path); refresh_paths(app); } }
-                BROWSE_REG => { if let Some(path) = pick_dir(hwnd) { set_text(app.reg, &path); refresh_paths(app); } }
                 BROWSE_NRSC => { if let Some(path) = pick_file(hwnd, "Seamless Coop DLL") { set_text(app.nrsc, &path); refresh_paths(app); } }
                 _ => {}
             }
@@ -675,26 +656,14 @@ fn main() {
         let pass = CreateWindowExW(WS_EX_CLIENTEDGE, edit.as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE | ES_PASSWORD, 80, 434, 240, 24, win, PASS, std::ptr::null_mut(), std::ptr::null_mut());
         let debug = CreateWindowExW(0, button.as_ptr(), wide("Debug log").as_ptr(), WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX, 340, 434, 120, 24, win, DEBUG, std::ptr::null_mut(), std::ptr::null_mut());
         CreateWindowExW(0, button.as_ptr(), wide("Save settings").as_ptr(), WS_CHILD | WS_VISIBLE, 480, 432, 130, 28, win, SAVE, std::ptr::null_mut(), std::ptr::null_mut());
-        CreateWindowExW(0, wide("STATIC").as_ptr(), wide("NRAP DLL").as_ptr(), WS_CHILD | WS_VISIBLE, 12, 478, 70, 20, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
-        let nrap = CreateWindowExW(WS_EX_CLIENTEDGE, edit.as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE, 88, 474, 500, 24, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
-        CreateWindowExW(0, button.as_ptr(), wide("Browse").as_ptr(), WS_CHILD | WS_VISIBLE, 596, 474, 70, 24, win, BROWSE_NRAP, std::ptr::null_mut(), std::ptr::null_mut());
-        let warn_nrap = CreateWindowExW(0, wide("STATIC").as_ptr(), wide("!").as_ptr(), WS_CHILD | SS_ICON, 672, 474, 20, 20, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
-        CreateWindowExW(0, wide("STATIC").as_ptr(), wide("Regulation").as_ptr(), WS_CHILD | WS_VISIBLE, 12, 508, 74, 20, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
-        let reg = CreateWindowExW(WS_EX_CLIENTEDGE, edit.as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE, 88, 504, 500, 24, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
-        CreateWindowExW(0, button.as_ptr(), wide("Browse").as_ptr(), WS_CHILD | WS_VISIBLE, 596, 504, 70, 24, win, BROWSE_REG, std::ptr::null_mut(), std::ptr::null_mut());
-        let warn_reg = CreateWindowExW(0, wide("STATIC").as_ptr(), wide("!").as_ptr(), WS_CHILD | SS_ICON, 672, 504, 20, 20, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
-        CreateWindowExW(0, wide("STATIC").as_ptr(), wide("Seamless").as_ptr(), WS_CHILD | WS_VISIBLE, 12, 538, 74, 20, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
-        let nrsc = CreateWindowExW(WS_EX_CLIENTEDGE, edit.as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE, 88, 534, 500, 24, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
-        CreateWindowExW(0, button.as_ptr(), wide("Browse").as_ptr(), WS_CHILD | WS_VISIBLE, 596, 534, 70, 24, win, BROWSE_NRSC, std::ptr::null_mut(), std::ptr::null_mut());
-        let warn_nrsc = CreateWindowExW(0, wide("STATIC").as_ptr(), wide("!").as_ptr(), WS_CHILD | SS_ICON, 672, 534, 20, 20, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
+        CreateWindowExW(0, wide("STATIC").as_ptr(), wide("Seamless").as_ptr(), WS_CHILD | WS_VISIBLE, 12, 474, 74, 20, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
+        let nrsc = CreateWindowExW(WS_EX_CLIENTEDGE, edit.as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE, 88, 470, 500, 24, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
+        CreateWindowExW(0, button.as_ptr(), wide("Browse").as_ptr(), WS_CHILD | WS_VISIBLE, 596, 470, 70, 24, win, BROWSE_NRSC, std::ptr::null_mut(), std::ptr::null_mut());
+        let warn_nrsc = CreateWindowExW(0, wide("STATIC").as_ptr(), wide("!").as_ptr(), WS_CHILD | SS_ICON, 672, 470, 20, 20, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
         let icon = LoadIconW(std::ptr::null_mut(), 32515 as *const u16);
-        SendMessageW(warn_nrap, 0x0170, icon as usize, 0);
-        SendMessageW(warn_reg, 0x0170, icon as usize, 0);
         SendMessageW(warn_nrsc, 0x0170, icon as usize, 0);
-        CreateWindowExW(0, button.as_ptr(), wide("Launch").as_ptr(), WS_CHILD | WS_VISIBLE, 280, 580, 200, 42, win, LAUNCH, std::ptr::null_mut(), std::ptr::null_mut());
-        let mut app = App { log, cmd, host, slot, pass, debug, nrap, reg, nrsc, warn_nrap, warn_reg, warn_nrsc, dir, log_off: 0 };
-        set_text(nrap, &default_nrap().display().to_string());
-        set_text(reg, &default_reg().display().to_string());
+        CreateWindowExW(0, button.as_ptr(), wide("Launch").as_ptr(), WS_CHILD | WS_VISIBLE, 280, 516, 200, 42, win, LAUNCH, std::ptr::null_mut(), std::ptr::null_mut());
+        let mut app = App { log, cmd, host, slot, pass, debug, nrsc, warn_nrsc, dir, log_off: 0 };
         set_text(nrsc, &default_nrsc().display().to_string());
         refresh_paths(&app);
         load_settings(&app);
