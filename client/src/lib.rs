@@ -141,6 +141,7 @@ fn bind_console() {
             std::ptr::null_mut(),
         );
         if con != INVALID_HANDLE_VALUE && !con.is_null() {
+            CONOUT.store(con as usize, std::sync::atomic::Ordering::SeqCst);
             SetStdHandle(STD_OUTPUT_HANDLE, con);
             SetStdHandle(STD_ERROR_HANDLE, con);
         }
@@ -175,10 +176,17 @@ fn read_console_line() -> Option<String> {
     }
 }
 
+static CONOUT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+
 fn write_console(msg: &str) {
     let line = format!("{msg}\r\n");
+    let stored = CONOUT.load(std::sync::atomic::Ordering::SeqCst) as HANDLE;
     unsafe {
-        let h = GetStdHandle(STD_OUTPUT_HANDLE);
+        let h = if !stored.is_null() && stored != INVALID_HANDLE_VALUE {
+            stored
+        } else {
+            GetStdHandle(STD_OUTPUT_HANDLE)
+        };
         if !h.is_null() && h != INVALID_HANDLE_VALUE {
             let mut written = 0u32;
             WriteFile(
@@ -409,6 +417,7 @@ fn worker() {
         let mut watches = watches;
         let mut man = None;
         let mut fail_logged = false;
+        log_line(&watch_dir, "NRAP watch thread running");
         loop {
         if man.is_none() {
             match flagman::resolve() {
