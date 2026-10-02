@@ -323,8 +323,25 @@ fn connect_and_handshake(
     next_index: &mut i64,
     drop_goods: i32,
 ) -> Result<Socket, String> {
-    let addr = cfg.addr();
-    let local = addr.starts_with("127.") || addr.starts_with("localhost");
+    let mut addr = cfg.addr();
+    if addr.starts_with("0.0.0.0") {
+        addr = addr.replacen("0.0.0.0", "127.0.0.1", 1);
+        log("NRAP AP 0.0.0.0 is a bind address; connecting to 127.0.0.1");
+    }
+    let host = addr.split(':').next().unwrap_or(&addr);
+    let local = host == "localhost"
+        || host == "127.0.0.1"
+        || host.starts_with("127.")
+        || host.starts_with("10.")
+        || host.starts_with("192.168.")
+        || host.starts_with("172.16.")
+        || host.starts_with("172.17.")
+        || host.starts_with("172.18.")
+        || host.starts_with("172.19.")
+        || host.starts_with("172.2")
+        || host.starts_with("172.30.")
+        || host.starts_with("172.31.")
+        || host == "::1";
     let url = if local { format!("ws://{addr}") } else { format!("wss://{addr}") };
     let (mut socket, _) = ws_connect(&url).map_err(|e| format!("ws handshake {url}: {e}"))?;
     tune(&mut socket, Duration::from_secs(8));

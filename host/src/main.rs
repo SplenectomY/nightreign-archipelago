@@ -324,6 +324,7 @@ fn profile_path() -> Option<PathBuf> {
 }
 
 fn launch(app: &App) {
+    save_settings(app);
     let exe = me3_exe();
     if !exe.exists() {
         append_log(app, &format!("me3 not found at {}", exe.display()));
