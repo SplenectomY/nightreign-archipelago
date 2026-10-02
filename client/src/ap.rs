@@ -226,7 +226,14 @@ fn read_text(socket: &mut Socket) -> Result<Option<String>, String> {
         Ok(Message::Pong(_)) | Ok(Message::Frame(_)) => Ok(None),
         Ok(Message::Binary(_)) => Ok(None),
         Ok(Message::Close(frame)) => Err(format!("close frame {frame:?}")),
-        Err(e) => Err(format!("read: {e}")),
+        Err(e) => {
+            let text = e.to_string();
+            if text.contains("10060") || text.contains("10035") || text.contains("timed out") || text.contains("WouldBlock") {
+                Ok(None)
+            } else {
+                Err(format!("read: {e}"))
+            }
+        }
     }
 }
 
