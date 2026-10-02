@@ -305,7 +305,7 @@ fn open_options(app: &App) {
         let edit = wide("EDIT");
         let button = wide("BUTTON");
         let text = fs::read_to_string(app.dir.join("flags.toml")).unwrap_or_default();
-        let mut row = |label: &str, y: i32, id: isize, value: &str, color: bool| {
+        let row = |label: &str, y: i32, id: isize, value: &str, color: bool| {
             CreateWindowExW(0, wide("STATIC").as_ptr(), wide(label).as_ptr(), WS_CHILD | WS_VISIBLE, 16, y + 4, 130, 20, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
             if color {
                 CreateWindowExW(0, button.as_ptr(), wide(value).as_ptr(), WS_CHILD | WS_VISIBLE, 150, y, 140, 26, win, id, std::ptr::null_mut(), std::ptr::null_mut())
@@ -336,8 +336,10 @@ fn open_options(app: &App) {
 }
 
 fn save_options(app: &App) {
-    if OPT.is_null() { return; }
-    let opt = unsafe { &*OPT };
+    let opt = unsafe {
+        if OPT.is_null() { return; }
+        &*OPT
+    };
     let path = app.dir.join("flags.toml");
     let mut text = fs::read_to_string(&path).unwrap_or_default();
     text = replace_key(&text, "x", &quoted(&text_of(opt.x)));
