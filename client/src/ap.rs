@@ -304,6 +304,18 @@ fn drain_server(
     }
 }
 
+
+fn tune(socket: &mut Socket, timeout: Duration) {
+    let tcp = match socket.get_ref() {
+        MaybeTlsStream::Plain(stream) => stream,
+        MaybeTlsStream::NativeTls(stream) => stream.get_ref(),
+        #[allow(unreachable_patterns)]
+        _ => return,
+    };
+    tcp.set_read_timeout(Some(timeout)).ok();
+    tcp.set_nodelay(true).ok();
+}
+
 fn connect_and_handshake(
     cfg: &ApConfig,
     log: &impl Fn(&str),
@@ -314,10 +326,7 @@ fn connect_and_handshake(
     let local = addr.starts_with("127.") || addr.starts_with("localhost");
     let url = if local { format!("ws://{addr}") } else { format!("wss://{addr}") };
     let (mut socket, _) = ws_connect(&url).map_err(|e| format!("ws handshake {url}: {e}"))?;
-    if let Ok(stream) = socket.get_ref().get_ref() {
-        stream.set_read_timeout(Some(Duration::from_secs(8))).ok();
-        stream.set_nodelay(true).ok();
-    }
+    tune(&mut socket, Duration::from_secs(8));
     if let Ok(Some(room)) = read_text(&mut socket) {
         handle_server_text(&room, log, next_index, drop_goods);
     }
@@ -339,9 +348,7 @@ fn connect_and_handshake(
         return Err(format!("unexpected handshake: {reply}"));
     }
     handle_server_text(&reply, log, next_index, drop_goods);
-    if let Ok(stream) = socket.get_ref().get_ref() {
-        stream.set_read_timeout(Some(Duration::from_millis(80))).ok();
-    }
+    tune(&mut socket, Duration::from_millis(80));
     let _ = socket.send(Message::Text("[{\"cmd\":\"Sync\"}]".into()));
     Ok(socket)
 }
