@@ -313,7 +313,7 @@ fn open_options(app: &App) {
         let location = row("Location", 280, 214, &overlay("color_location", "6BE36B"), true);
         let text_color = row("Text", 312, 215, &overlay("text_color", "E8D7A4"), true);
         let debug = CreateWindowExW(0, button.as_ptr(), wide("Debug log").as_ptr(), WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX, 16, 348, 140, 24, win, 216, std::ptr::null_mut(), std::ptr::null_mut());
-        let on = toml_get(&text, "", "debug").unwrap_or_else(|| "false".into()) == "true";
+        let on = text.lines().any(|l| l.trim() == "debug = true");
         SendMessageW(debug, BM_SETCHECK, if on { 1 } else { 0 }, 0);
         CreateWindowExW(0, button.as_ptr(), wide("Close").as_ptr(), WS_CHILD | WS_VISIBLE, 160, 348, 120, 28, win, 220, std::ptr::null_mut(), std::ptr::null_mut());
         let boxed = Box::new(OptWin { x, y, width, height, fade, local, remote, item, location, text: text_color, debug });
