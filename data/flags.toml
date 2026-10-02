@@ -753,3 +753,28 @@ location = "Night boss defeated"
 location_id = 839000751
 kind = "event_flag"
 event_flag_id = 7512
+
+[[flag]]
+location = "Unlock Duchess"
+location_id = 839000401
+kind = "event_flag"
+event_flag_id = 6031
+
+[[flag]]
+location = "Unlock Revenant"
+location_id = 839000402
+kind = "event_flag"
+event_flag_id = 6037
+
+[[flag]]
+location = "Unlock Scholar"
+location_id = 839000403
+kind = "event_flag"
+event_flag_id = 6038
+
+[[flag]]
+location = "Unlock Undertaker"
+location_id = 839000404
+kind = "event_flag"
+event_flag_id = 6039
+

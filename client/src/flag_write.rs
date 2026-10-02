@@ -105,25 +105,25 @@ fn set_flag_from_force(flag: u32, on: bool, why: &str, force: bool) -> Result<St
 }
 
 /// HeroParam.characterUnlockFlag. Defaults were 0, so they are regulation flags.
-/// Duchess, Revenant, Scholar, and Undertaker already had quest flags.
+/// Duchess, Revenant, Scholar, and Undertaker quest flags are checks, not unlocks.
 fn nightfarer_flag(item_id: i64) -> Option<u32> {
     match item_id {
-        839_100_301 => Some(222),
-        839_100_302 => Some(6031),
-        839_100_303 => Some(225),
-        839_100_304 => Some(227),
-        839_100_305 => Some(226),
-        839_100_306 => Some(224),
-        839_100_307 => Some(223),
-        839_100_308 => Some(6037),
-        839_100_309 => Some(6038),
-        839_100_310 => Some(6039),
+        839_100_301 => Some(222), // Wylder
+        839_100_302 => Some(228), // Duchess
+        839_100_303 => Some(225), // Raider
+        839_100_304 => Some(227), // Executor
+        839_100_305 => Some(226), // Recluse
+        839_100_306 => Some(224), // Ironeye
+        839_100_307 => Some(223), // Guardian
+        839_100_308 => Some(229), // Revenant
+        839_100_309 => Some(230), // Scholar
+        839_100_310 => Some(231), // Undertaker
         _ => None,
     }
 }
 
 fn is_nightfarer(flag: u32) -> bool {
-    matches!(flag, 222..=227 | 6031 | 6037 | 6038 | 6039)
+    matches!(flag, 222..=231)
 }
 
 /// Regulation override flags. 210 and 211 are named, so Everdark starts at 212.

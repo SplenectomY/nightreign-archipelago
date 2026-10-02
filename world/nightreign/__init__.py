@@ -113,6 +113,11 @@ class NightreignWorld(World):
             hold_locs[f"Open Magician Tower {n}"] = LOCATION_NAME_TO_ID[f"Open Magician Tower {n}"]
         for loc_name, _item in self._nightlords() + self._everdark():
             hold_locs[loc_name] = LOCATION_NAME_TO_ID[loc_name]
+        for name in ("Unlock Duchess", "Unlock Revenant"):
+            hold_locs[name] = LOCATION_NAME_TO_ID[name]
+        if self.options.include_dlc:
+            for name in ("Unlock Scholar", "Unlock Undertaker"):
+                hold_locs[name] = LOCATION_NAME_TO_ID[name]
         hold.add_locations(hold_locs, NightreignLocation)
 
         menu.connect(hold)
@@ -167,6 +172,18 @@ class NightreignWorld(World):
             return sum(state.can_reach(name, "Location", player) for name in defeats) >= need
 
         for loc_name, item_name in self._nightlords() + self._everdark():
+            set_rule(
+                self.get_location(loc_name),
+                lambda state, item_name=item_name: state.has(item_name, player),
+            )
+        quests = {
+            "Unlock Duchess": "Nightfarer - Duchess",
+            "Unlock Revenant": "Nightfarer - Revenant",
+        }
+        if self.options.include_dlc:
+            quests["Unlock Scholar"] = "Nightfarer - Scholar"
+            quests["Unlock Undertaker"] = "Nightfarer - Undertaker"
+        for loc_name, item_name in quests.items():
             set_rule(
                 self.get_location(loc_name),
                 lambda state, item_name=item_name: state.has(item_name, player),
