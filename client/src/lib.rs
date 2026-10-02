@@ -551,7 +551,8 @@ fn worker() {
                 log_line(&dir, &msg);
             }
             if id != 839_100_100 {
-                if let Some(msg) = drop::apply_item(id, 0) {
+                let goods = drop::drop_item_id_from_toml(text.as_deref());
+                if let Some(msg) = drop::apply_item(id, goods) {
                     log_line(&dir, &msg);
                 }
             }
