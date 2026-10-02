@@ -78,6 +78,7 @@ extern "system" {
         flags: DWORD,
         template: HANDLE,
     ) -> HANDLE;
+    fn GetNumberOfConsoleInputEvents(handle: *mut c_void, count: *mut u32) -> i32;
     fn ReadFile(
         file: HANDLE,
         buf: *mut u8,
@@ -188,12 +189,17 @@ fn read_console_line() -> Option<String> {
         if h.is_null() || h == INVALID_HANDLE_VALUE {
             return None;
         }
-        let mut buf = [0u8; 512];
-        let mut n = 0u32;
-        if ReadFile(h, buf.as_mut_ptr(), buf.len() as DWORD, &mut n, std::ptr::null_mut()) == 0 {
+        let mut waiting = 0u32;
+        if GetNumberOfConsoleInputEvents(h, &mut waiting) == 0 || waiting == 0 {
             return None;
         }
-        Some(String::from_utf8_lossy(&buf[..n as usize]).trim().to_string())
+        let mut buf = [0u8; 512];
+        let mut n = 0u32;
+        if ReadFile(h, buf.as_mut_ptr(), buf.len() as DWORD, &mut n, std::ptr::null_mut()) == 0 || n == 0 {
+            return None;
+        }
+        let line = String::from_utf8_lossy(&buf[..n as usize]).trim().to_string();
+        if line.is_empty() { None } else { Some(line) }
     }
 }
 

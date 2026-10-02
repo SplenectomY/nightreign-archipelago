@@ -87,6 +87,11 @@ struct OptWin {
     item: HWND,
     location: HWND,
     text: HWND,
+    host_text: HWND,
+    host_local: HWND,
+    host_remote: HWND,
+    host_item: HWND,
+    host_location: HWND,
     debug: HWND,
 }
 
@@ -338,7 +343,7 @@ fn open_options(app: &App) {
         let class = wide("NRAPOptions");
         let wc = WndClass { style: 0, wnd_proc: Some(opt_proc), cls_extra: 0, wnd_extra: 0, instance: std::ptr::null_mut(), icon: std::ptr::null_mut(), cursor: std::ptr::null_mut(), background: std::ptr::null_mut(), menu_name: std::ptr::null(), class_name: class.as_ptr() };
         RegisterClassW(&wc);
-        let win = CreateWindowExW(0, class.as_ptr(), wide("NRAP Options").as_ptr(), WS_OVERLAPPEDWINDOW | WS_VISIBLE, 140, 120, 420, 600, std::ptr::null_mut(), 0, std::ptr::null_mut(), std::ptr::null_mut());
+        let win = CreateWindowExW(0, class.as_ptr(), wide("NRAP Options").as_ptr(), WS_OVERLAPPEDWINDOW | WS_VISIBLE, 140, 80, 420, 790, std::ptr::null_mut(), 0, std::ptr::null_mut(), std::ptr::null_mut());
         let edit = wide("EDIT");
         let button = wide("BUTTON");
         let text = fs::read_to_string(app.dir.join("flags.toml")).unwrap_or_default();
@@ -354,6 +359,7 @@ fn open_options(app: &App) {
             }
         };
         let overlay = |key: &str, fallback: &str| toml_get(&text, "[overlay]", key).unwrap_or_else(|| fallback.into());
+        let host_color = |key: &str, fallback: &str| toml_get(&text, "[host]", key).unwrap_or_else(|| fallback.into());
         let x = row("X", 40, 201, &overlay("x", "24"), false);
         let y = row("Y", 72, 202, &overlay("y", "center"), false);
         let width = row("Width", 104, 203, &overlay("width", "720"), false);
@@ -365,12 +371,18 @@ fn open_options(app: &App) {
         let item = row("Item", 312, 213, &overlay("color_item", "5DC8C8"), true);
         let location = row("Location", 348, 214, &overlay("color_location", "6BE36B"), true);
         let text_color = row("Text", 384, 215, &overlay("text_color", "E8D7A4"), true);
-        CreateWindowExW(0, wide("STATIC").as_ptr(), wide("Debug").as_ptr(), WS_CHILD | WS_VISIBLE, 16, 432, 200, 20, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
-        let debug = CreateWindowExW(0, button.as_ptr(), wide("Debug log").as_ptr(), WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX, 28, 460, 160, 24, win, 216, std::ptr::null_mut(), std::ptr::null_mut());
+        CreateWindowExW(0, wide("STATIC").as_ptr(), wide("Host console").as_ptr(), WS_CHILD | WS_VISIBLE, 16, 432, 200, 20, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
+        let host_text = row("Text", 456, 221, &host_color("text_color", "000000"), true);
+        let host_local = row("Local player", 492, 222, &host_color("color_local", "EE77FF"), true);
+        let host_remote = row("Remote player", 528, 223, &host_color("color_remote", "EE77FF"), true);
+        let host_item = row("Item", 564, 224, &host_color("color_item", "5DC8C8"), true);
+        let host_location = row("Location", 600, 225, &host_color("color_location", "6BE36B"), true);
+        CreateWindowExW(0, wide("STATIC").as_ptr(), wide("Debug").as_ptr(), WS_CHILD | WS_VISIBLE, 16, 640, 200, 20, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
+        let debug = CreateWindowExW(0, button.as_ptr(), wide("Debug log").as_ptr(), WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX, 28, 668, 160, 24, win, 216, std::ptr::null_mut(), std::ptr::null_mut());
         let on = text.lines().any(|l| l.trim() == "debug = true");
         SendMessageW(debug, BM_SETCHECK, if on { 1 } else { 0 }, 0);
-        CreateWindowExW(0, button.as_ptr(), wide("Close").as_ptr(), WS_CHILD | WS_VISIBLE, 110, 512, 200, 32, win, 220, std::ptr::null_mut(), std::ptr::null_mut());
-        let boxed = Box::new(OptWin { x, y, width, height, fade, font, local, remote, item, location, text: text_color, debug });
+        CreateWindowExW(0, button.as_ptr(), wide("Close").as_ptr(), WS_CHILD | WS_VISIBLE, 110, 708, 200, 32, win, 220, std::ptr::null_mut(), std::ptr::null_mut());
+        let boxed = Box::new(OptWin { x, y, width, height, fade, font, local, remote, item, location, text: text_color, host_text, host_local, host_remote, host_item, host_location, debug });
         OPT = Box::into_raw(boxed);
     }
 }
@@ -394,6 +406,11 @@ fn save_options(app: &App) {
     text = replace_section_key(&text, "[overlay]", "color_item", &format!("\"{}\"", text_of(opt.item)));
     text = replace_section_key(&text, "[overlay]", "color_location", &format!("\"{}\"", text_of(opt.location)));
     text = replace_section_key(&text, "[overlay]", "text_color", &format!("\"{}\"", text_of(opt.text)));
+    text = replace_section_key(&text, "[host]", "text_color", &format!("\"{}\"", text_of(opt.host_text)));
+    text = replace_section_key(&text, "[host]", "color_local", &format!("\"{}\"", text_of(opt.host_local)));
+    text = replace_section_key(&text, "[host]", "color_remote", &format!("\"{}\"", text_of(opt.host_remote)));
+    text = replace_section_key(&text, "[host]", "color_item", &format!("\"{}\"", text_of(opt.host_item)));
+    text = replace_section_key(&text, "[host]", "color_location", &format!("\"{}\"", text_of(opt.host_location)));
     let debug = unsafe { SendMessageW(opt.debug, BM_GETCHECK, 0, 0) } == 1;
     text = replace_key(&text, "debug", if debug { "true" } else { "false" });
     if let Err(e) = fs::write(&path, text) {
@@ -420,7 +437,7 @@ fn colors(app: &App) -> (u32, u32, u32, u32, u32, String) {
     let mut remote = bgr("EE77FF");
     let mut item = bgr("5DC8C8");
     let mut loc = bgr("6BE36B");
-    let mut plain = bgr("E8D7A4");
+    let mut plain = bgr("000000");
     let mut slot = text_of(app.slot);
     let mut section = "";
     for line in text.lines() {
@@ -428,7 +445,7 @@ fn colors(app: &App) -> (u32, u32, u32, u32, u32, String) {
         if t.starts_with('[') { section = t; continue; }
         let Some((k, v)) = t.split_once('=') else { continue };
         let v = v.trim().trim_matches('"');
-        if section == "[overlay]" {
+        if section == "[host]" {
             match k.trim() {
                 "color_local" => local = bgr(v),
                 "color_remote" => remote = bgr(v),
