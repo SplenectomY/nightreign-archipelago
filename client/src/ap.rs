@@ -358,7 +358,7 @@ fn connect_and_handshake(
         handle_server_text(&room, log, next_index, drop_goods);
     }
     let connect = format!(
-        "[{{\"cmd\":\"Connect\",\"password\":\"{}\",\"game\":\"{}\",\"name\":\"{}\",\"uuid\":\"\",\"version\":{{\"major\":0,\"minor\":5,\"build\":1,\"class\":\"Version\"}},\"items_handling\":{},\"tags\":[\"AP\"],\"slot_data\":false}}]",
+        "[{{\"cmd\":\"Connect\",\"password\":\"{}\",\"game\":\"{}\",\"name\":\"{}\",\"uuid\":\"\",\"version\":{{\"major\":0,\"minor\":5,\"build\":1,\"class\":\"Version\"}},\"items_handling\":{},\"tags\":[\"AP\"],\"slot_data\":true}}]",
         escape(&cfg.password),
         GAME,
         escape(&cfg.slot),
