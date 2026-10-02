@@ -8,6 +8,7 @@
       <ComponentGroupRef Id="Shortcuts" />
     </Feature>
     <ui:WixUI Id="WixUI_InstallDir" InstallDirectory="INSTALLFOLDER" />
+    <WixVariable Id="WixUILicenseRtf" Value="installer\License.rtf" />
   </Package>
 
   <Fragment>
