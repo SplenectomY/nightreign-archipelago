@@ -267,6 +267,7 @@ impl FlagMan {
         let (base, bit) = self.group_base(flag, ptr_table)?;
         bit_at(base, bit, msb)
     }
+}
 
 fn looks_like_flagman(span: ModuleSpan, inst: usize) -> Option<(u32, u32, u32, usize)> {
     if !heap_ptr(span, inst, 0x48) {
