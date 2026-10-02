@@ -1,19 +1,115 @@
+# Elden Ring Nightreign player options.
+#
+# A line starting with # is a comment. The generator ignores it.
+# A choice can be a single value, or a weighted set. Weights are chances, not percents:
+#
+#   goal:
+#     heolstor: 50
+#     count: 1
+#
+# That is 50 chances of Heolstor and 1 chance of a Nightlord count. A lone value is the same as weight 1.
+# A range is a number, or random / random-low / random-high / random-range-low-high.
+# true and false are the only toggle values. yes and no are accepted too.
+
+description: Default Elden Ring Nightreign template
 name: Player1
 game: Elden Ring Nightreign
-description: Phase 0 template for Nightreign Archipelago
+requires:
+  version: 0.6.7
 
 Elden Ring Nightreign:
-  goal: heolstor
+  # How this slot is completed.
+  # heolstor: defeat Heolstor, the Night Aspect. This is the default.
+  # count: defeat nightlord_count distinct Nightlords. Heolstor counts once he is open.
+  # specific: defeat the Nightlord named by specific_nightlord.
+  goal:
+    heolstor: 50
+    count: 0
+    specific: 0
+
+  # Used only when goal is count. Distinct Nightlord defeats required.
+  # 1 is the shortest seed. 10 is every Nightlord, including DLC when include_dlc is on.
+  # Default 4 is about the vanilla board unlock.
   nightlord_count: 4
-  specific_nightlord: heolstor
+
+  # Used only when goal is specific. Ignored for heolstor and count.
+  # gladius, adel, gnoster, maris, libra, fulghor, caligo, heolstor, harmonia, straghess.
+  # harmonia and straghess need include_dlc.
+  specific_nightlord:
+    heolstor: 50
+    gladius: 0
+    adel: 0
+    gnoster: 0
+    maris: 0
+    libra: 0
+    fulghor: 0
+    caligo: 0
+    harmonia: 0
+    straghess: 0
+
+  # false: Heolstor is not a shuffled unlock. He opens locally after heolstor_unlock_count
+  # other Nightlord defeats. This is the default, and it forces a few expeditions before the goal.
+  # true: Expedition Unlock - Heolstor is in the item pool. Someone has to find it and send it.
+  heolstor_in_pool: false
+
+  # Other Nightlord defeats required before this slot can open Heolstor.
+  # Ignored when heolstor_in_pool is true. 1 to 9. Default 4.
+  heolstor_unlock_count: 4
+
+  # true: Everdark Sovereign defeats are locations, and their unlocks are items.
+  # The client opens them offline. false: no Everdark locations or items.
   include_everdark: true
+
+  # true: Forsaken Hollows Nightlords (Harmonia, Straghess) and their Nightfarers are in the pool.
+  # false: base game roster only.
   include_dlc: true
-  shop_checks: unique_only
+
+  # Which Hold purchases become locations.
+  # none: no shop locations. The bazaar stays empty unless you turn this back on.
+  # unique_only: Small Jar Bazaar rows. Finding the item stocks the shelf. Buying it is the check.
+  shop_checks:
+    unique_only: 50
+    none: 0
+
+  # Nightfarers unlocked at the start, chosen at random from the enabled roster.
+  # 1 is the intended seed. Higher values put fewer Nightfarers in the pool. 1 to 10.
   starting_nightfarers: 1
+
+  # Shop rows already stocked at the start. One number is rolled between min and max.
+  # 0 stocks nothing. The two flatstones are infinite and are not checks.
+  # If min is above max, generation swaps them.
   starting_shop_min: 3
   starting_shop_max: 6
+
+  # Day 1 night-boss defeats that become locations. The first kill is Day 1 Boss 1.
+  # 1 to 30. Default 10. A wipe after the kill still keeps the check.
   day1_boss_count: 10
+
+  # Day 2 night-boss defeats that become locations. The first kill is Day 2 Boss 1.
+  # 1 to 30. Default 10.
   day2_boss_count: 10
+
+  # Evergaol seals that become locations. The flag toggles, so opening and sealing both count.
+  # 1 to 40. Default 20.
   evergaol_count: 20
+
+  # Magician tower openings that become locations. The flag toggles, so both edges count.
+  # 1 to 30. Default 10.
   tower_count: 10
+
+  # Not implemented. Leave false. A death does not kill other players.
   death_link: false
+
+  # Common Archipelago options. These are optional.
+  #
+  # progression_balancing: 0 to 99. Higher pushes progression toward worlds that are behind.
+  # accessibility: items (full), or minimal (locations can require more than the logical route).
+  # local_items: item names that must be in this world.
+  # non_local_items: item names that must be in another world.
+  # start_inventory: items granted before the first check. Name: count.
+  # start_hints: item names hinted at the start.
+  # start_location_hints: location names hinted at the start.
+  # exclude_locations: locations removed from the pool.
+  # priority_locations: locations filled earlier.
+  progression_balancing: 50
+  accessibility: items

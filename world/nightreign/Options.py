@@ -4,7 +4,11 @@ from Options import Choice, Range, Toggle, PerGameCommonOptions
 
 
 class Goal(Choice):
-    """How this slot is completed."""
+    """How this slot is completed.
+    heolstor: defeat Heolstor. Default.
+    count: defeat nightlord_count distinct Nightlords.
+    specific: defeat the Nightlord named by specific_nightlord.
+    """
     display_name = "Goal"
     option_heolstor = 0
     option_count = 1
@@ -13,7 +17,7 @@ class Goal(Choice):
 
 
 class NightlordCount(Range):
-    """Used when goal is count. Number of distinct Nightlords to defeat."""
+    """Used when goal is count. Distinct Nightlord defeats required. 1 to 10. Default 4."""
     display_name = "Nightlord Count"
     range_start = 1
     range_end = 10
@@ -21,7 +25,9 @@ class NightlordCount(Range):
 
 
 class SpecificNightlord(Choice):
-    """Used when goal is specific. Default Heolstor."""
+    """Used when goal is specific. gladius, adel, gnoster, maris, libra, fulghor, caligo, heolstor, harmonia, straghess.
+    harmonia and straghess need include_dlc.
+    """
     display_name = "Specific Nightlord"
     option_gladius = 0
     option_adel = 1
@@ -63,7 +69,10 @@ class IncludeDlc(Toggle):
 
 
 class ShopChecks(Choice):
-    """Which Hold purchases become locations."""
+    """Which Hold purchases become locations.
+    none: no shop locations.
+    unique_only: Small Jar Bazaar rows. Finding the item stocks it. Buying it is the check.
+    """
     display_name = "Shop Checks"
     option_none = 0
     option_unique_only = 1
@@ -127,7 +136,7 @@ class TowerCount(Range):
 
 
 class DeathLink(Toggle):
-    """Not implemented yet."""
+    """Not implemented. Leave off. A death does not kill other players."""
     display_name = "Death Link"
     default = False
 
