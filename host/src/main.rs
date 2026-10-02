@@ -50,6 +50,8 @@ const OPTIONS: isize = 113;
 const RECONNECT: isize = 114;
 const BROWSE_NRSC: isize = 111;
 const SEAMLESS: isize = 112;
+const BROWSE_ME3: isize = 115;
+const ME3: isize = 116;
 const EN_KILLFOCUS: u16 = 0x0200;
 const SS_ICON: u32 = 0x0003;
 const SW_HIDE: i32 = 0;
@@ -75,6 +77,8 @@ struct App {
     pass: HWND,
     nrsc: HWND,
     warn_nrsc: HWND,
+    me3: HWND,
+    warn_me3: HWND,
     reconnect: HWND,
     dir: PathBuf,
     log_off: u64,
@@ -312,6 +316,9 @@ fn load_settings(app: &App) {
     set_text(app.host, &toml_get(&text, "[ap]", "host").unwrap_or_else(|| "127.0.0.1:38281".into()));
     set_text(app.slot, &toml_get(&text, "[ap]", "slot").unwrap_or_else(|| "Player1".into()));
     set_text(app.pass, &toml_get(&text, "[ap]", "password").unwrap_or_default());
+    if let Some(path) = toml_get(&text, "[paths]", "me3") {
+        if !path.is_empty() { set_text(app.me3, &path); }
+    }
 }
 
 fn save_connection(app: &App) {
@@ -320,6 +327,7 @@ fn save_connection(app: &App) {
     text = replace_key(&text, "host", &format!("\"{}\"", text_of(app.host)));
     text = replace_key(&text, "slot", &format!("\"{}\"", text_of(app.slot)));
     text = replace_key(&text, "password", &format!("\"{}\"", text_of(app.pass)));
+    text = replace_section_key(&text, "[paths]", "me3", &format!("\"{}\"", text_of(app.me3).replace('\\', "/")));
     if let Err(e) = fs::write(&path, text) {
         append_log(app, &format!("Save failed: {e}"));
     }
@@ -778,12 +786,23 @@ fn pick_dir(owner: HWND) -> Option<String> {
 }
 
 fn mark(edit: HWND, warn: HWND, ok: bool) {
-    unsafe { ShowWindow(warn, if ok { SW_HIDE } else { SW_SHOW }); }
-    unsafe { InvalidateRect(edit, std::ptr::null(), 1); }
+    unsafe {
+        ShowWindow(warn, if ok { SW_HIDE } else { SW_SHOW });
+        if ok { SendMessageW(warn, 0x0170, 0, 0); }
+        else {
+            let icon = LoadIconW(std::ptr::null_mut(), 32515 as *const u16);
+            SendMessageW(warn, 0x0170, icon as usize, 0);
+        }
+        InvalidateRect(edit, std::ptr::null(), 1);
+        if let Some(parent) = Some(GetParent(warn)) {
+            InvalidateRect(parent, std::ptr::null(), 1);
+        }
+    }
 }
 
 fn refresh_paths(app: &App) {
     mark(app.nrsc, app.warn_nrsc, PathBuf::from(text_of(app.nrsc)).is_file());
+    mark(app.me3, app.warn_me3, PathBuf::from(text_of(app.me3)).is_file());
 }
 
 fn write_profile_paths(app: &App) -> Result<(), String> {
@@ -816,7 +835,7 @@ fn write_profile_paths(app: &App) -> Result<(), String> {
 
 fn launch(app: &App) {
     save_connection(app);
-    let exe = me3_exe();
+    let exe = PathBuf::from(text_of(app.me3));
     if !exe.exists() {
         append_log(app, &format!("me3 not found at {}", exe.display()));
         return;
@@ -913,6 +932,7 @@ unsafe extern "system" fn wnd_proc(hwnd: HWND, msg: u32, w: usize, l: isize) -> 
                 RECONNECT => request_reconnect(app),
                 LAUNCH => launch(app),
                 BROWSE_NRSC => { if let Some(path) = pick_file(hwnd, "Seamless Coop DLL") { set_text(app.nrsc, &path); refresh_paths(app); save_connection(app); } }
+                BROWSE_ME3 => { if let Some(path) = pick_file(hwnd, "me3.exe") { set_text(app.me3, &path); refresh_paths(app); save_connection(app); } }
                 _ => {}
             }
             0
@@ -959,7 +979,7 @@ fn main() {
         FIELD_BRUSH = CreateSolidBrush(0x00FFFFFF) as isize;
         LABEL_BRUSH = CreateSolidBrush(0x00F2F2F2) as isize;
         WARN_BRUSH = CreateSolidBrush(0x006464FF) as isize;
-        let win = CreateWindowExW(0, class.as_ptr(), title.as_ptr(), WS_OVERLAPPEDWINDOW | WS_VISIBLE, 80, 80, 760, 780, std::ptr::null_mut(), 0, std::ptr::null_mut(), std::ptr::null_mut());
+        let win = CreateWindowExW(0, class.as_ptr(), title.as_ptr(), WS_OVERLAPPEDWINDOW | WS_VISIBLE, 80, 80, 760, 840, std::ptr::null_mut(), 0, std::ptr::null_mut(), std::ptr::null_mut());
         LoadLibraryW(wide("Msftedit.dll").as_ptr());
         let edit = wide("EDIT");
         let rich = wide("RICHEDIT50W");
@@ -983,14 +1003,18 @@ fn main() {
         CreateWindowExW(0, wide("STATIC").as_ptr(), wide("Seamless").as_ptr(), WS_CHILD | WS_VISIBLE, 12, 542, 74, 20, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
         let nrsc = CreateWindowExW(WS_EX_CLIENTEDGE, edit.as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE, 88, 538, 500, 24, win, SEAMLESS, std::ptr::null_mut(), std::ptr::null_mut());
         CreateWindowExW(0, button.as_ptr(), wide("Browse").as_ptr(), WS_CHILD | WS_VISIBLE, 596, 538, 70, 24, win, BROWSE_NRSC, std::ptr::null_mut(), std::ptr::null_mut());
-        let warn_nrsc = CreateWindowExW(0, wide("STATIC").as_ptr(), wide("!").as_ptr(), WS_CHILD | SS_ICON, 672, 538, 20, 20, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
-        let icon = LoadIconW(std::ptr::null_mut(), 32515 as *const u16);
-        SendMessageW(warn_nrsc, 0x0170, icon as usize, 0);
-        CreateWindowExW(0, wide("STATIC").as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE | SS_ETCHEDHORZ, 12, 578, 720, 2, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
-        CreateWindowExW(0, button.as_ptr(), wide("Options").as_ptr(), WS_CHILD | WS_VISIBLE, 280, 596, 200, 28, win, OPTIONS, std::ptr::null_mut(), std::ptr::null_mut());
-        CreateWindowExW(0, button.as_ptr(), wide("Launch").as_ptr(), WS_CHILD | WS_VISIBLE, 280, 636, 200, 42, win, LAUNCH, std::ptr::null_mut(), std::ptr::null_mut());
-        let mut app = App { log, cmd, send, host, slot, pass, nrsc, warn_nrsc, reconnect, dir, log_off: 0, mod_off: 0, connected: false };
+        let warn_nrsc = CreateWindowExW(0, wide("STATIC").as_ptr(), wide("").as_ptr(), WS_CHILD | SS_ICON, 672, 538, 20, 20, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
+        CreateWindowExW(0, wide("STATIC").as_ptr(), wide("Must point to me3.exe").as_ptr(), WS_CHILD | WS_VISIBLE, 88, 572, 220, 18, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
+        CreateWindowExW(0, wide("STATIC").as_ptr(), wide("me3").as_ptr(), WS_CHILD | WS_VISIBLE, 12, 600, 74, 20, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
+        let me3 = CreateWindowExW(WS_EX_CLIENTEDGE, edit.as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE, 88, 596, 500, 24, win, ME3, std::ptr::null_mut(), std::ptr::null_mut());
+        CreateWindowExW(0, button.as_ptr(), wide("Browse").as_ptr(), WS_CHILD | WS_VISIBLE, 596, 596, 70, 24, win, BROWSE_ME3, std::ptr::null_mut(), std::ptr::null_mut());
+        let warn_me3 = CreateWindowExW(0, wide("STATIC").as_ptr(), wide("").as_ptr(), WS_CHILD | SS_ICON, 672, 596, 20, 20, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
+        CreateWindowExW(0, wide("STATIC").as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE | SS_ETCHEDHORZ, 12, 636, 720, 2, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
+        CreateWindowExW(0, button.as_ptr(), wide("Options").as_ptr(), WS_CHILD | WS_VISIBLE, 280, 654, 200, 28, win, OPTIONS, std::ptr::null_mut(), std::ptr::null_mut());
+        CreateWindowExW(0, button.as_ptr(), wide("Launch").as_ptr(), WS_CHILD | WS_VISIBLE, 280, 694, 200, 42, win, LAUNCH, std::ptr::null_mut(), std::ptr::null_mut());
+        let mut app = App { log, cmd, send, host, slot, pass, nrsc, warn_nrsc, me3, warn_me3, reconnect, dir, log_off: 0, mod_off: 0, connected: false };
         set_text(nrsc, &default_nrsc().display().to_string());
+        set_text(me3, &me3_exe().display().to_string());
         refresh_paths(&app);
         set_text(cmd, CMD_HINT);
         load_settings(&app);
