@@ -40,10 +40,11 @@ const SEND: isize = 102;
 const HOST: isize = 103;
 const SLOT: isize = 104;
 const PASS: isize = 105;
-const SAVE: isize = 106;
 const LAUNCH: isize = 107;
-const DEBUG: isize = 108;
+const OPTIONS: isize = 113;
 const BROWSE_NRSC: isize = 111;
+const SEAMLESS: isize = 112;
+const EN_KILLFOCUS: u16 = 0x0200;
 const SS_ICON: u32 = 0x0003;
 const SW_HIDE: i32 = 0;
 const SW_SHOW: i32 = 5;
@@ -52,6 +53,8 @@ static mut APP: *mut App = std::ptr::null_mut();
 static mut FIELD_BRUSH: isize = 0;
 static mut LABEL_BRUSH: isize = 0;
 static mut WARN_BRUSH: isize = 0;
+static mut OPT: *mut OptWin = std::ptr::null_mut();
+static mut CUST: [u32; 16] = [0; 16];
 static mut SCROLLED: bool = false;
 
 struct App {
@@ -60,7 +63,6 @@ struct App {
     host: HWND,
     slot: HWND,
     pass: HWND,
-    debug: HWND,
     nrsc: HWND,
     warn_nrsc: HWND,
     dir: PathBuf,
@@ -82,6 +84,7 @@ extern "system" {
     fn GetWindowTextW(hwnd: HWND, buf: *mut u16, max: i32) -> i32;
     fn LoadLibraryW(name: *const u16) -> *mut c_void;
     fn ShowWindow(hwnd: HWND, cmd: i32) -> i32;
+    fn DestroyWindow(hwnd: HWND) -> i32;
     fn InvalidateRect(hwnd: HWND, rect: *const c_void, erase: i32) -> i32;
     fn LoadIconW(instance: HINSTANCE, name: *const u16) -> *mut c_void;
     fn GetParent(hwnd: HWND) -> HWND;
@@ -89,6 +92,7 @@ extern "system" {
 #[link(name = "comdlg32")]
 extern "system" {
     fn GetOpenFileNameW(ofn: *mut OpenFile) -> i32;
+    fn ChooseColorW(cc: *mut ChooseColor) -> i32;
 }
 #[link(name = "shell32")]
 extern "system" {
@@ -122,6 +126,18 @@ struct OpenFile {
     flags_ex: u32,
 }
 #[repr(C)]
+#[repr(C)]
+struct ChooseColor {
+    size: u32,
+    owner: HWND,
+    instance: HWND,
+    rgb: u32,
+    custom: *mut u32,
+    flags: u32,
+    data: usize,
+    hook: usize,
+    template: *const u16,
+}
 struct BrowseInfo {
     owner: HWND,
     root: *mut c_void,
@@ -208,44 +224,124 @@ fn replace_key(text: &str, key: &str, value: &str) -> String {
     out.join("\n") + "\n"
 }
 
-fn load_settings(app: &App) {
-    let path = app.dir.join("flags.toml");
-    let text = fs::read_to_string(&path).unwrap_or_default();
-    let mut host = "127.0.0.1:38281".to_string();
-    let mut slot = "Player1".to_string();
-    let mut pass = String::new();
-    let mut debug = false;
-    let mut section = "";
+fn toml_get(text: &str, section: &str, key: &str) -> Option<String> {
+    let mut current = "";
     for line in text.lines() {
         let t = line.trim();
-        if t.starts_with('[') { section = t; continue; }
-        let Some((k, v)) = t.split_once('=') else { continue };
-        let v = v.trim().trim_matches('"');
-        match (section, k.trim()) {
-            ("[ap]", "host") => host = v.to_string(),
-            ("[ap]", "slot") => slot = v.to_string(),
-            ("[ap]", "password") => pass = v.to_string(),
-            (_, "debug") if section.is_empty() || section == "[debug]" => debug = v == "true",
-            _ => {}
+        if t.starts_with('[') { current = t; continue; }
+        if current == section {
+            if let Some((k, v)) = t.split_once('=') {
+                if k.trim() == key { return Some(v.trim().trim_matches('"').to_string()); }
+            }
         }
     }
-    set_text(app.host, &host);
-    set_text(app.slot, &slot);
-    set_text(app.pass, &pass);
-    unsafe { SendMessageW(app.debug, BM_SETCHECK, if debug { 1 } else { 0 }, 0) };
+    None
 }
 
-fn save_settings(app: &App) {
+fn quoted(value: &str) -> String {
+    if value.parse::<i32>().is_ok() { value.to_string() } else { format!("\"{value}\"") }
+}
+
+fn load_settings(app: &App) {
+    let text = fs::read_to_string(app.dir.join("flags.toml")).unwrap_or_default();
+    set_text(app.host, &toml_get(&text, "[ap]", "host").unwrap_or_else(|| "127.0.0.1:38281".into()));
+    set_text(app.slot, &toml_get(&text, "[ap]", "slot").unwrap_or_else(|| "Player1".into()));
+    set_text(app.pass, &toml_get(&text, "[ap]", "password").unwrap_or_default());
+}
+
+fn save_connection(app: &App) {
     let path = app.dir.join("flags.toml");
     let mut text = fs::read_to_string(&path).unwrap_or_default();
     text = replace_key(&text, "host", &format!("\"{}\"", text_of(app.host)));
     text = replace_key(&text, "slot", &format!("\"{}\"", text_of(app.slot)));
     text = replace_key(&text, "password", &format!("\"{}\"", text_of(app.pass)));
-    let debug = unsafe { SendMessageW(app.debug, BM_GETCHECK, 0, 0) } == 1;
+    if let Err(e) = fs::write(&path, text) {
+        append_log(app, &format!("Save failed: {e}"));
+    }
+    let _ = write_profile_paths(app);
+}
+
+fn hex_to_bgr(hex: &str) -> u32 {
+    let rgb = u32::from_str_radix(hex.trim().trim_start_matches('#'), 16).unwrap_or(0);
+    ((rgb & 0xff) << 16) | (rgb & 0xff00) | ((rgb >> 16) & 0xff)
+}
+
+fn bgr_to_hex(bgr: u32) -> String {
+    format!("{:02X}{:02X}{:02X}", bgr & 0xff, (bgr >> 8) & 0xff, (bgr >> 16) & 0xff)
+}
+
+fn pick_color(owner: HWND, current: &str) -> Option<String> {
+    let mut cc = unsafe { std::mem::zeroed::<ChooseColor>() };
+    cc.size = std::mem::size_of::<ChooseColor>() as u32;
+    cc.owner = owner;
+    cc.rgb = hex_to_bgr(current);
+    cc.custom = unsafe { CUST.as_mut_ptr() };
+    cc.flags = 0x3;
+    if unsafe { ChooseColorW(&mut cc) } == 0 { return None; }
+    Some(bgr_to_hex(cc.rgb))
+}
+
+fn open_options(app: &App) {
+    unsafe {
+        if !OPT.is_null() { return; }
+        let class = wide("NRAPOptions");
+        let wc = WndClass { style: 0, wnd_proc: Some(opt_proc), cls_extra: 0, wnd_extra: 0, instance: std::ptr::null_mut(), icon: std::ptr::null_mut(), cursor: std::ptr::null_mut(), background: std::ptr::null_mut(), menu_name: std::ptr::null(), class_name: class.as_ptr() };
+        RegisterClassW(&wc);
+        let win = CreateWindowExW(0, class.as_ptr(), wide("NRAP Options").as_ptr(), WS_OVERLAPPEDWINDOW | WS_VISIBLE, 140, 120, 460, 430, std::ptr::null_mut(), 0, std::ptr::null_mut(), std::ptr::null_mut());
+        let edit = wide("EDIT");
+        let button = wide("BUTTON");
+        let text = fs::read_to_string(app.dir.join("flags.toml")).unwrap_or_default();
+        let mut row = |label: &str, y: i32, id: isize, value: &str, color: bool| {
+            CreateWindowExW(0, wide("STATIC").as_ptr(), wide(label).as_ptr(), WS_CHILD | WS_VISIBLE, 16, y + 4, 130, 20, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
+            if color {
+                CreateWindowExW(0, button.as_ptr(), wide(value).as_ptr(), WS_CHILD | WS_VISIBLE, 150, y, 140, 26, win, id, std::ptr::null_mut(), std::ptr::null_mut())
+            } else {
+                let h = CreateWindowExW(WS_EX_CLIENTEDGE, edit.as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE, 150, y, 140, 24, win, id, std::ptr::null_mut(), std::ptr::null_mut());
+                set_text(h, value);
+                h
+            }
+        };
+        let overlay = |key: &str, fallback: &str| toml_get(&text, "[overlay]", key).unwrap_or_else(|| fallback.into());
+        let x = row("X", 16, 201, &overlay("x", "24"), false);
+        let y = row("Y", 48, 202, &overlay("y", "center"), false);
+        let width = row("Width", 80, 203, &overlay("width", "720"), false);
+        let height = row("Height", 112, 204, &overlay("height", "220"), false);
+        let fade = row("Fade seconds", 144, 205, &overlay("hold_seconds", "5"), false);
+        let local = row("Local player", 184, 211, &overlay("color_local", "EE77FF"), true);
+        let remote = row("Remote player", 216, 212, &overlay("color_remote", "FA9C1E"), true);
+        let item = row("Item", 248, 213, &overlay("color_item", "5DC8C8"), true);
+        let location = row("Location", 280, 214, &overlay("color_location", "6BE36B"), true);
+        let text_color = row("Text", 312, 215, &overlay("text_color", "E8D7A4"), true);
+        let debug = CreateWindowExW(0, button.as_ptr(), wide("Debug log").as_ptr(), WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX, 16, 348, 140, 24, win, 216, std::ptr::null_mut(), std::ptr::null_mut());
+        let on = toml_get(&text, "", "debug").unwrap_or_else(|| "false".into()) == "true";
+        SendMessageW(debug, BM_SETCHECK, if on { 1 } else { 0 }, 0);
+        CreateWindowExW(0, button.as_ptr(), wide("Close").as_ptr(), WS_CHILD | WS_VISIBLE, 160, 348, 120, 28, win, 220, std::ptr::null_mut(), std::ptr::null_mut());
+        let boxed = Box::new(OptWin { x, y, width, height, fade, local, remote, item, location, text: text_color, debug });
+        OPT = Box::into_raw(boxed);
+    }
+}
+
+fn save_options(app: &App) {
+    if OPT.is_null() { return; }
+    let opt = unsafe { &*OPT };
+    let path = app.dir.join("flags.toml");
+    let mut text = fs::read_to_string(&path).unwrap_or_default();
+    text = replace_key(&text, "x", &quoted(&text_of(opt.x)));
+    text = replace_key(&text, "y", &quoted(&text_of(opt.y)));
+    text = replace_key(&text, "width", &quoted(&text_of(opt.width)));
+    text = replace_key(&text, "height", &quoted(&text_of(opt.height)));
+    text = replace_key(&text, "hold_seconds", &quoted(&text_of(opt.fade)));
+    text = replace_key(&text, "color_local", &format!("\"{}\"", text_of(opt.local)));
+    text = replace_key(&text, "color_remote", &format!("\"{}\"", text_of(opt.remote)));
+    text = replace_key(&text, "color_item", &format!("\"{}\"", text_of(opt.item)));
+    text = replace_key(&text, "color_location", &format!("\"{}\"", text_of(opt.location)));
+    text = replace_key(&text, "text_color", &format!("\"{}\"", text_of(opt.text)));
+    let debug = unsafe { SendMessageW(opt.debug, BM_GETCHECK, 0, 0) } == 1;
     text = replace_key(&text, "debug", if debug { "true" } else { "false" });
-    match fs::write(&path, text) {
-        Ok(()) => append_log(app, "Saved flags.toml. Host and password apply on the next connect."),
-        Err(e) => append_log(app, &format!("Save failed: {e}")),
+    if let Err(e) = fs::write(&path, text) {
+        append_log(app, &format!("Options save failed: {e}"));
+    } else {
+        append_log(app, "Saved overlay options. Reconnect to apply them.");
     }
 }
 
@@ -571,6 +667,32 @@ fn launch(app: &App) {
     }
 }
 
+
+unsafe extern "system" fn opt_proc(hwnd: HWND, msg: u32, w: usize, l: isize) -> isize {
+    match msg {
+        WM_COMMAND => {
+            let id = (w & 0xffff) as isize;
+            if (211..=215).contains(&id) && !OPT.is_null() {
+                let opt = &*OPT;
+                let button = match id { 211 => opt.local, 212 => opt.remote, 213 => opt.item, 214 => opt.location, _ => opt.text };
+                if let Some(hex) = pick_color(hwnd, &text_of(button)) { set_text(button, &hex); }
+            }
+            if id == 220 {
+                if !APP.is_null() { save_options(&*APP); }
+                OPT = std::ptr::null_mut();
+                DestroyWindow(hwnd);
+            }
+            0
+        }
+        WM_DESTROY => {
+            if !OPT.is_null() && !APP.is_null() { save_options(&*APP); }
+            OPT = std::ptr::null_mut();
+            0
+        }
+        _ => DefWindowProcW(hwnd, msg, w, l),
+    }
+}
+
 unsafe extern "system" fn wnd_proc(hwnd: HWND, msg: u32, w: usize, l: isize) -> isize {
     match msg {
         WM_CTLCOLOREDIT => {
@@ -590,12 +712,17 @@ unsafe extern "system" fn wnd_proc(hwnd: HWND, msg: u32, w: usize, l: isize) -> 
         }
         WM_COMMAND => {
             let id = (w & 0xffff) as isize;
+            let note = (w >> 16) as u16;
             let app = &mut *APP;
+            if note == EN_KILLFOCUS && matches!(id, HOST | SLOT | PASS | SEAMLESS) {
+                save_connection(app);
+                return 0;
+            }
             match id {
                 SEND => send_command(app),
-                SAVE => save_settings(app),
+                OPTIONS => open_options(app),
                 LAUNCH => launch(app),
-                BROWSE_NRSC => { if let Some(path) = pick_file(hwnd, "Seamless Coop DLL") { set_text(app.nrsc, &path); refresh_paths(app); } }
+                BROWSE_NRSC => { if let Some(path) = pick_file(hwnd, "Seamless Coop DLL") { set_text(app.nrsc, &path); refresh_paths(app); save_connection(app); } }
                 _ => {}
             }
             0
@@ -654,16 +781,15 @@ fn main() {
         let slot = CreateWindowExW(WS_EX_CLIENTEDGE, edit.as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE, 384, 400, 180, 24, win, SLOT, std::ptr::null_mut(), std::ptr::null_mut());
         CreateWindowExW(0, wide("STATIC").as_ptr(), wide("Password").as_ptr(), WS_CHILD | WS_VISIBLE, 12, 438, 64, 20, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
         let pass = CreateWindowExW(WS_EX_CLIENTEDGE, edit.as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE | ES_PASSWORD, 80, 434, 240, 24, win, PASS, std::ptr::null_mut(), std::ptr::null_mut());
-        let debug = CreateWindowExW(0, button.as_ptr(), wide("Debug log").as_ptr(), WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX, 340, 434, 120, 24, win, DEBUG, std::ptr::null_mut(), std::ptr::null_mut());
-        CreateWindowExW(0, button.as_ptr(), wide("Save settings").as_ptr(), WS_CHILD | WS_VISIBLE, 480, 432, 130, 28, win, SAVE, std::ptr::null_mut(), std::ptr::null_mut());
+        CreateWindowExW(0, button.as_ptr(), wide("Options").as_ptr(), WS_CHILD | WS_VISIBLE, 480, 432, 130, 28, win, OPTIONS, std::ptr::null_mut(), std::ptr::null_mut());
         CreateWindowExW(0, wide("STATIC").as_ptr(), wide("Seamless").as_ptr(), WS_CHILD | WS_VISIBLE, 12, 474, 74, 20, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
-        let nrsc = CreateWindowExW(WS_EX_CLIENTEDGE, edit.as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE, 88, 470, 500, 24, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
+        let nrsc = CreateWindowExW(WS_EX_CLIENTEDGE, edit.as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE, 88, 470, 500, 24, win, SEAMLESS, std::ptr::null_mut(), std::ptr::null_mut());
         CreateWindowExW(0, button.as_ptr(), wide("Browse").as_ptr(), WS_CHILD | WS_VISIBLE, 596, 470, 70, 24, win, BROWSE_NRSC, std::ptr::null_mut(), std::ptr::null_mut());
         let warn_nrsc = CreateWindowExW(0, wide("STATIC").as_ptr(), wide("!").as_ptr(), WS_CHILD | SS_ICON, 672, 470, 20, 20, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
         let icon = LoadIconW(std::ptr::null_mut(), 32515 as *const u16);
         SendMessageW(warn_nrsc, 0x0170, icon as usize, 0);
         CreateWindowExW(0, button.as_ptr(), wide("Launch").as_ptr(), WS_CHILD | WS_VISIBLE, 280, 516, 200, 42, win, LAUNCH, std::ptr::null_mut(), std::ptr::null_mut());
-        let mut app = App { log, cmd, host, slot, pass, debug, nrsc, warn_nrsc, dir, log_off: 0 };
+        let mut app = App { log, cmd, host, slot, pass, nrsc, warn_nrsc, dir, log_off: 0 };
         set_text(nrsc, &default_nrsc().display().to_string());
         refresh_paths(&app);
         load_settings(&app);
