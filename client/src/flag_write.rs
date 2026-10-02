@@ -530,6 +530,10 @@ pub fn pop_queued() -> Option<(i64, i64)> {
     if q.is_empty() { None } else { Some(q.remove(0)) }
 }
 
+pub fn cached_flags() -> Vec<u32> {
+    CACHED.lock().unwrap().clone()
+}
+
 pub fn cache_seed() -> String {
     CACHE_SEED.lock().unwrap().clone()
 }

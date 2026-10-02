@@ -646,6 +646,7 @@ fn worker() {
                 log_line(&dir, &msg);
             }
         }
+        hero::arm(&flag_write::cached_flags());
         if let Some(msg) = hero::apply() {
             log_line(&dir, &msg);
         }

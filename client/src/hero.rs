@@ -112,6 +112,29 @@ pub fn init() -> Result<String, String> {
     Ok(format!("NRAP hero getter hooked site=0x{site:X}"))
 }
 
+pub fn arm(flags: &[u32]) {
+    if flags.contains(&222) {
+        WYLDER_GRANTED.store(1, Ordering::SeqCst);
+        return;
+    }
+    WYLDER_GRANTED.store(0, Ordering::SeqCst);
+    let id = flags.iter().find_map(|flag| match flag {
+        223 => Some(2), // Guardian
+        224 => Some(3), // Ironeye
+        228 => Some(4), // Duchess
+        225 => Some(5), // Raider
+        229 => Some(6), // Revenant
+        226 => Some(7), // Recluse
+        227 => Some(8), // Executor
+        230 => Some(9), // Scholar
+        231 => Some(10), // Undertaker
+        _ => None,
+    });
+    if let Some(id) = id {
+        WANTED.store(id, Ordering::SeqCst);
+    }
+}
+
 pub fn want(item_id: i64) -> Option<String> {
     let id = session_id(item_id)?;
     if id == 1 {
