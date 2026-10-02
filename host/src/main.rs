@@ -54,6 +54,7 @@ const BROWSE_ME3: isize = 115;
 const ME3: isize = 116;
 const EN_KILLFOCUS: u16 = 0x0200;
 const SS_ICON: u32 = 0x0003;
+const ES_AUTOHSCROLL: u32 = 0x0080;
 const SW_HIDE: i32 = 0;
 const SW_SHOW: i32 = 5;
 
@@ -988,11 +989,11 @@ fn main() {
         CreateWindowExW(0, wide("STATIC").as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE | SS_ETCHEDHORZ, 12, 500, 720, 2, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
         CreateWindowExW(0, wide("STATIC").as_ptr(), wide("Must point to nrsc.dll").as_ptr(), WS_CHILD | WS_VISIBLE, 88, 514, 220, 18, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
         CreateWindowExW(0, wide("STATIC").as_ptr(), wide("Seamless").as_ptr(), WS_CHILD | WS_VISIBLE, 12, 542, 74, 20, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
-        let nrsc = CreateWindowExW(WS_EX_CLIENTEDGE, edit.as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE, 88, 538, 500, 24, win, SEAMLESS, std::ptr::null_mut(), std::ptr::null_mut());
+        let nrsc = CreateWindowExW(WS_EX_CLIENTEDGE, edit.as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL, 88, 538, 500, 24, win, SEAMLESS, std::ptr::null_mut(), std::ptr::null_mut());
         CreateWindowExW(0, button.as_ptr(), wide("Browse").as_ptr(), WS_CHILD | WS_VISIBLE, 596, 538, 70, 24, win, BROWSE_NRSC, std::ptr::null_mut(), std::ptr::null_mut());
         CreateWindowExW(0, wide("STATIC").as_ptr(), wide("Must point to me3.exe").as_ptr(), WS_CHILD | WS_VISIBLE, 88, 572, 220, 18, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
         CreateWindowExW(0, wide("STATIC").as_ptr(), wide("me3").as_ptr(), WS_CHILD | WS_VISIBLE, 12, 600, 74, 20, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
-        let me3 = CreateWindowExW(WS_EX_CLIENTEDGE, edit.as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE, 88, 596, 500, 24, win, ME3, std::ptr::null_mut(), std::ptr::null_mut());
+        let me3 = CreateWindowExW(WS_EX_CLIENTEDGE, edit.as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL, 88, 596, 500, 24, win, ME3, std::ptr::null_mut(), std::ptr::null_mut());
         CreateWindowExW(0, button.as_ptr(), wide("Browse").as_ptr(), WS_CHILD | WS_VISIBLE, 596, 596, 70, 24, win, BROWSE_ME3, std::ptr::null_mut(), std::ptr::null_mut());
         CreateWindowExW(0, wide("STATIC").as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE | SS_ETCHEDHORZ, 12, 636, 720, 2, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
         CreateWindowExW(0, button.as_ptr(), wide("Options").as_ptr(), WS_CHILD | WS_VISIBLE, 280, 654, 200, 28, win, OPTIONS, std::ptr::null_mut(), std::ptr::null_mut());
