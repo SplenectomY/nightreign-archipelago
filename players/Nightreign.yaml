@@ -57,7 +57,7 @@ Elden Ring Nightreign:
   heolstor_unlock_count: 4
 
   # true: Everdark Sovereign defeats are locations, and their unlocks are items.
-  # The client opens them offline. false: no Everdark locations or items.
+  # false: no Everdark locations or items.
   include_everdark: true
 
   # true: Forsaken Hollows Nightlords (Harmonia, Straghess) and their Nightfarers are in the pool.
@@ -81,19 +81,19 @@ Elden Ring Nightreign:
   starting_shop_min: 3
   starting_shop_max: 6
 
-  # Day 1 night-boss defeats that become locations. The first kill is Day 1 Boss 1.
+  # Day 1 night-boss defeats that become locations.
   # 1 to 30. Default 10. A wipe after the kill still keeps the check.
   day1_boss_count: 10
 
-  # Day 2 night-boss defeats that become locations. The first kill is Day 2 Boss 1.
+  # Day 2 night-boss defeats that become locations.
   # 1 to 30. Default 10.
   day2_boss_count: 10
 
-  # Evergaol seals that become locations. The flag toggles, so opening and sealing both count.
+  # Evergaol seals that become locations.
   # 1 to 40. Default 20.
   evergaol_count: 20
 
-  # Magician tower openings that become locations. The flag toggles, so both edges count.
+  # Magician tower openings that become locations.
   # 1 to 30. Default 10.
   tower_count: 10
 
