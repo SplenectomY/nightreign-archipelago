@@ -15,7 +15,6 @@ mod scan;
 
 use std::ffi::c_void;
 use std::fs::{self, OpenOptions};
-use std::io::{self, BufRead};
 use std::io::Write;
 use std::path::PathBuf;
 use std::sync::mpsc;
@@ -374,7 +373,7 @@ fn worker() {
         let count = text.lines().find_map(|l| l.trim().strip_prefix("heolstor_unlock_count = ").and_then(|v| v.parse().ok())).unwrap_or(4);
         flag_write::configure_heolstor(in_pool, count);
     }
-    let mut watches = text.as_deref().map(parse_watches).unwrap_or_default();
+    let watches = text.as_deref().map(parse_watches).unwrap_or_default();
     if watches.is_empty() {
         log_line(&dir, "NRAP no event_flag_id values in flags.toml");
     } else {
