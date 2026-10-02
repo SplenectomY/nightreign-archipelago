@@ -581,10 +581,16 @@ fn set_connected(app: &mut App, on: bool) {
 }
 
 fn note_connection(app: &mut App, chunk: &str) {
-    if chunk.contains("NRAP AP not connected") || chunk.contains("NRAP AP socket") || chunk.contains("NRAP AP disconnecting") {
-        set_connected(app, false);
-    } else if chunk.contains("NRAP AP connected") {
-        set_connected(app, true);
+    let mut state: Option<bool> = None;
+    for line in chunk.lines() {
+        if line.contains("NRAP AP not connected") || line.contains("NRAP AP socket ended") || line.contains("NRAP AP disconnecting") {
+            state = Some(false);
+        } else if line.contains("NRAP AP connected") {
+            state = Some(true);
+        }
+    }
+    if let Some(on) = state {
+        set_connected(app, on);
     }
 }
 
