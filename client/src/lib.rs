@@ -642,7 +642,9 @@ fn worker() {
             log_line(&dir, &msg);
         }
         if let Some(msg) = flag_write::reapply_cached() {
-            log_line(&dir, &msg);
+            if DEBUG.load(Ordering::SeqCst) {
+                log_line(&dir, &msg);
+            }
         }
         if let Some(msg) = hero::apply() {
             log_line(&dir, &msg);
