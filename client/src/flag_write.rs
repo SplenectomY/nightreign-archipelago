@@ -593,6 +593,30 @@ fn is_defeat_flag(flag: u32) -> bool {
     matches!(flag, 150..=156 | 161 | 162)
 }
 
+pub fn unlock_for_defeat(flag: u32) -> Option<u32> {
+    Some(match flag {
+        150 => 189,
+        151 => 190,
+        152 => 191,
+        153 => 192,
+        154 => 193,
+        155 => 194,
+        156 => 195,
+        160 => 115,
+        161 => 135,
+        162 => 136,
+        170 => 212,
+        171 => 213,
+        172 => 214,
+        173 => 215,
+        174 => 216,
+        175 => 217,
+        176 => 218,
+        181 => 219,
+        _ => return None,
+    })
+}
+
 pub fn note_defeat(flag: u32) -> Option<String> {
     if !is_defeat_flag(flag) || *HEOLSTOR_IN_POOL.lock().unwrap() {
         return None;

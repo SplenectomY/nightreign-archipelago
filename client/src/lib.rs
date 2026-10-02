@@ -234,6 +234,7 @@ struct Watch {
     last: Option<bool>,
     miss_logged: bool,
     submitted: bool,
+    ignored: bool,
 }
 
 fn toml_key_value(line: &str) -> Option<(&str, &str)> {
@@ -263,6 +264,7 @@ fn parse_watches(text: &str) -> Vec<Watch> {
                     last: None,
                     miss_logged: false,
                     submitted: false,
+                    ignored: false,
                 });
             }
         }
@@ -476,12 +478,20 @@ fn worker() {
                     Some(on) => {
                         if w.last != Some(on) {
                             if w.last == Some(false) && on {
-                                log_line(
-                                    &watch_dir,
-                                    &format!("NRAP check: {} (flag {} 0->1)", w.location, w.flag),
-                                );
-                                if let Some(msg) = flag_write::note_defeat(w.flag) {
-                                    log_line(&watch_dir, &msg);
+                                if let Some(gate) = flag_write::unlock_for_defeat(w.flag) {
+                                    if found.get(gate) != Some(true) {
+                                        w.ignored = true;
+                                        log_line(&watch_dir, &format!("NRAP check blocked: {} (flag {} 0->1, unlock {} off)", w.location, w.flag, gate));
+                                    }
+                                }
+                                if !w.ignored {
+                                    log_line(
+                                        &watch_dir,
+                                        &format!("NRAP check: {} (flag {} 0->1)", w.location, w.flag),
+                                    );
+                                    if let Some(msg) = flag_write::note_defeat(w.flag) {
+                                        log_line(&watch_dir, &msg);
+                                    }
                                 }
                             } else {
                                 log_line(
@@ -496,7 +506,15 @@ fn worker() {
                             }
                             w.last = Some(on);
                         }
-                        if on && !w.submitted && w.location_id != 0 {
+                        if on && !w.submitted && !w.ignored && w.location_id != 0 {
+                            if let Some(gate) = flag_write::unlock_for_defeat(w.flag) {
+                                if found.get(gate) != Some(true) {
+                                    w.ignored = true;
+                                    log_line(&watch_dir, &format!("NRAP check blocked: {} (flag {} on, unlock {} off)", w.location, w.flag, gate));
+                                }
+                            }
+                        }
+                        if on && !w.submitted && !w.ignored && w.location_id != 0 {
                             let _ = watch_tx.send(w.location_id);
                             w.submitted = true;
                         }
