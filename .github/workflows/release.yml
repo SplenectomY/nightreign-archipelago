@@ -80,6 +80,8 @@ jobs:
           body: |
             Tester pack. No Rust or MSVC required.
 
-            Zip contains `nightreign_ap.dll`, `flags.toml`, me3 profile, apworld, player yaml, and the install notes.
+            Zip contains `nightreign_ap.dll`, `nrap-host.exe`, `flags.toml`, me3 profile, apworld, player yaml, regulation.bin, and the install notes.
 
-            The regulation package is included and enabled. Seamless Coop is the tested launch path.
+            Launch with nrap-host.exe. It saves host, slot, and password, starts me3, and shows the log. The in-game overlay is a click-through log. Local servers use ws; archipelago.gg uses wss.
+
+            The regulation package is included and enabled. Seamless Coop is tested, including multi-slot sessions.
