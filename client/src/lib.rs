@@ -371,6 +371,7 @@ fn worker() {
     if text.as_deref().is_some_and(|t| t.lines().any(|l| l.trim() == "flag_diff = true")) {
         FLAG_DIFF.store(true, Ordering::SeqCst);
     }
+    let console_dir = dir.clone();
     thread::spawn(move || {
         loop {
             let Some(line) = read_console_line() else {
@@ -390,7 +391,7 @@ fn worker() {
                     _ => !FLAG_DIFF.load(Ordering::SeqCst),
                 };
                 FLAG_DIFF.store(on, Ordering::SeqCst);
-                log_line(&dir, &format!("NRAP flagdiff {}", if on { "on" } else { "off" }));
+                log_line(&console_dir, &format!("NRAP flagdiff {}", if on { "on" } else { "off" }));
             }
         }
     });
