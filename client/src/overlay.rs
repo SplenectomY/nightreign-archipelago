@@ -60,6 +60,8 @@ struct Rect {
     right: i32,
     bottom: i32,
 }
+#[repr(C)]
+struct Size { cx: i32, cy: i32 }
 
 #[repr(C)]
 struct Msg {
@@ -129,6 +131,7 @@ extern "system" {
     fn SetBkMode(hdc: HDC, mode: i32) -> i32;
     fn DrawTextW(hdc: HDC, text: *const u16, len: i32, rect: *mut Rect, format: u32) -> i32;
     fn DeleteObject(obj: HGDIOBJ) -> i32;
+    fn GetTextExtentPoint32W(hdc: HDC, text: *const u16, len: i32, size: *mut Size) -> i32;
 }
 
 fn wide(s: &str) -> Vec<u16> {
@@ -273,6 +276,15 @@ fn colorize(line: &str) -> Vec<(String, u32)> {
     spans
 }
 
+
+fn text_width(hdc: HDC, text: &str) -> i32 {
+    if text.is_empty() { return 0; }
+    let w = wide(text);
+    let mut size = Size { cx: 0, cy: 0 };
+    unsafe { GetTextExtentPoint32W(hdc, w.as_ptr(), (w.len() as i32) - 1, &mut size); }
+    size.cx.max(1)
+}
+
 fn paint_wrapped(hdc: HDC, rc: &Rect, lines: &[String]) {
     let width = (rc.right - rc.left - 16).max(40);
     let height = FONT_SIZE.load(Ordering::SeqCst) as i32 + 4;
@@ -283,10 +295,7 @@ fn paint_wrapped(hdc: HDC, rc: &Rect, lines: &[String]) {
         let mut used = 0i32;
         for (text, color) in spans {
             for word in text.split_inclusive(' ') {
-                let w = wide(word);
-                let mut box_rc = Rect { left: 0, top: 0, right: 0, bottom: 0 };
-                unsafe { DrawTextW(hdc, w.as_ptr(), (w.len() as i32) - 1, &mut box_rc, DT_LEFT | DT_NOPREFIX | DT_SINGLELINE | 0x400); }
-                let word_w = box_rc.right.max(8);
+                let word_w = text_width(hdc, word);
                 if used > 0 && used + word_w > width {
                     draw_row(hdc, 8, y, &row);
                     y += height;
@@ -309,12 +318,13 @@ fn paint_wrapped(hdc: HDC, rc: &Rect, lines: &[String]) {
 fn draw_row(hdc: HDC, mut x: i32, y: i32, row: &[(String, u32)]) {
     for (text, color) in row {
         let w = wide(text);
-        let mut box_rc = Rect { left: x, top: y, right: x + 2000, bottom: y + 40 };
+        let advance = text_width(hdc, text);
+        let mut box_rc = Rect { left: x, top: y, right: x + advance + 4, bottom: y + 40 };
         unsafe {
             SetTextColor(hdc, *color);
             DrawTextW(hdc, w.as_ptr(), (w.len() as i32) - 1, &mut box_rc, DT_LEFT | DT_NOPREFIX | DT_SINGLELINE);
         }
-        x = box_rc.right;
+        x += advance;
     }
 }
 
