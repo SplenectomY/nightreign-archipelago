@@ -518,13 +518,9 @@ pub fn enqueue_item(index: i64, item_id: i64) -> bool {
     true
 }
 
-pub fn apply_queued() -> Option<String> {
-    let item_id = {
-        let mut q = GRANT_Q.lock().unwrap();
-        if q.is_empty() { None } else { Some(q.remove(0)) }
-    };
-    let Some(item_id) = item_id else { return None };
-    apply_item(item_id)
+pub fn pop_queued() -> Option<i64> {
+    let mut q = GRANT_Q.lock().unwrap();
+    if q.is_empty() { None } else { Some(q.remove(0)) }
 }
 
 pub fn remember_unlock(item_id: i64) {

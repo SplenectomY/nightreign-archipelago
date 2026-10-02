@@ -540,8 +540,21 @@ fn worker() {
     let mut last_clear_flag = 0u32;
     let mut last_debug_drop = 0i32;
     loop {
-        if let Some(msg) = flag_write::apply_queued() {
-            log_line(&dir, &msg);
+        if let Some(id) = flag_write::pop_queued() {
+            if let Some(msg) = flag_write::apply_item(id) {
+                log_line(&dir, &msg);
+            }
+            if let Some(msg) = hero::want(id) {
+                log_line(&dir, &msg);
+            }
+            if let Some(msg) = grant::want(id) {
+                log_line(&dir, &msg);
+            }
+            if id != 839_100_100 {
+                if let Some(msg) = drop::apply_item(id, 0) {
+                    log_line(&dir, &msg);
+                }
+            }
         }
         if let Some(msg) = flag_write::retry_pending() {
             log_line(&dir, &msg);
