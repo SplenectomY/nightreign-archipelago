@@ -80,6 +80,12 @@ pub fn set_flag_from(flag: u32, on: bool, why: &str) -> Result<String, String> {
         return Err(format!("flagman instance not live (0x{:X})", man.instance));
     }
     let before = man.get(flag);
+    if before == Some(on) {
+        return Ok(format!(
+            "NRAP SetEventFlag {flag} {} why={why} skip already before={before:?}",
+            u32::from(on)
+        ));
+    }
     let setter: SetFlagFn = unsafe { std::mem::transmute(fn_addr) };
     unsafe {
         setter(man.instance, flag, u32::from(on));
@@ -310,15 +316,21 @@ fn unlock_flag(item_id: i64) -> Option<u32> {
 
 static APPLIED: Mutex<Vec<u32>> = Mutex::new(Vec::new());
 static CACHED: Mutex<Vec<u32>> = Mutex::new(Vec::new());
+static SEEN: Mutex<Vec<i64>> = Mutex::new(Vec::new());
+static GRANT_Q: Mutex<Vec<i64>> = Mutex::new(Vec::new());
 static CACHE_PATH: Mutex<Option<std::path::PathBuf>> = Mutex::new(None);
 static CACHE_SEED: Mutex<String> = Mutex::new(String::new());
 static ARMED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
 fn write_cache(path: &std::path::PathBuf, seed: &str, flags: &[u32]) {
+    let seen = SEEN.lock().unwrap().clone();
     let mut body = format!("seed={seed}\n");
     for flag in flags {
         body.push_str(&flag.to_string());
         body.push('\n');
+    }
+    for index in seen {
+        body.push_str(&format!("seen={index}\n"));
     }
     let _ = std::fs::write(path, body);
 }
@@ -331,15 +343,21 @@ pub fn load_cache(dir: Option<&std::path::PathBuf>) -> String {
     let text = std::fs::read_to_string(&path).unwrap_or_default();
     let mut seed = String::new();
     let mut flags = Vec::new();
+    let mut seen = Vec::new();
     for line in text.lines() {
         if let Some(rest) = line.trim().strip_prefix("seed=") {
             seed = rest.to_string();
+        } else if let Some(rest) = line.trim().strip_prefix("seen=") {
+            if let Ok(index) = rest.parse() {
+                seen.push(index);
+            }
         } else if let Ok(flag) = line.trim().parse() {
             flags.push(flag);
         }
     }
     *CACHE_SEED.lock().unwrap() = seed.clone();
     *CACHED.lock().unwrap() = flags.clone();
+    *SEEN.lock().unwrap() = seen;
     *CACHE_PATH.lock().unwrap() = Some(path);
     format!("NRAP unlock cache loaded {} seed={seed}", flags.len())
 }
@@ -483,6 +501,30 @@ pub fn bind_seed(seed: &str) -> String {
         }
     }
     format!("NRAP unlock cache armed seed={seed} flags={} boss_kills={}", CACHED.lock().unwrap().len(), boss_kill_count())
+}
+
+pub fn enqueue_item(index: i64, item_id: i64) -> bool {
+    let mut seen = SEEN.lock().unwrap();
+    if seen.contains(&index) {
+        return false;
+    }
+    seen.push(index);
+    drop(seen);
+    GRANT_Q.lock().unwrap().push(item_id);
+    let flags = CACHED.lock().unwrap().clone();
+    if let Some(path) = CACHE_PATH.lock().unwrap().as_ref() {
+        write_cache(path, &CACHE_SEED.lock().unwrap(), &flags);
+    }
+    true
+}
+
+pub fn apply_queued() -> Option<String> {
+    let item_id = {
+        let mut q = GRANT_Q.lock().unwrap();
+        if q.is_empty() { None } else { Some(q.remove(0)) }
+    };
+    let Some(item_id) = item_id else { return None };
+    apply_item(item_id)
 }
 
 pub fn remember_unlock(item_id: i64) {

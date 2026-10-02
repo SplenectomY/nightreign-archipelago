@@ -197,21 +197,12 @@ fn handle_server_text(text: &str, log: &impl Fn(&str), next_index: &mut i64, dro
             "NRAP received {} ({id}) index {ap_index}",
             item_name(id)
         ));
-        if let Some(msg) = crate::flag_write::apply_item(id) {
-            log(&msg);
+        if crate::flag_write::enqueue_item(ap_index, id) {
+            log(&format!("NRAP grant queued {id} index {ap_index}"));
+        } else {
+            log(&format!("NRAP grant skip already {id} index {ap_index}"));
         }
-        crate::flag_write::remember_unlock(id);
-        if let Some(msg) = crate::hero::want(id) {
-            log(&msg);
-        }
-        if let Some(msg) = crate::grant::want(id) {
-            log(&msg);
-        }
-        if id != 839_100_100 {
-            if let Some(msg) = crate::drop::apply_item(id, drop_goods) {
-                log(&msg);
-            }
-        }
+        let _ = drop_goods;
         if id == 839_100_900 {
             GOAL.store(true, Ordering::SeqCst);
             log("NRAP goal met");

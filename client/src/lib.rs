@@ -540,6 +540,9 @@ fn worker() {
     let mut last_clear_flag = 0u32;
     let mut last_debug_drop = 0i32;
     loop {
+        if let Some(msg) = flag_write::apply_queued() {
+            log_line(&dir, &msg);
+        }
         if let Some(msg) = flag_write::retry_pending() {
             log_line(&dir, &msg);
         }
