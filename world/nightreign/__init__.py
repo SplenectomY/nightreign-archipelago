@@ -216,11 +216,22 @@ class NightreignWorld(World):
                 self.get_location("Unlock Revenant"),
                 lambda state: state.has("Shop - Besmirched Frame", player),
             )
+            nightlords = [loc for loc, _item in self._nightlords()] + ["Nightlord - Heolstor"]
+
+            def two_nightlords(state) -> bool:
+                return sum(state.can_reach(name, "Location", player) for name in nightlords) >= 2
+
             for name in SHOP_LOCATIONS:
-                set_rule(
-                    self.get_location(name),
-                    lambda state, name=name: state.has(name, player),
-                )
+                if name.startswith("Garb - "):
+                    set_rule(
+                        self.get_location(name),
+                        lambda state, name=name: state.has(name, player) and two_nightlords(state),
+                    )
+                else:
+                    set_rule(
+                        self.get_location(name),
+                        lambda state, name=name: state.has(name, player),
+                    )
         set_rule(self.get_location("Nightlord - Heolstor"), heolstor_gate)
 
         goal = self.options.goal.current_key
