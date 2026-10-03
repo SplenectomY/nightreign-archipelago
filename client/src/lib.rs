@@ -657,6 +657,17 @@ fn worker() {
             thread::sleep(Duration::from_millis(200));
         }
     });
+    let sticky_dir = dir.clone();
+    thread::spawn(move || loop {
+        if flag_write::in_session() && !flag_write::in_expedition() {
+            if let Some(msg) = flag_write::reapply_cached() {
+                if DEBUG.load(Ordering::SeqCst) && LOG_STICKY.load(Ordering::SeqCst) {
+                    log_line(&sticky_dir, &msg);
+                }
+            }
+        }
+        thread::sleep(Duration::from_millis(200));
+    });
     let mut last_debug_flag = 0u32;
     let mut last_clear_flag = 0u32;
     let mut last_debug_drop = 0i32;
@@ -705,11 +716,6 @@ fn worker() {
         }
         if let Some(msg) = flag_write::stock_shop_rows() {
             log_line(&dir, &msg);
-        }
-        if let Some(msg) = flag_write::reapply_cached() {
-            if DEBUG.load(Ordering::SeqCst) && LOG_STICKY.load(Ordering::SeqCst) {
-                log_line(&dir, &msg);
-            }
         }
         hero::arm(&flag_write::cached_flags());
         if let Some(msg) = hero::apply() {
