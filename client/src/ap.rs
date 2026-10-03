@@ -1,7 +1,7 @@
 //! Blocking AP client. Own thread. Flag thread only pushes location ids.
 
 use std::net::TcpStream;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::Mutex;
 use std::sync::mpsc::{Receiver, RecvTimeoutError};
 use std::time::Duration;
