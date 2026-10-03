@@ -317,7 +317,9 @@ fn json_unescape(s: &str) -> String {
 }
 
 fn part_name(raw: &str, kind: &str) -> String {
-    let id = raw.parse::<i64>().unwrap_or(i64::MIN);
+    let Some(id) = raw.parse::<i64>().ok() else {
+        return raw.to_string();
+    };
     match kind {
         "item_id" => item_name(id),
         "location_id" => location_name(id),
@@ -330,38 +332,22 @@ fn printjson_text(text: &str) -> Option<String> {
     if !text.contains("PrintJSON") {
         return None;
     }
+    let Some(at) = text.find("\"data\":[") else { return None };
+    let body = &text[at + 8..];
     let mut parts = Vec::new();
     let mut from = 0usize;
-    while let Some(rel) = text[from..].find("\"text\":\"") {
-        let at = from + rel + 8;
-        let mut end = at;
-        let bytes = text.as_bytes();
-        while end < bytes.len() {
-            if bytes[end] == b'\\' {
-                end += 2;
-                continue;
-            }
-            if bytes[end] == b'"' {
-                break;
-            }
-            end += 1;
+    while let Some(rel) = body[from..].find('{') {
+        let start = from + rel;
+        let Some(end_rel) = body[start..].find('}') else { break };
+        let obj = &body[start..=start + end_rel];
+        if let Some(raw) = object_str(obj, "text") {
+            let kind = object_str(obj, "type").unwrap_or_default();
+            parts.push(part_name(&raw, &kind));
         }
-        if end > bytes.len() {
+        from = start + end_rel + 1;
+        if parts.len() > 24 || body[from..].trim_start().starts_with(']') {
             break;
         }
-        let raw = json_unescape(&text[at..end]);
-        let tail = &text[end..end.saturating_add(80).min(text.len())];
-        let kind = if tail.contains("\"type\":\"item_id\"") {
-            "item_id"
-        } else if tail.contains("\"type\":\"location_id\"") {
-            "location_id"
-        } else if tail.contains("\"type\":\"player_id\"") {
-            "player_id"
-        } else {
-            ""
-        };
-        parts.push(part_name(&raw, kind));
-        from = end + 1;
     }
     if parts.is_empty() {
         return None;
