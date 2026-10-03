@@ -498,7 +498,9 @@ fn worker() {
         }
         if let Some(found) = man {
             static DAY: std::sync::Mutex<[(u32, Option<bool>); 9]> = std::sync::Mutex::new([
-                (7502, None), (7507, None), (8140, None), (8145, None), (7001, None), (2000, None), (7512, None), (9100, None), (8155, None),
+                (7502, None), (7507, None), (8140, None), (8145, None), (7001, None), (2000, None), (7512, None), (8155, None),
+                (9100, None), (9101, None), (9102, None), (9103, None), (9104, None), (9105, None),
+                (9106, None), (9107, None), (9108, None), (9109, None), (9110, None), (9111, None),
             ]);
             let mut day = DAY.lock().unwrap();
             for (flag, last) in day.iter_mut() {
@@ -527,6 +529,12 @@ fn worker() {
                                 log_line(&watch_dir, &format!("NRAP toggle {flag} count {n} loc {loc}"));
                             } else if !on {
                                 log_line(&watch_dir, &format!("NRAP toggle {flag} clear ignored"));
+                            }
+                        }
+                        if last.is_some() && on && (9100..=9111).contains(flag) {
+                            if let Some((n, loc)) = flag_write::note_toggle(*flag, true) {
+                                let _ = watch_tx.send(loc);
+                                log_line(&watch_dir, &format!("NRAP buried treasure {flag} count {n} loc {loc}"));
                             }
                         }
                         *last = Some(on);

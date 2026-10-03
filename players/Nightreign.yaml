@@ -105,6 +105,10 @@ Elden Ring Nightreign:
   # 0 to 20. Default 3.
   invader_count: 3
 
+  # Buried treasure chests opened. Flags 9100-9111 rise to 1 and clear when the expedition ends.
+  # Only the rise counts. 0 to 40. Default 10.
+  buried_treasure_count: 10
+
   # Not implemented. Leave false. A death does not kill other players.
   death_link: false
 

@@ -149,6 +149,14 @@ class InvaderCount(Range):
     default = 3
 
 
+class BuriedTreasureCount(Range):
+    """How many buried treasure openings become locations. Flags 9100-9111 rise to 1 and clear on exit, so only the rise counts."""
+    display_name = "Buried Treasure Count"
+    range_start = 0
+    range_end = 40
+    default = 10
+
+
 class DeathLink(Toggle):
     """Not implemented. Leave off. A death does not kill other players."""
     display_name = "Death Link"
@@ -175,4 +183,5 @@ class NightreignOptions(PerGameCommonOptions):
     evergaol_count: EvergaolCount
     tower_count: TowerCount
     invader_count: InvaderCount
+    buried_treasure_count: BuriedTreasureCount
     death_link: DeathLink

@@ -457,6 +457,7 @@ static DAY2_KILLS: Mutex<u32> = Mutex::new(0);
 static EVERGAOL: Mutex<u32> = Mutex::new(0);
 static TOWER: Mutex<u32> = Mutex::new(0);
 static INVADER: Mutex<u32> = Mutex::new(0);
+static TREASURE: Mutex<u32> = Mutex::new(0);
 static IGNORE_CLEAR: Mutex<Vec<u32>> = Mutex::new(Vec::new());
 static BOSS_PATH: Mutex<Option<std::path::PathBuf>> = Mutex::new(None);
 
@@ -478,6 +479,7 @@ pub fn load_boss_kills(dir: Option<&std::path::PathBuf>) -> String {
         if let Some(rest) = line.trim().strip_prefix("evergaol=") { *EVERGAOL.lock().unwrap() = rest.parse().unwrap_or(0); }
         if let Some(rest) = line.trim().strip_prefix("tower=") { *TOWER.lock().unwrap() = rest.parse().unwrap_or(0); }
         if let Some(rest) = line.trim().strip_prefix("invader=") { *INVADER.lock().unwrap() = rest.parse().unwrap_or(0); }
+        if let Some(rest) = line.trim().strip_prefix("treasure=") { *TREASURE.lock().unwrap() = rest.parse().unwrap_or(0); }
     }
     *BOSS_PATH.lock().unwrap() = Some(path);
     *BOSS_KILLS.lock().unwrap() = count;
@@ -492,9 +494,9 @@ fn write_counts() {
     let Some(path) = BOSS_PATH.lock().unwrap().clone() else { return };
     let seed = CACHE_SEED.lock().unwrap().clone();
     let _ = std::fs::write(path, format!(
-        "seed={seed}\ncount={}\nday1={}\nday2={}\nevergaol={}\ntower={}\ninvader={}\n",
+        "seed={seed}\ncount={}\nday1={}\nday2={}\nevergaol={}\ntower={}\ninvader={}\ntreasure={}\n",
         *BOSS_KILLS.lock().unwrap(), *DAY1_KILLS.lock().unwrap(), *DAY2_KILLS.lock().unwrap(),
-        *EVERGAOL.lock().unwrap(), *TOWER.lock().unwrap(), *INVADER.lock().unwrap()
+        *EVERGAOL.lock().unwrap(), *TOWER.lock().unwrap(), *INVADER.lock().unwrap(), *TREASURE.lock().unwrap()
     ));
 }
 
@@ -547,6 +549,10 @@ pub fn note_toggle(flag: u32, rising: bool) -> Option<(u32, i64)> {
         let mut n = INVADER.lock().unwrap();
         *n += 1;
         (*n, 839001400 + *n as i64)
+    } else if (9100..=9111).contains(&flag) {
+        let mut n = TREASURE.lock().unwrap();
+        *n += 1;
+        (*n, 839001500 + *n as i64)
     } else {
         return None;
     };
@@ -568,6 +574,7 @@ pub fn bind_seed(seed: &str) -> String {
         *EVERGAOL.lock().unwrap() = 0;
         *TOWER.lock().unwrap() = 0;
         *INVADER.lock().unwrap() = 0;
+        *TREASURE.lock().unwrap() = 0;
         write_counts();
         ARMED.store(true, std::sync::atomic::Ordering::SeqCst);
         return format!("NRAP unlock cache cleared, seed {known} -> {seed}");
