@@ -132,6 +132,8 @@ extern "system" {
     fn GetLastError() -> u32;
     fn FindWindowW(class: *const u16, title: *const u16) -> HWND;
     fn SetForegroundWindow(hwnd: HWND) -> i32;
+    fn GetModuleHandleW(name: *const u16) -> HINSTANCE;
+    fn LoadIconW(instance: HINSTANCE, name: *const u16) -> *mut c_void;
 }
 #[link(name = "comdlg32")]
 extern "system" {
@@ -209,6 +211,11 @@ struct WndClass {
     background: *mut c_void,
     menu_name: *const u16,
     class_name: *const u16,
+}
+
+
+fn app_icon() -> *mut c_void {
+    unsafe { LoadIconW(GetModuleHandleW(std::ptr::null()), 1 as *const u16) }
 }
 
 fn wide(s: &str) -> Vec<u16> {
@@ -346,7 +353,7 @@ fn open_options(app: &App) {
     unsafe {
         if !OPT.is_null() { return; }
         let class = wide("NRAPOptions");
-        let wc = WndClass { style: 0, wnd_proc: Some(opt_proc), cls_extra: 0, wnd_extra: 0, instance: std::ptr::null_mut(), icon: std::ptr::null_mut(), cursor: std::ptr::null_mut(), background: std::ptr::null_mut(), menu_name: std::ptr::null(), class_name: class.as_ptr() };
+        let wc = WndClass { style: 0, wnd_proc: Some(opt_proc), cls_extra: 0, wnd_extra: 0, instance: std::ptr::null_mut(), icon: app_icon(), cursor: std::ptr::null_mut(), background: std::ptr::null_mut(), menu_name: std::ptr::null(), class_name: class.as_ptr() };
         RegisterClassW(&wc);
         let win = CreateWindowExW(0, class.as_ptr(), wide("NRAP Options").as_ptr(), WS_OVERLAPPEDWINDOW | WS_VISIBLE, 140, 80, 420, 900, std::ptr::null_mut(), 0, std::ptr::null_mut(), std::ptr::null_mut());
         let edit = wide("EDIT");
@@ -981,7 +988,7 @@ fn main() {
             cls_extra: 0,
             wnd_extra: 0,
             instance: std::ptr::null_mut(),
-            icon: std::ptr::null_mut(),
+            icon: app_icon(),
             cursor: std::ptr::null_mut(),
             background: std::ptr::null_mut(),
             menu_name: std::ptr::null(),
