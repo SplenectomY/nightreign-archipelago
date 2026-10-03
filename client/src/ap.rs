@@ -468,6 +468,11 @@ fn connect_and_handshake(
     tune(&mut socket, Duration::from_secs(8));
     if let Ok(Some(room)) = read_text(&mut socket) {
         handle_server_text(&room, log, next_index, drop_goods);
+        let games = package_games(&room);
+        if !games.is_empty() {
+            let _ = socket.send(Message::Text(datapackage_request(&games).into()));
+            log(&format!("NRAP AP requested datapackage for {}", games.join(", ")));
+        }
     }
     let connect = format!(
         "[{{\"cmd\":\"Connect\",\"password\":\"{}\",\"game\":\"{}\",\"name\":\"{}\",\"uuid\":\"\",\"version\":{{\"major\":0,\"minor\":5,\"build\":1,\"class\":\"Version\"}},\"items_handling\":{},\"tags\":[\"AP\"],\"slot_data\":true}}]",
