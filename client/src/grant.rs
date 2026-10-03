@@ -115,7 +115,7 @@ pub fn want_once(dir: Option<&std::path::PathBuf>, seed: &str, index: i64, item_
     let amt = murk_amount(item_id)?;
     if let Some(dir) = dir {
         if murk_seen(dir, seed, index) {
-            return Some(format!("NRAP murk skip already index={index} id={item_id}"));
+            return Some(format!("NRAP murk skip already {} ({item_id}) index={index}", crate::ap::item_name(item_id)));
         }
     }
     match add_murk(amt) {
@@ -123,11 +123,11 @@ pub fn want_once(dir: Option<&std::path::PathBuf>, seed: &str, index: i64, item_
             if let Some(dir) = dir {
                 remember_murk(dir, seed, index, item_id, amt);
             }
-            Some(format!("NRAP murk +{amt} index={index} id={item_id} {detail}"))
+            Some(format!("NRAP murk +{amt} {} ({item_id}) index={index} {detail}", crate::ap::item_name(item_id)))
         }
         Err(e) => {
             PENDING.fetch_add(amt, Ordering::SeqCst);
-            Some(format!("NRAP murk queued +{amt} index={index} id={item_id} ({e})"))
+            Some(format!("NRAP murk queued +{amt} {} ({item_id}) index={index} ({e})", crate::ap::item_name(item_id)))
         }
     }
 }

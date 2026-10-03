@@ -72,8 +72,97 @@ fn escape(s: &str) -> String {
     s.replace('\\', "\\\\").replace('"', "\\\"")
 }
 
-fn item_name(id: i64) -> String {
-    crate::names::item_label(id).map(str::to_string).unwrap_or_else(|| format!("item {id}"))
+static ITEM_NAMES: Mutex<Vec<(i64, String)>> = Mutex::new(Vec::new());
+static LOCATION_NAMES: Mutex<Vec<(i64, String)>> = Mutex::new(Vec::new());
+
+pub fn item_name(id: i64) -> String {
+    if let Some(name) = crate::names::item_label(id) {
+        return name.to_string();
+    }
+    ITEM_NAMES.lock().unwrap().iter().find(|(item, _)| *item == id).map(|(_, name)| name.clone()).unwrap_or_else(|| format!("item {id}"))
+}
+
+fn location_name(id: i64) -> String {
+    if let Some(name) = crate::names::location_label(id) {
+        return name.to_string();
+    }
+    LOCATION_NAMES.lock().unwrap().iter().find(|(loc, _)| *loc == id).map(|(_, name)| name.clone()).unwrap_or_else(|| id.to_string())
+}
+
+fn remember_name(map: &Mutex<Vec<(i64, String)>>, id: i64, name: &str) {
+    if name.is_empty() || id == 0 {
+        return;
+    }
+    let mut names = map.lock().unwrap();
+    if !names.iter().any(|(have, _)| *have == id) {
+        names.push((id, name.to_string()));
+    }
+}
+
+fn ingest_package(text: &str) {
+    for (key, map) in [("item_name_to_id", &ITEM_NAMES), ("location_name_to_id", &LOCATION_NAMES)] {
+        let mut from = 0usize;
+        let needle = format!("\"{key}\":");
+        while let Some(rel) = text[from..].find(&needle) {
+            let start = from + rel + needle.len();
+            let Some(brace) = text[start..].find('{') else { break };
+            let mut depth = 0i32;
+            let mut end = start + brace;
+            for (i, c) in text[end..].char_indices() {
+                if c == '{' { depth += 1; }
+                if c == '}' {
+                    depth -= 1;
+                    if depth == 0 {
+                        end += i;
+                        break;
+                    }
+                }
+            }
+            let body = &text[start + brace..=end.min(text.len() - 1)];
+            let mut at = 0usize;
+            while let Some(q) = body[at..].find('"') {
+                let name_at = at + q + 1;
+                let Some(q2) = body[name_at..].find('"') else { break };
+                let name = json_unescape(&body[name_at..name_at + q2]);
+                let after = &body[name_at + q2 + 1..];
+                let Some(colon) = after.find(':') else { break };
+                let num: String = after[colon + 1..].trim_start().chars().take_while(|c| c.is_ascii_digit() || *c == '-').collect();
+                if let Ok(id) = num.parse::<i64>() {
+                    remember_name(map, id, &name);
+                }
+                at = name_at + q2 + 1;
+            }
+            from = end + 1;
+        }
+    }
+}
+
+fn package_games(text: &str) -> Vec<String> {
+    let Some(at) = text.find("datapackage_checksums") else { return Vec::new() };
+    let rest = &text[at..at.saturating_add(4000).min(text.len())];
+    let Some(start) = rest.find('{') else { return Vec::new() };
+    let mut games = Vec::new();
+    let mut from = start + 1;
+    while let Some(q) = rest[from..].find('"') {
+        let name_at = from + q + 1;
+        let Some(q2) = rest[name_at..].find('"') else { break };
+        let name = json_unescape(&rest[name_at..name_at + q2]);
+        if !name.is_empty() && !games.contains(&name) {
+            games.push(name);
+        }
+        let after = &rest[name_at + q2 + 1..];
+        let Some(end) = after.find(',') .or_else(|| after.find('}')) else { break };
+        if after[..end].contains('}') && !after[..end].contains(',') {
+            break;
+        }
+        from = name_at + q2 + 1 + end;
+    }
+    games
+}
+
+fn datapackage_request(games: &[String]) -> String {
+    let list = games.iter().map(|g| format!("\"{}\"", escape(g))).collect::<Vec<_>>().join(",");
+    format!("[{{\"cmd\":\"GetDataPackage\",\"games\":[{list}]}}]")
 }
 
 fn parse_seed(text: &str) -> Option<String> {
@@ -181,8 +270,8 @@ fn json_unescape(s: &str) -> String {
 fn part_name(raw: &str, kind: &str) -> String {
     let id = raw.parse::<i64>().unwrap_or(i64::MIN);
     match kind {
-        "item_id" => crate::names::item_label(id).unwrap_or(raw).to_string(),
-        "location_id" => crate::names::location_label(id).unwrap_or_else(|| raw.to_string()),
+        "item_id" => item_name(id),
+        "location_id" => location_name(id),
         "player_id" => player_name(id).unwrap_or_else(|| raw.to_string()),
         _ => raw.to_string(),
     }
@@ -252,6 +341,14 @@ fn handle_server_text(text: &str, log: &impl Fn(&str), next_index: &mut i64, dro
     if text.contains("RoomInfo") {
         if let Some(seed) = parse_seed(&text) {
             log(&crate::flag_write::bind_seed(&seed));
+        }
+    }
+    if text.contains("DataPackage") {
+        let before = ITEM_NAMES.lock().unwrap().len();
+        ingest_package(text);
+        let after = ITEM_NAMES.lock().unwrap().len();
+        if after > before {
+            log(&format!("NRAP AP datapackage items {} locations {}", after, LOCATION_NAMES.lock().unwrap().len()));
         }
     }
     if !text.contains("ReceivedItems") {
@@ -390,6 +487,11 @@ fn connect_and_handshake(
         return Err(format!("unexpected handshake: {reply}"));
     }
     handle_server_text(&reply, log, next_index, drop_goods);
+    let games = package_games(&reply);
+    if !games.is_empty() {
+        let _ = socket.send(Message::Text(datapackage_request(&games).into()));
+        log(&format!("NRAP AP requested datapackage for {}", games.join(", ")));
+    }
     tune(&mut socket, Duration::from_millis(80));
     let _ = socket.send(Message::Text("[{\"cmd\":\"Sync\"}]".into()));
     Ok(socket)

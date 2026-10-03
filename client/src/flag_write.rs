@@ -923,7 +923,7 @@ pub fn apply_item(item_id: i64) -> Option<String> {
         });
     }
     let Some(flag) = flag_for_item(item_id) else {
-        return Some(format!("NRAP grant {item_id} (no unlock flag)"));
+        return Some(format!("NRAP grant {} ({item_id}) (no unlock flag)", crate::ap::item_name(item_id)));
     };
     match set_flag_from(flag, true, "item") {
         Ok(msg) => {
