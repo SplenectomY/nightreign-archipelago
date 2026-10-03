@@ -265,6 +265,10 @@ fn replace_section_key(text: &str, section: &str, key: &str, value: &str) -> Str
         }
     }
     if !hit {
+        if current != section {
+            out.push(String::new());
+            out.push(section.to_string());
+        }
         out.push(format!("{key} = {value}"));
     }
     out.join("\n") + "\n"
@@ -314,6 +318,9 @@ fn load_settings(app: &App) {
     if let Some(path) = toml_get(&text, "[paths]", "me3") {
         if !path.is_empty() { set_text(app.me3, &path); }
     }
+    if let Some(path) = toml_get(&text, "[paths]", "nrsc") {
+        if !path.is_empty() { set_text(app.nrsc, &path); }
+    }
 }
 
 fn save_connection(app: &App) {
@@ -323,6 +330,7 @@ fn save_connection(app: &App) {
     text = replace_key(&text, "slot", &format!("\"{}\"", text_of(app.slot)));
     text = replace_key(&text, "password", &format!("\"{}\"", text_of(app.pass)));
     text = replace_section_key(&text, "[paths]", "me3", &format!("\"{}\"", text_of(app.me3).replace('\\', "/")));
+    text = replace_section_key(&text, "[paths]", "nrsc", &format!("\"{}\"", text_of(app.nrsc).replace('\\', "/")));
     if let Err(e) = fs::write(&path, text) {
         append_log(app, &format!("Save failed: {e}"));
     }
