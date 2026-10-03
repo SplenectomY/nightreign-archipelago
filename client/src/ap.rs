@@ -202,6 +202,19 @@ fn player_name(id: i64) -> Option<String> {
     PLAYERS.lock().unwrap().iter().find(|(slot, _)| *slot == id).map(|(_, name)| name.clone())
 }
 
+fn object_i64(obj: &str, key: &str) -> Option<i64> {
+    parse_i64_after(obj, key)
+}
+
+fn object_str(obj: &str, key: &str) -> Option<String> {
+    let needle = format!("\"{key}\":");
+    let at = obj.find(&needle)?;
+    let rest = &obj[at + needle.len()..];
+    let start = rest.find('"')? + 1;
+    let end = rest[start..].find('"')?;
+    Some(json_unescape(&rest[start..start + end]))
+}
+
 fn remember_players(text: &str) {
     if !text.contains("Connected") {
         return;
@@ -218,19 +231,20 @@ fn remember_players(text: &str) {
         }
     }
     let mut players = Vec::new();
-    let mut from = 0usize;
-    while let Some(rel) = text[from..].find("\"slot\":") {
-        let at = from + rel;
-        let Some(slot) = parse_i64_after(&text[at..], "slot") else { break };
-        let name = text[at..].find("\"alias\":\"").or_else(|| text[at..].find("\"name\":\"")).map(|n| {
-            let key_at = at + n;
-            let start = text[key_at..].find("\":\"").map(|i| key_at + i + 3).unwrap_or(key_at);
-            let end = text[start..].find('"').map(|i| start + i).unwrap_or(start);
-            text[start..end].to_string()
-        }).unwrap_or_else(|| format!("Player {slot}"));
-        players.push((slot, name));
-        from = at + 8;
-        if players.len() > 32 { break; }
+    if let Some(at) = text.find("\"players\":[") {
+        let body = &text[at + 11..];
+        let mut from = 0usize;
+        while let Some(rel) = body[from..].find('{') {
+            let start = from + rel;
+            let Some(end_rel) = body[start..].find('}') else { break };
+            let obj = &body[start..start + end_rel];
+            if let Some(slot) = object_i64(obj, "slot") {
+                let name = object_str(obj, "alias").or_else(|| object_str(obj, "name")).unwrap_or_else(|| format!("Player {slot}"));
+                players.push((slot, name));
+            }
+            from = start + end_rel + 1;
+            if players.len() > 32 { break; }
+        }
     }
     if !players.is_empty() {
         *PLAYERS.lock().unwrap() = players;
