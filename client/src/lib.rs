@@ -553,6 +553,10 @@ fn worker() {
                                     if let Some(msg) = flag_write::note_defeat(w.flag) {
                                         log_line(&watch_dir, &msg);
                                     }
+                                    if let Some(loc) = flag_write::note_count_goal(w.flag) {
+                                        let _ = watch_tx.send(loc);
+                                        log_line(&watch_dir, &format!("NRAP count goal met, LocationChecks {loc}"));
+                                    }
                                 }
                             } else {
                                 log_line(

@@ -14,6 +14,8 @@ static PENDING: Mutex<Vec<u32>> = Mutex::new(Vec::new());
 static HEOLSTOR_IN_POOL: Mutex<bool> = Mutex::new(false);
 static HEOLSTOR_NEED: Mutex<u32> = Mutex::new(4);
 static UNLOCKS: Mutex<Vec<i64>> = Mutex::new(Vec::new());
+static COUNT_GOT: Mutex<Vec<u32>> = Mutex::new(Vec::new());
+static COUNT_SENT: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 static GRANTED_NIGHTFARERS: Mutex<Vec<u32>> = Mutex::new(Vec::new());
 static SUPPRESSED: Mutex<Vec<u32>> = Mutex::new(Vec::new());
 
@@ -734,6 +736,27 @@ pub fn unlock_for_defeat(flag: u32) -> Option<u32> {
         181 => 219,
         _ => return None,
     })
+}
+
+fn is_count_flag(flag: u32) -> bool {
+    matches!(flag, 150..=156 | 160..=162)
+}
+
+/// Count goal locks Victory on location 839000200. Send that check once the defeats are met.
+pub fn note_count_goal(flag: u32) -> Option<i64> {
+    let need = crate::ap::count_need();
+    if need == 0 || !is_count_flag(flag) || COUNT_SENT.load(std::sync::atomic::Ordering::SeqCst) {
+        return None;
+    }
+    let mut got = COUNT_GOT.lock().unwrap();
+    if !got.contains(&flag) {
+        got.push(flag);
+    }
+    if got.len() < need as usize {
+        return None;
+    }
+    COUNT_SENT.store(true, std::sync::atomic::Ordering::SeqCst);
+    Some(839000200)
 }
 
 pub fn note_defeat(flag: u32) -> Option<String> {

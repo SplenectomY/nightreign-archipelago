@@ -101,6 +101,11 @@ pub fn tutorial_margit() -> bool {
     TUTORIAL_MARGIT.load(Ordering::SeqCst)
 }
 static GOAL_SENT: AtomicBool = AtomicBool::new(false);
+static COUNT_NEED: AtomicU32 = AtomicU32::new(0);
+
+pub fn count_need() -> u32 {
+    COUNT_NEED.load(Ordering::SeqCst)
+}
 static PLAYERS: Mutex<Vec<(i64, String)>> = Mutex::new(Vec::new());
 
 fn player_name(id: i64) -> Option<String> {
@@ -116,6 +121,11 @@ fn remember_players(text: &str) {
     }
     if text.contains("\"tutorial_margit\":false") || text.contains("\"tutorial_margit\": false") {
         TUTORIAL_MARGIT.store(false, Ordering::SeqCst);
+    }
+    if text.contains("\"goal\":\"count\"") || text.contains("\"goal\": \"count\"") {
+        if let Some(n) = parse_i64_after(text, "nightlord_count") {
+            COUNT_NEED.store(n.max(1) as u32, Ordering::SeqCst);
+        }
     }
     let mut players = Vec::new();
     let mut from = 0usize;
