@@ -276,6 +276,12 @@ fn handle_server_text(text: &str, log: &impl Fn(&str), next_index: &mut i64, dro
         } else {
             log(&format!("NRAP grant skip already {id} index {ap_index}"));
         }
+        if let Some(loc) = shop_purchase(id) {
+            let mut hints = SHOP_HINTS.lock().unwrap();
+            if !hints.contains(&loc) {
+                hints.push(loc);
+            }
+        }
         let _ = drop_goods;
         if id == 839_100_900 {
             GOAL.store(true, Ordering::SeqCst);
@@ -408,6 +414,27 @@ fn send_say(socket: &mut Socket, text: &str) -> Result<(), String> {
     socket
         .send(Message::Text(pkt.into()))
         .map_err(|e| format!("Say: {e}"))
+}
+
+fn shop_purchase(item_id: i64) -> Option<i64> {
+    if (839_100_600..=839_100_683).contains(&item_id) {
+        return Some(item_id - 100_000);
+    }
+    if (839_100_800..=839_100_839).contains(&item_id) {
+        return Some(item_id - 100_000 + 100);
+    }
+    None
+}
+
+fn send_scouts(socket: &mut Socket, ids: &[i64]) -> Result<(), String> {
+    if ids.is_empty() {
+        return Ok(());
+    }
+    let list = ids.iter().map(|id| id.to_string()).collect::<Vec<_>>().join(",");
+    let pkt = format!("[{{\"cmd\":\"LocationScouts\",\"locations\":[{list}],\"create_as_hint\":2}}]");
+    socket
+        .send(Message::Text(pkt.into()))
+        .map_err(|e| format!("LocationScouts: {e}"))
 }
 
 fn send_checks(socket: &mut Socket, ids: &[i64]) -> Result<(), String> {
