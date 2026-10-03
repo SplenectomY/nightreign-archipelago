@@ -3,6 +3,7 @@
 
 use std::ffi::c_void;
 use std::fs;
+use std::os::windows::io::AsRawHandle;
 use std::path::PathBuf;
 use std::process::Command;
 
@@ -969,7 +970,7 @@ fn instance_owned(dir: &std::path::Path) -> bool {
         let path = dir.join("nrap.instance");
         let file = std::fs::OpenOptions::new().read(true).write(true).create(true).open(&path);
         if let Ok(file) = file {
-            let locked = LockFileEx(std::os::windows::io::AsRawHandle::as_raw_handle(&file) as *mut c_void, 3, 0, 1, 0, std::ptr::null_mut());
+            let locked = LockFileEx(file.as_raw_handle() as *mut c_void, 3, 0, 1, 0, std::ptr::null_mut());
             if locked == 0 {
                 raise_existing();
                 return false;
