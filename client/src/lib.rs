@@ -570,6 +570,9 @@ fn worker() {
             }
             drop(day);
             for w in &mut watches {
+                if flag_write::in_expedition() && w.location.starts_with("Shop - ") {
+                    continue;
+                }
                 match found.get(w.flag) {
                     Some(on) => {
                         if w.last != Some(on) {
