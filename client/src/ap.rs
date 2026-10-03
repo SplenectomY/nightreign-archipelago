@@ -165,6 +165,41 @@ fn datapackage_request(games: &[String]) -> String {
     format!("[{{\"cmd\":\"GetDataPackage\",\"games\":[{list}]}}]")
 }
 
+fn names_path() -> Option<std::path::PathBuf> {
+    let seed = crate::flag_write::cache_seed();
+    if seed.is_empty() { return None; }
+    crate::flag_write::cache_dir().map(|dir| dir.join(format!("datapackage_{seed}.txt")))
+}
+
+fn load_names() -> usize {
+    let Some(path) = names_path() else { return 0 };
+    let text = std::fs::read_to_string(path).unwrap_or_default();
+    if text.is_empty() { return 0; }
+    for line in text.lines() {
+        let mut parts = line.splitn(3, '\t');
+        let kind = parts.next().unwrap_or("");
+        let id = parts.next().and_then(|s| s.parse::<i64>().ok());
+        let name = parts.next().unwrap_or("");
+        if let Some(id) = id {
+            if kind == "i" { remember_name(&ITEM_NAMES, id, name); }
+            if kind == "l" { remember_name(&LOCATION_NAMES, id, name); }
+        }
+    }
+    ITEM_NAMES.lock().unwrap().len()
+}
+
+fn save_names() {
+    let Some(path) = names_path() else { return };
+    let mut body = String::new();
+    for (id, name) in ITEM_NAMES.lock().unwrap().iter() {
+        body.push_str(&format!("i\t{id}\t{name}\n"));
+    }
+    for (id, name) in LOCATION_NAMES.lock().unwrap().iter() {
+        body.push_str(&format!("l\t{id}\t{name}\n"));
+    }
+    let _ = std::fs::write(path, body);
+}
+
 fn parse_seed(text: &str) -> Option<String> {
     let key = "\"seed_name\":\"";
     let at = text.find(key)?;
@@ -362,7 +397,8 @@ fn handle_server_text(text: &str, log: &impl Fn(&str), next_index: &mut i64, dro
         ingest_package(text);
         let after = ITEM_NAMES.lock().unwrap().len();
         if after > before {
-            log(&format!("NRAP AP datapackage items {} locations {}", after, LOCATION_NAMES.lock().unwrap().len()));
+            save_names();
+            log(&format!("NRAP AP datapackage items {} locations {} cached", after, LOCATION_NAMES.lock().unwrap().len()));
         }
     }
     if !text.contains("ReceivedItems") {
@@ -482,10 +518,15 @@ fn connect_and_handshake(
     tune(&mut socket, Duration::from_secs(8));
     if let Ok(Some(room)) = read_text(&mut socket) {
         handle_server_text(&room, log, next_index, drop_goods);
-        let games = package_games(&room);
-        if !games.is_empty() {
-            let _ = socket.send(Message::Text(datapackage_request(&games).into()));
-            log(&format!("NRAP AP requested datapackage for {}", games.join(", ")));
+        let cached = load_names();
+        if cached > 0 {
+            log(&format!("NRAP AP datapackage cache loaded {cached}"));
+        } else {
+            let games = package_games(&room);
+            if !games.is_empty() {
+                let _ = socket.send(Message::Text(datapackage_request(&games).into()));
+                log(&format!("NRAP AP requested datapackage for {}", games.join(", ")));
+            }
         }
     }
     let connect = format!(
@@ -498,7 +539,11 @@ fn connect_and_handshake(
     socket
         .send(Message::Text(connect.into()))
         .map_err(|e| format!("Connect send: {e}"))?;
-    let reply = read_text(&mut socket)?.ok_or_else(|| "no Connect reply".to_string())?;
+    let mut reply = read_text(&mut socket)?.ok_or_else(|| "no Connect reply".to_string())?;
+    if reply.contains("DataPackage") {
+        handle_server_text(&reply, log, next_index, drop_goods);
+        reply = read_text(&mut socket)?.ok_or_else(|| "no Connect reply".to_string())?;
+    }
     if reply.contains("ConnectionRefused") {
         return Err(format!("ConnectionRefused: {reply}"));
     }
@@ -506,11 +551,6 @@ fn connect_and_handshake(
         return Err(format!("unexpected handshake: {reply}"));
     }
     handle_server_text(&reply, log, next_index, drop_goods);
-    let games = package_games(&reply);
-    if !games.is_empty() {
-        let _ = socket.send(Message::Text(datapackage_request(&games).into()));
-        log(&format!("NRAP AP requested datapackage for {}", games.join(", ")));
-    }
     tune(&mut socket, Duration::from_millis(80));
     let _ = socket.send(Message::Text("[{\"cmd\":\"Sync\"}]".into()));
     Ok(socket)
