@@ -629,6 +629,8 @@ pub fn enqueue_item(index: i64, item_id: i64) -> bool {
         return false;
     }
     queued.push((index, item_id));
+    drop(queued);
+    remember_unlock(item_id);
     true
 }
 

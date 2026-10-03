@@ -716,8 +716,10 @@ fn worker() {
             log_line(&dir, &msg);
         }
         }
-        if let Some(msg) = grant::retry() {
-            log_line(&dir, &msg);
+        if hold {
+            if let Some(msg) = grant::retry() {
+                log_line(&dir, &msg);
+            }
         }
         if let Some(msg) = drop::retry_pending() {
             log_line(&dir, &msg);
