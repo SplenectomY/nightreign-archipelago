@@ -109,8 +109,6 @@ class NightreignWorld(World):
         if self.options.shop_checks.current_key != "none":
             for name in SHOP_LOCATIONS:
                 hold_locs[name] = LOCATION_NAME_TO_ID[name]
-        for i in range(1, 28):
-            hold_locs[f"Unused {i}"] = LOCATION_NAME_TO_ID[f"Unused {i}"]
         for n in range(1, int(self.options.evergaol_count) + 1):
             hold_locs[f"Seal Evergaol {n}"] = LOCATION_NAME_TO_ID[f"Seal Evergaol {n}"]
         for n in range(1, int(self.options.tower_count) + 1):
@@ -160,11 +158,11 @@ class NightreignWorld(World):
         pool += [self.create_item(name) for name in shop[start_shop:]]
         unfilled = sum(1 for loc in self.multiworld.get_locations(self.player) if not loc.item)
         # Victory is locked in set_rules, so leave one location empty.
-        murk = ["Murk Purse"] * 8 + ["Murk Bundle"] * 8 + ["Murk Coffer"] * 6 + ["Murk Chest"] * 3 + ["Murk Hoard"] * 2
-        for name in murk:
-            pool.append(self.create_item(name))
-        while len(pool) < unfilled - 1:
-            pool.append(self.create_item("Murk Purse"))
+        # Fill only the leftover slots, rotating murk types so a small world is not flooded with purses.
+        murk_types = ["Murk Purse", "Murk Bundle", "Murk Coffer", "Murk Chest", "Murk Hoard"]
+        slots = max(0, unfilled - 1 - len(pool))
+        for i in range(slots):
+            pool.append(self.create_item(murk_types[i % len(murk_types)]))
         self.multiworld.itempool += pool
 
     def _goal_unlocks(self, unlocks: List[str]) -> set:
