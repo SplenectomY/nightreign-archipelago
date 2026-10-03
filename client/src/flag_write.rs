@@ -637,8 +637,10 @@ pub fn cache_seed() -> String {
     CACHE_SEED.lock().unwrap().clone()
 }
 
-pub fn remember_unlock(item_id: i64) {
-    let Some(flag) = unlock_flag(item_id) else { return };
+fn remember_flag(flag: u32) {
+    if !is_sticky(flag) && !is_nightfarer(flag) {
+        return;
+    }
     let mut flags = CACHED.lock().unwrap();
     if !flags.contains(&flag) {
         flags.push(flag);
@@ -646,6 +648,11 @@ pub fn remember_unlock(item_id: i64) {
             write_cache(path, &CACHE_SEED.lock().unwrap(), &flags);
         }
     }
+}
+
+pub fn remember_unlock(item_id: i64) {
+    let Some(flag) = unlock_flag(item_id) else { return };
+    remember_flag(flag);
 }
 
 fn is_sticky(flag: u32) -> bool {
@@ -881,6 +888,7 @@ pub fn apply_item(item_id: i64) -> Option<String> {
                 format!("{msg} (shop row unlocked)")
             }
             Err(e) => {
+                remember_flag(release);
                 let mut q = PENDING.lock().unwrap();
                 if !q.contains(&release) {
                     q.push(release);
@@ -899,6 +907,7 @@ pub fn apply_item(item_id: i64) -> Option<String> {
             Some(msg)
         }
         Err(e) => {
+            remember_flag(flag);
             let mut q = PENDING.lock().unwrap();
             if !q.contains(&flag) {
                 q.push(flag);
@@ -925,6 +934,7 @@ pub fn retry_pending() -> Option<String> {
     match set_flag_from(flag, true, "pending") {
         Ok(msg) => {
             q.remove(0);
+            remember_flag(flag);
             remember_nightfarer(flag);
             Some(match reapplied {
                 Some(extra) => format!("{extra}; {msg}"),
