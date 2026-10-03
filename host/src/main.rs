@@ -54,10 +54,7 @@ const SEAMLESS: isize = 112;
 const BROWSE_ME3: isize = 115;
 const ME3: isize = 116;
 const EN_KILLFOCUS: u16 = 0x0200;
-const SS_ICON: u32 = 0x0003;
 const ES_AUTOHSCROLL: u32 = 0x0080;
-const SW_HIDE: i32 = 0;
-const SW_SHOW: i32 = 5;
 
 static mut APP: *mut App = std::ptr::null_mut();
 static mut FIELD_BRUSH: isize = 0;
@@ -66,6 +63,7 @@ static mut WARN_BRUSH: isize = 0;
 static mut OPT: *mut OptWin = std::ptr::null_mut();
 static mut CUST: [u32; 16] = [0; 16];
 static mut SCROLLED: bool = false;
+static mut INSTANCE: *mut c_void = std::ptr::null_mut();
 
 #[repr(C)]
 struct SystemTime { year: u16, month: u16, dow: u16, day: u16, hour: u16, minute: u16, second: u16, ms: u16 }
@@ -124,8 +122,6 @@ extern "system" {
     fn DestroyWindow(hwnd: HWND) -> i32;
     fn InvalidateRect(hwnd: HWND, rect: *const c_void, erase: i32) -> i32;
     fn FillRect(hdc: *mut c_void, rect: *const [i32; 4], brush: *mut c_void) -> i32;
-    fn LoadIconW(instance: HINSTANCE, name: *const u16) -> *mut c_void;
-    fn GetParent(hwnd: HWND) -> HWND;
     fn GetFocus() -> HWND;
     fn GetLocalTime(out: *mut SystemTime);
     fn EnableWindow(hwnd: HWND, enable: i32) -> i32;
@@ -139,11 +135,6 @@ extern "system" {
 extern "system" {
     fn GetOpenFileNameW(ofn: *mut OpenFile) -> i32;
     fn ChooseColorW(cc: *mut ChooseColor) -> i32;
-}
-#[link(name = "shell32")]
-extern "system" {
-    fn SHBrowseForFolderW(info: *mut BrowseInfo) -> *mut c_void;
-    fn SHGetPathFromIDListW(pidl: *mut c_void, path: *mut u16) -> i32;
 }
 #[repr(C)]
 struct OpenFile {
@@ -183,16 +174,6 @@ struct ChooseColor {
     data: usize,
     hook: usize,
     template: *const u16,
-}
-struct BrowseInfo {
-    owner: HWND,
-    root: *mut c_void,
-    display: *mut u16,
-    title: *const u16,
-    flags: u32,
-    callback: usize,
-    param: isize,
-    image: i32,
 }
 #[link(name = "gdi32")]
 extern "system" {
@@ -353,7 +334,7 @@ fn pick_color(owner: HWND, current: &str) -> Option<String> {
     cc.size = std::mem::size_of::<ChooseColor>() as u32;
     cc.owner = owner;
     cc.rgb = hex_to_bgr(current);
-    cc.custom = unsafe { CUST.as_mut_ptr() };
+    cc.custom = std::ptr::addr_of_mut!(CUST) as *mut u32;
     cc.flags = 0x3;
     if unsafe { ChooseColorW(&mut cc) } == 0 { return None; }
     Some(bgr_to_hex(cc.rgb))
@@ -753,7 +734,6 @@ fn steam_nrsc() -> Option<PathBuf> {
 }
 
 fn default_nrap() -> PathBuf { exe_dir().join("nightreign_ap.dll") }
-fn default_reg() -> PathBuf { exe_dir().join("regulation.bin") }
 fn default_nrsc() -> PathBuf {
     steam_nrsc().unwrap_or_else(|| PathBuf::from(r"C:\Program Files (x86)\Steam\steamapps\common\ELDEN RING NIGHTREIGN\Game\SeamlessCoop\nrsc.dll"))
 }
@@ -775,19 +755,6 @@ fn pick_file(owner: HWND, title: &str, filter_text: &str) -> Option<String> {
     if unsafe { GetOpenFileNameW(&mut ofn) } == 0 { return None; }
     let n = buf.iter().position(|c| *c == 0).unwrap_or(buf.len());
     Some(String::from_utf16_lossy(&buf[..n]))
-}
-
-fn pick_dir(owner: HWND) -> Option<String> {
-    let title = wide("Regulation folder");
-    let mut display = [0u16; 520];
-    let mut info = BrowseInfo { owner, root: std::ptr::null_mut(), display: display.as_mut_ptr(), title: title.as_ptr(), flags: 0x41, callback: 0, param: 0, image: 0 };
-    let pidl = unsafe { SHBrowseForFolderW(&mut info) };
-    if pidl.is_null() { return None; }
-    let mut path = [0u16; 520];
-    let ok = unsafe { SHGetPathFromIDListW(pidl, path.as_mut_ptr()) };
-    if ok == 0 { return None; }
-    let n = path.iter().position(|c| *c == 0).unwrap_or(path.len());
-    Some(String::from_utf16_lossy(&path[..n]))
 }
 
 fn refresh_paths(app: &App) {
@@ -977,7 +944,7 @@ fn instance_owned(dir: &std::path::Path) -> bool {
             }
             std::mem::forget(file);
         }
-        std::mem::forget(handle);
+        INSTANCE = handle;
         true
     }
 }
