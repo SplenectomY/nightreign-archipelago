@@ -420,6 +420,16 @@ pub fn in_session() -> bool {
     IN_SESSION.load(std::sync::atomic::Ordering::SeqCst)
 }
 
+static IN_EXPEDITION: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+pub fn set_in_expedition(on: bool) {
+    IN_EXPEDITION.store(on, std::sync::atomic::Ordering::SeqCst);
+}
+
+pub fn in_expedition() -> bool {
+    IN_EXPEDITION.load(std::sync::atomic::Ordering::SeqCst)
+}
+
 
 fn write_cache(path: &std::path::PathBuf, seed: &str, flags: &[u32]) {
     let seen = SEEN.lock().unwrap().clone();

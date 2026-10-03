@@ -503,11 +503,19 @@ fn worker() {
                 log_line(&watch_dir, &format!("NRAP session {}", if in_game { "in game" } else { "title, flag work paused" }));
             }
             if !in_game {
+                if flag_write::in_expedition() {
+                    flag_write::set_in_expedition(false);
+                }
                 thread::sleep(Duration::from_millis(200));
                 continue;
             }
-            static DAY: std::sync::Mutex<[(u32, Option<bool>); 22]> = std::sync::Mutex::new([
-                (7500, None), (7502, None), (7507, None), (8140, None), (8145, None), (7001, None), (2000, None), (2030, None), (7512, None), (8155, None),
+            let expedition = found.get(7500) == Some(true) || found.get(7505) == Some(true) || found.get(7510) == Some(true);
+            if flag_write::in_expedition() != expedition {
+                flag_write::set_in_expedition(expedition);
+                log_line(&watch_dir, &format!("NRAP expedition {}", if expedition { "started, unlock writes paused" } else { "ended" }));
+            }
+            static DAY: std::sync::Mutex<[(u32, Option<bool>); 24]> = std::sync::Mutex::new([
+                (7500, None), (7505, None), (7510, None), (7502, None), (7507, None), (8140, None), (8145, None), (7001, None), (2000, None), (2030, None), (7512, None), (8155, None),
                 (8120, None), (8121, None), (8122, None), (8123, None), (8124, None), (8125, None),
                 (8126, None), (8127, None), (8128, None), (8129, None), (8130, None), (8131, None),
             ]);
@@ -644,6 +652,8 @@ fn worker() {
             thread::sleep(Duration::from_millis(200));
             continue;
         }
+        let hold = !flag_write::in_expedition();
+        if hold {
         if let Some((index, id)) = flag_write::pop_queued() {
             let mut landed = false;
             if let Some(msg) = flag_write::apply_item(id) {
@@ -684,6 +694,7 @@ fn worker() {
         hero::arm(&flag_write::cached_flags());
         if let Some(msg) = hero::apply() {
             log_line(&dir, &msg);
+        }
         }
         if let Some(msg) = grant::retry() {
             log_line(&dir, &msg);
