@@ -98,8 +98,8 @@ Elden Ring Nightreign:
   evergaol_count: 20
 
   # Magician tower openings that become locations.
-  # 1 to 30. Default 10.
-  tower_count: 10
+  # 1 to 50. Default 30.
+  tower_count: 30
 
   # Invader defeats that become locations. Flag 8155 toggles, so both edges count.
   # 0 to 20. Default 3.
