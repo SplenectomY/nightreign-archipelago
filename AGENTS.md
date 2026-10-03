@@ -15,6 +15,13 @@ Bump `client/Cargo.toml` and `host/Cargo.toml` to the same version in the same c
 
 Pull with `git pull` before building. Do not check out a single file and call that an update.
 
+Pack the apworld from the repo root, not from `world`:
+
+```powershell
+Compress-Archive -Path world\nightreign -DestinationPath nightreign.apworld -Force
+Copy-Item -Force .\nightreign.apworld C:\ProgramData\Archipelago\custom_worlds\nightreign.apworld
+```
+
 ## Flag work
 
 - Flag 2030 is 0 on the title screen. Read only 2030 there. No other flag reads or writes.
