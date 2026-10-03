@@ -3,7 +3,7 @@
 
 from typing import Dict, List
 
-from BaseClasses import Item, ItemClassification, Location, Region, Tutorial
+from BaseClasses import Item, ItemClassification, Location, LocationProgressType, Region, Tutorial
 from worlds.AutoWorld import WebWorld, World
 from worlds.generic.Rules import set_rule
 from BaseClasses import ItemClassification
@@ -195,7 +195,44 @@ class NightreignWorld(World):
             classification = ItemClassification.progression_deprioritized
         return NightreignItem(name, classification, data.code, self.player)
 
+
+    def _gate_counts(self, prefix: str, count: int, every: int, deep_after: int = 0) -> None:
+        """Place an event every `every` counts. Later counts require that event, so they fill later."""
+        if count <= every:
+            return
+        region = self.get_region("Roundtable Hold")
+        player = self.player
+        for gate in range(every, count, every):
+            event_name = f"Gate {prefix} {gate}"
+            event = NightreignItem(event_name, ItemClassification.progression, None, player)
+            event_loc = NightreignLocation(player, event_name, None, region)
+            event_loc.place_locked_item(event)
+            source = f"{prefix} {gate}"
+            set_rule(event_loc, lambda state, src=source: state.can_reach(src, "Location", player))
+            last = min(count, gate + every)
+            for n in range(gate + 1, last + 1):
+                name = f"{prefix} {n}"
+                need_deep = deep_after and n > deep_after
+
+                def rule(state, ev=event_name, deep=need_deep) -> bool:
+                    if not state.has(ev, player):
+                        return False
+                    if deep and not state.has("Expedition Unlock - Deep of Night", player):
+                        return False
+                    return True
+
+                loc = self.get_location(name)
+                set_rule(loc, rule)
+                loc.progress_type = LocationProgressType.EXCLUDED
+
     def set_rules(self) -> None:
+        self._gate_counts("Day 1 Boss", int(self.options.day1_boss_count), 3)
+        self._gate_counts("Day 2 Boss", int(self.options.day2_boss_count), 2)
+        self._gate_counts("Seal Evergaol", int(self.options.evergaol_count), 5)
+        self._gate_counts("Open Magician Tower", int(self.options.tower_count), 6)
+        self._gate_counts("Defeat Invaders", int(self.options.invader_count), 4, deep_after=5)
+        self._gate_counts("Buried Treasure Map", int(self.options.buried_treasure_count), 10)
+
         player = self.player
         defeats = [loc for loc, _item in self._nightlords() if loc != "Nightlord - Heolstor"]
         need = int(self.options.heolstor_unlock_count)

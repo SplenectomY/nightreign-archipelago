@@ -142,11 +142,11 @@ class TowerCount(Range):
 
 
 class InvaderCount(Range):
-    """How many invader defeats become locations. Flag 8155 toggles, so both edges count."""
+    """How many invader defeats become locations. Flag 8155 toggles, so both edges count. Counts after 5 require Deep of Night."""
     display_name = "Invader Count"
     range_start = 0
-    range_end = 20
-    default = 3
+    range_end = 50
+    default = 20
 
 
 class BuriedTreasureCount(Range):
