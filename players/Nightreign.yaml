@@ -102,8 +102,8 @@ Elden Ring Nightreign:
   tower_count: 30
 
   # Invader defeats that become locations. Flag 8155 toggles, so both edges count.
-  # 0 to 20. Default 3.
-  invader_count: 3
+  # 0 to 50. Default 20. Counts after 5 require Expedition Unlock - Deep of Night.
+  invader_count: 20
 
   # Buried treasure chests opened. Flags 8120-8131 rise to 1 and clear when the expedition ends.
   # Only the rise counts. 0 to 100. Default 50.

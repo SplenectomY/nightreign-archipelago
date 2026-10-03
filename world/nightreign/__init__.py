@@ -197,6 +197,12 @@ class NightreignWorld(World):
 
     def set_rules(self) -> None:
         player = self.player
+        for n in range(6, int(self.options.invader_count) + 1):
+            set_rule(
+                self.get_location(f"Defeat Invaders {n}"),
+                lambda state: state.has("Expedition Unlock - Deep of Night", player),
+            )
+
         defeats = [loc for loc, _item in self._nightlords() if loc != "Nightlord - Heolstor"]
         need = int(self.options.heolstor_unlock_count)
         in_pool = bool(self.options.heolstor_in_pool)
