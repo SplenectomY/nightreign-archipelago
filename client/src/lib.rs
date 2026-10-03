@@ -497,6 +497,15 @@ fn worker() {
             }
         }
         if let Some(found) = man {
+            let in_game = found.get(2030) == Some(true);
+            if flag_write::in_session() != in_game {
+                flag_write::set_in_session(in_game);
+                log_line(&watch_dir, &format!("NRAP session {}", if in_game { "in game" } else { "title, flag work paused" }));
+            }
+            if !in_game {
+                thread::sleep(Duration::from_millis(200));
+                continue;
+            }
             static DAY: std::sync::Mutex<[(u32, Option<bool>); 22]> = std::sync::Mutex::new([
                 (7500, None), (7502, None), (7507, None), (8140, None), (8145, None), (7001, None), (2000, None), (2030, None), (7512, None), (8155, None),
                 (8120, None), (8121, None), (8122, None), (8123, None), (8124, None), (8125, None),
@@ -631,6 +640,10 @@ fn worker() {
     let mut last_clear_flag = 0u32;
     let mut last_debug_drop = 0i32;
     loop {
+        if !flag_write::in_session() {
+            thread::sleep(Duration::from_millis(200));
+            continue;
+        }
         if let Some((index, id)) = flag_write::pop_queued() {
             let mut landed = false;
             if let Some(msg) = flag_write::apply_item(id) {

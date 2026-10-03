@@ -410,6 +410,16 @@ static GRANT_Q: Mutex<Vec<(i64, i64)>> = Mutex::new(Vec::new());
 static CACHE_PATH: Mutex<Option<std::path::PathBuf>> = Mutex::new(None);
 static CACHE_SEED: Mutex<String> = Mutex::new(String::new());
 static ARMED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+static IN_SESSION: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+pub fn set_in_session(on: bool) {
+    IN_SESSION.store(on, std::sync::atomic::Ordering::SeqCst);
+}
+
+pub fn in_session() -> bool {
+    IN_SESSION.load(std::sync::atomic::Ordering::SeqCst)
+}
+
 
 fn write_cache(path: &std::path::PathBuf, seed: &str, flags: &[u32]) {
     let seen = SEEN.lock().unwrap().clone();
