@@ -657,6 +657,11 @@ pub fn cache_seed() -> String {
     CACHE_SEED.lock().unwrap().clone()
 }
 
+pub fn cache_dir() -> Option<std::path::PathBuf> {
+    CACHE_PATH.lock().unwrap().as_ref().and_then(|p| p.parent().map(|d| d.to_path_buf()))
+}
+
+
 fn remember_flag(flag: u32) {
     if !is_sticky(flag) && !is_nightfarer(flag) {
         return;

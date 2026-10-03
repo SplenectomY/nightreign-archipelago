@@ -278,10 +278,7 @@ fn handle_server_text(text: &str, log: &impl Fn(&str), next_index: &mut i64, dro
             log(&format!("NRAP grant skip already {id} index {ap_index}"));
         }
         if let Some(loc) = shop_purchase(id) {
-            let mut hints = SHOP_HINTS.lock().unwrap();
-            if !hints.contains(&loc) {
-                hints.push(loc);
-            }
+            queue_shop_hint(loc);
         }
         let _ = drop_goods;
         if id == 839_100_900 {
@@ -439,23 +436,68 @@ fn send_scouts(socket: &mut Socket, ids: &[i64]) -> Result<(), String> {
 }
 
 
+fn hint_file() -> Option<std::path::PathBuf> {
+    let seed = crate::flag_write::cache_seed();
+    if seed.is_empty() {
+        return None;
+    }
+    crate::flag_write::cache_dir().map(|dir| dir.join(format!("shop_hints_{seed}.txt")))
+}
+
+fn read_hint_file() -> Vec<i64> {
+    let Some(path) = hint_file() else { return Vec::new() };
+    std::fs::read_to_string(path).unwrap_or_default().lines().filter_map(|line| line.trim().parse().ok()).collect()
+}
+
+fn write_hint_file(ids: &[i64]) {
+    let Some(path) = hint_file() else { return };
+    if ids.is_empty() {
+        let _ = std::fs::remove_file(path);
+        return;
+    }
+    let body = ids.iter().map(|id| id.to_string()).collect::<Vec<_>>().join("\n");
+    let _ = std::fs::write(path, body + "\n");
+}
+
+fn queue_shop_hint(loc: i64) {
+    let mut hints = SHOP_HINTS.lock().unwrap();
+    for id in read_hint_file() {
+        if !hints.contains(&id) {
+            hints.push(id);
+        }
+    }
+    if !hints.contains(&loc) {
+        hints.push(loc);
+    }
+    write_hint_file(&hints);
+}
+
 fn flush_shop_hints(socket: &mut Socket, log: &impl Fn(&str)) {
+    if !crate::flag_write::in_session() || crate::flag_write::in_expedition() {
+        return;
+    }
     let ids = {
         let mut hints = SHOP_HINTS.lock().unwrap();
+        for id in read_hint_file() {
+            if !hints.contains(&id) {
+                hints.push(id);
+            }
+        }
         if hints.is_empty() {
             return;
         }
-        std::mem::take(&mut *hints)
+        hints.clone()
     };
     match send_scouts(socket, &ids) {
-        Ok(()) => log(&format!(
-            "NRAP AP shop hint {}",
-            ids.iter().map(|id| id.to_string()).collect::<Vec<_>>().join(",")
-        )),
-        Err(e) => {
-            SHOP_HINTS.lock().unwrap().splice(0..0, ids);
-            log(&format!("NRAP AP shop hint failed: {e}"));
+        Ok(()) => {
+            SHOP_HINTS.lock().unwrap().retain(|id| !ids.contains(id));
+            write_hint_file(&SHOP_HINTS.lock().unwrap());
+            log(&format!(
+                "NRAP AP shop hint {}",
+                ids.iter().map(|id| id.to_string()).collect::<Vec<_>>().join(",")
+            ));
         }
+        Err(e) => log(&format!("NRAP AP shop hint failed: {e}")),
     }
 }
 
