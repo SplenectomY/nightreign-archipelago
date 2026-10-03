@@ -120,17 +120,14 @@ fn ingest_package(text: &str) {
             }
             let body = &text[start + brace..=end.min(text.len() - 1)];
             let mut at = 0usize;
-            while let Some(q) = body[at..].find('"') {
-                let name_at = at + q + 1;
-                let Some(q2) = body[name_at..].find('"') else { break };
-                let name = json_unescape(&body[name_at..name_at + q2]);
-                let after = &body[name_at + q2 + 1..];
+            while let Some((name, next)) = json_string_at(&body[at..]) {
+                let after = &body[at + next..];
                 let Some(colon) = after.find(':') else { break };
                 let num: String = after[colon + 1..].trim_start().chars().take_while(|c| c.is_ascii_digit() || *c == '-').collect();
                 if let Ok(id) = num.parse::<i64>() {
                     remember_name(map, id, &name);
                 }
-                at = name_at + q2 + 1;
+                at += next;
             }
             from = end + 1;
         }
@@ -168,7 +165,7 @@ fn datapackage_request(games: &[String]) -> String {
 fn names_path() -> Option<std::path::PathBuf> {
     let seed = crate::flag_write::cache_seed();
     if seed.is_empty() { return None; }
-    crate::flag_write::cache_dir().map(|dir| dir.join(format!("datapackage_{seed}.txt")))
+    crate::flag_write::cache_dir().map(|dir| dir.join(format!("datapackage_v2_{seed}.txt")))
 }
 
 fn load_names() -> usize {
@@ -241,13 +238,34 @@ fn object_i64(obj: &str, key: &str) -> Option<i64> {
     parse_i64_after(obj, key)
 }
 
+fn json_string_at(s: &str) -> Option<(String, usize)> {
+    let bytes = s.as_bytes();
+    let start = bytes.iter().position(|b| *b == b'"')?;
+    let mut i = start + 1;
+    let mut raw = String::new();
+    while i < bytes.len() {
+        if bytes[i] == b'\\' {
+            raw.push('\\');
+            i += 1;
+            if i < bytes.len() {
+                raw.push(bytes[i] as char);
+                i += 1;
+            }
+            continue;
+        }
+        if bytes[i] == b'"' {
+            return Some((json_unescape(&raw), i + 1));
+        }
+        raw.push(bytes[i] as char);
+        i += 1;
+    }
+    None
+}
+
 fn object_str(obj: &str, key: &str) -> Option<String> {
     let needle = format!("\"{key}\":");
     let at = obj.find(&needle)?;
-    let rest = &obj[at + needle.len()..];
-    let start = rest.find('"')? + 1;
-    let end = rest[start..].find('"')?;
-    Some(json_unescape(&rest[start..start + end]))
+    json_string_at(&obj[at + needle.len()..]).map(|(s, _)| s)
 }
 
 fn remember_players(text: &str) {
