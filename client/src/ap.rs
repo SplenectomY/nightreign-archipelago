@@ -418,11 +418,9 @@ fn handle_server_text(text: &str, log: &impl Fn(&str), next_index: &mut i64, dro
             item_name(id)
         ));
         if crate::flag_write::enqueue_item(ap_index, id) {
-            log(&format!("NRAP grant queued {id} index {ap_index}"));
-        } else if let Some(msg) = crate::flag_write::apply_now(id) {
-            log(&format!("NRAP grant replay {id} index {ap_index}; {msg}"));
+            log(&format!("NRAP grant queued {} ({id}) index {ap_index}", item_name(id)));
         } else {
-            log(&format!("NRAP grant skip already {id} index {ap_index}"));
+            log(&format!("NRAP grant skip already {} ({id}) index {ap_index}", item_name(id)));
         }
         if let Some(loc) = shop_purchase(id) {
             queue_shop_hint(loc);
