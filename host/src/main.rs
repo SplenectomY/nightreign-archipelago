@@ -101,6 +101,10 @@ struct OptWin {
     host_item: HWND,
     host_location: HWND,
     debug: HWND,
+    log_sticky: HWND,
+    log_dayflags: HWND,
+    log_flagdiffs: HWND,
+    log_rewrites: HWND,
 }
 
 #[link(name = "user32")]
@@ -344,7 +348,7 @@ fn open_options(app: &App) {
         let class = wide("NRAPOptions");
         let wc = WndClass { style: 0, wnd_proc: Some(opt_proc), cls_extra: 0, wnd_extra: 0, instance: std::ptr::null_mut(), icon: std::ptr::null_mut(), cursor: std::ptr::null_mut(), background: std::ptr::null_mut(), menu_name: std::ptr::null(), class_name: class.as_ptr() };
         RegisterClassW(&wc);
-        let win = CreateWindowExW(0, class.as_ptr(), wide("NRAP Options").as_ptr(), WS_OVERLAPPEDWINDOW | WS_VISIBLE, 140, 80, 420, 790, std::ptr::null_mut(), 0, std::ptr::null_mut(), std::ptr::null_mut());
+        let win = CreateWindowExW(0, class.as_ptr(), wide("NRAP Options").as_ptr(), WS_OVERLAPPEDWINDOW | WS_VISIBLE, 140, 80, 420, 900, std::ptr::null_mut(), 0, std::ptr::null_mut(), std::ptr::null_mut());
         let edit = wide("EDIT");
         let button = wide("BUTTON");
         let text = fs::read_to_string(app.dir.join("flags.toml")).unwrap_or_default();
@@ -382,8 +386,18 @@ fn open_options(app: &App) {
         let debug = CreateWindowExW(0, button.as_ptr(), wide("Debug log").as_ptr(), WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX, 28, 668, 160, 24, win, 216, std::ptr::null_mut(), std::ptr::null_mut());
         let on = text.lines().any(|l| l.trim() == "debug = true");
         SendMessageW(debug, BM_SETCHECK, if on { 1 } else { 0 }, 0);
-        CreateWindowExW(0, button.as_ptr(), wide("Close").as_ptr(), WS_CHILD | WS_VISIBLE, 110, 708, 200, 32, win, 220, std::ptr::null_mut(), std::ptr::null_mut());
-        let boxed = Box::new(OptWin { x, y, width, height, fade, font, local, remote, item, location, text: text_color, host_text, host_local, host_remote, host_item, host_location, debug });
+        let extra = if on { WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX } else { WS_CHILD | BS_AUTOCHECKBOX };
+        let log_sticky = CreateWindowExW(0, button.as_ptr(), wide("Log sticky writes").as_ptr(), extra, 48, 696, 220, 22, win, 231, std::ptr::null_mut(), std::ptr::null_mut());
+        let log_dayflags = CreateWindowExW(0, button.as_ptr(), wide("Log dayflags").as_ptr(), extra, 48, 720, 220, 22, win, 232, std::ptr::null_mut(), std::ptr::null_mut());
+        let log_flagdiffs = CreateWindowExW(0, button.as_ptr(), wide("Log flagdiffs").as_ptr(), extra, 48, 744, 220, 22, win, 233, std::ptr::null_mut(), std::ptr::null_mut());
+        let log_rewrites = CreateWindowExW(0, button.as_ptr(), wide("Log rewrites").as_ptr(), extra, 48, 768, 220, 22, win, 234, std::ptr::null_mut(), std::ptr::null_mut());
+        let checked = |key: &str| text.lines().any(|l| l.trim() == format!("{key} = true"));
+        SendMessageW(log_sticky, BM_SETCHECK, if checked("log_sticky") { 1 } else { 0 }, 0);
+        SendMessageW(log_dayflags, BM_SETCHECK, if checked("log_dayflags") { 1 } else { 0 }, 0);
+        SendMessageW(log_flagdiffs, BM_SETCHECK, if checked("log_flagdiffs") { 1 } else { 0 }, 0);
+        SendMessageW(log_rewrites, BM_SETCHECK, if checked("log_rewrites") { 1 } else { 0 }, 0);
+        CreateWindowExW(0, button.as_ptr(), wide("Close").as_ptr(), WS_CHILD | WS_VISIBLE, 110, 808, 200, 32, win, 220, std::ptr::null_mut(), std::ptr::null_mut());
+        let boxed = Box::new(OptWin { x, y, width, height, fade, font, local, remote, item, location, text: text_color, host_text, host_local, host_remote, host_item, host_location, debug, log_sticky, log_dayflags, log_flagdiffs, log_rewrites });
         OPT = Box::into_raw(boxed);
     }
 }
@@ -414,6 +428,11 @@ fn save_options(app: &App) {
     text = replace_section_key(&text, "[host]", "color_location", &format!("\"{}\"", text_of(opt.host_location)));
     let debug = unsafe { SendMessageW(opt.debug, BM_GETCHECK, 0, 0) } == 1;
     text = replace_key(&text, "debug", if debug { "true" } else { "false" });
+    let checked = |hwnd| unsafe { SendMessageW(hwnd, BM_GETCHECK, 0, 0) } == 1;
+    text = replace_key(&text, "log_sticky", if checked(opt.log_sticky) { "true" } else { "false" });
+    text = replace_key(&text, "log_dayflags", if checked(opt.log_dayflags) { "true" } else { "false" });
+    text = replace_key(&text, "log_flagdiffs", if checked(opt.log_flagdiffs) { "true" } else { "false" });
+    text = replace_key(&text, "log_rewrites", if checked(opt.log_rewrites) { "true" } else { "false" });
     if let Err(e) = fs::write(&path, text) {
         append_log(app, &format!("Options save failed: {e}"));
     } else {
@@ -838,6 +857,13 @@ unsafe extern "system" fn opt_proc(hwnd: HWND, msg: u32, w: usize, l: isize) -> 
                 let opt = &*OPT;
                 let button = match id { 211 => opt.local, 212 => opt.remote, 213 => opt.item, 214 => opt.location, _ => opt.text };
                 if let Some(hex) = pick_color(hwnd, &text_of(button)) { set_text(button, &hex); InvalidateRect(button, std::ptr::null(), 1); }
+            }
+            if id == 216 && !OPT.is_null() {
+                let opt = &*OPT;
+                let show = SendMessageW(opt.debug, BM_GETCHECK, 0, 0) == 1;
+                for hwnd in [opt.log_sticky, opt.log_dayflags, opt.log_flagdiffs, opt.log_rewrites] {
+                    ShowWindow(hwnd, if show { 5 } else { 0 });
+                }
             }
             if id == 220 {
                 if !APP.is_null() { save_options(&*APP); }

@@ -200,6 +200,18 @@ fn write_console(msg: &str) {
 }
 
 static DEBUG: AtomicBool = AtomicBool::new(false);
+static LOG_STICKY: AtomicBool = AtomicBool::new(false);
+static LOG_DAYFLAGS: AtomicBool = AtomicBool::new(false);
+static LOG_REWRITES: AtomicBool = AtomicBool::new(false);
+
+fn apply_debug_flags(text: &str) {
+    let on = |key: &str| text.lines().any(|l| l.trim() == format!("{key} = true"));
+    DEBUG.store(on("debug"), Ordering::SeqCst);
+    LOG_STICKY.store(on("log_sticky"), Ordering::SeqCst);
+    LOG_DAYFLAGS.store(on("log_dayflags"), Ordering::SeqCst);
+    LOG_REWRITES.store(on("log_rewrites"), Ordering::SeqCst);
+    FLAG_DIFF.store(on("debug") && on("log_flagdiffs"), Ordering::SeqCst);
+}
 
 fn console_visible(msg: &str) -> bool {
     DEBUG.load(Ordering::SeqCst)
@@ -415,11 +427,8 @@ fn worker() {
             ap::run(ap_cfg, rx, say_rx, drop_goods, config_path, |msg| log_line(&dir_ap, msg));
         });
     }
-    if text.as_deref().is_some_and(|t| t.lines().any(|l| l.trim() == "flag_diff = true")) {
-        FLAG_DIFF.store(true, Ordering::SeqCst);
-    }
-    if text.as_deref().is_some_and(|t| t.lines().any(|l| l.trim() == "debug = true")) {
-        DEBUG.store(true, Ordering::SeqCst);
+    if let Some(text) = text.as_deref() {
+        apply_debug_flags(text);
     }
     let console_dir = dir.clone();
     thread::spawn(move || {
@@ -443,9 +452,8 @@ fn worker() {
                 if let Some(dir) = console_dir.as_ref() {
                     if let Ok(text) = std::fs::read_to_string(dir.join("flags.toml")) {
                         overlay::apply(&text);
-                        let on = text.lines().any(|l| l.trim() == "debug = true");
-                        DEBUG.store(on, Ordering::SeqCst);
-                        log_line(&console_dir, &format!("NRAP options applied, debug {}", if on { "on" } else { "off" }));
+                        apply_debug_flags(&text);
+                        log_line(&console_dir, &format!("NRAP options applied, debug {}", if DEBUG.load(Ordering::SeqCst) { "on" } else { "off" }));
                     }
                 }
                 continue;
@@ -523,7 +531,9 @@ fn worker() {
             for (flag, last) in day.iter_mut() {
                 if let Some(on) = found.get(*flag) {
                     if *last != Some(on) {
-                        log_line(&watch_dir, &format!("NRAP dayflag {flag} {}->{}", last.map(|v| if v {"1"} else {"0"}).unwrap_or("?"), if on {"1"} else {"0"}));
+                        if DEBUG.load(Ordering::SeqCst) && LOG_DAYFLAGS.load(Ordering::SeqCst) {
+                            log_line(&watch_dir, &format!("NRAP dayflag {flag} {}->{}", last.map(|v| if v {"1"} else {"0"}).unwrap_or("?"), if on {"1"} else {"0"}));
+                        }
                         if last.is_some() && on && matches!(*flag, 7512 | 7001 | 2000) {
                             let mut latched = Vec::new();
                             for counter in [8140u32, 8145, 8155] {
@@ -681,13 +691,20 @@ fn worker() {
             }
         }
         if let Some(msg) = flag_write::retry_pending() {
-            log_line(&dir, &msg);
+            let rewrite = msg.contains("rewrite");
+            if rewrite {
+                if DEBUG.load(Ordering::SeqCst) && LOG_REWRITES.load(Ordering::SeqCst) {
+                    log_line(&dir, &msg);
+                }
+            } else if DEBUG.load(Ordering::SeqCst) {
+                log_line(&dir, &msg);
+            }
         }
         if let Some(msg) = flag_write::stock_shop_rows() {
             log_line(&dir, &msg);
         }
         if let Some(msg) = flag_write::reapply_cached() {
-            if DEBUG.load(Ordering::SeqCst) {
+            if DEBUG.load(Ordering::SeqCst) && LOG_STICKY.load(Ordering::SeqCst) {
                 log_line(&dir, &msg);
             }
         }
