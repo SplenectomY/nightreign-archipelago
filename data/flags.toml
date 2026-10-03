@@ -19,7 +19,7 @@ color_location = "6BE36B"
 debug = false
 flag_diff = false
 # Nightreign 1.3.3.0
-# Keep [goal] in sync with Player1.yaml. Client opens Heolstor (flag 115) locally.
+# Keep [goal] in sync with Player1.yaml. Client opens Heolstor (flag 196) locally.
 
 game_version = "1.3.3.0"
 

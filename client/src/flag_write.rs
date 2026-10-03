@@ -643,7 +643,7 @@ pub fn remember_unlock(item_id: i64) {
 }
 
 fn is_sticky(flag: u32) -> bool {
-    matches!(flag, 115 | 130 | 135 | 136 | 189..=195 | 212..=219) || is_nightfarer(flag)
+    matches!(flag, 196..=199 | 189..=195 | 212..=219) || is_nightfarer(flag)
 }
 
 pub fn reapply_cached() -> Option<String> {
@@ -701,10 +701,10 @@ pub fn flag_for_item(item_id: i64) -> Option<u32> {
         839_100_005 => Some(193),
         839_100_006 => Some(194),
         839_100_007 => Some(195),
-        839_100_008 => Some(115),
-        839_100_009 => Some(135),
-        839_100_010 => Some(136),
-        839_100_011 => Some(130),
+        839_100_008 => Some(196),
+        839_100_009 => Some(197),
+        839_100_010 => Some(198),
+        839_100_011 => Some(199),
         839_100_111 => Some(212),
         839_100_112 => Some(213),
         839_100_113 => Some(214),
@@ -730,9 +730,9 @@ pub fn unlock_for_defeat(flag: u32) -> Option<u32> {
         154 => 193,
         155 => 194,
         156 => 195,
-        160 => 115,
-        161 => 135,
-        162 => 136,
+        160 => 196,
+        161 => 197,
+        162 => 198,
         170 => 212,
         171 => 213,
         172 => 214,
@@ -783,14 +783,14 @@ pub fn note_defeat(flag: u32) -> Option<String> {
             need
         ));
     }
-    match set_flag_from(115, true, "heolstor") {
+    match set_flag_from(196, true, "heolstor") {
         Ok(msg) => Some(format!("{msg} after {} Nightlord defeats", got.len())),
         Err(e) => {
             let mut q = PENDING.lock().unwrap();
-            if !q.contains(&115) {
-                q.push(115);
+            if !q.contains(&196) {
+                q.push(196);
             }
-            Some(format!("NRAP Heolstor gate met, flag 115 queued ({e})"))
+            Some(format!("NRAP Heolstor gate met, flag 196 queued ({e})"))
         }
     }
 }
