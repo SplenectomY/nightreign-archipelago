@@ -441,7 +441,13 @@ pub fn load_cache(dir: Option<&std::path::PathBuf>) -> String {
                 seen.push(index);
             }
         } else if let Ok(flag) = line.trim().parse() {
-            flags.push(flag);
+            flags.push(match flag {
+                115 => 196,
+                130 => 199,
+                135 => 197,
+                136 => 198,
+                other => other,
+            });
         }
     }
     *CACHE_SEED.lock().unwrap() = seed.clone();
@@ -643,7 +649,7 @@ pub fn remember_unlock(item_id: i64) {
 }
 
 fn is_sticky(flag: u32) -> bool {
-    matches!(flag, 196..=199 | 189..=195 | 212..=219) || is_nightfarer(flag)
+    matches!(flag, 196..=199 | 189..=195 | 212..=219 | 68800..=68923) || is_nightfarer(flag)
 }
 
 pub fn reapply_cached() -> Option<String> {
@@ -669,7 +675,12 @@ pub fn reapply_cached() -> Option<String> {
         return None;
     }
     *LAST.lock().unwrap() = Some(std::time::Instant::now());
-    let sticky: Vec<u32> = flags.into_iter().filter(|flag| is_sticky(*flag)).collect();
+    let mut sticky: Vec<u32> = flags.into_iter().filter(|flag| is_sticky(*flag)).collect();
+    for flag in GRANTED_NIGHTFARERS.lock().unwrap().iter().copied() {
+        if !sticky.contains(&flag) {
+            sticky.push(flag);
+        }
+    }
     let mut wrote = 0usize;
     let mut notes = Vec::new();
     for flag in &sticky {
@@ -803,6 +814,13 @@ fn remember_nightfarer(flag: u32) {
         let mut got = GRANTED_NIGHTFARERS.lock().unwrap();
         if !got.contains(&flag) {
             got.push(flag);
+        }
+        let mut flags = CACHED.lock().unwrap();
+        if !flags.contains(&flag) {
+            flags.push(flag);
+            if let Some(path) = CACHE_PATH.lock().unwrap().as_ref() {
+                write_cache(path, &CACHE_SEED.lock().unwrap(), &flags);
+            }
         }
     }
 }
