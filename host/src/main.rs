@@ -3,7 +3,6 @@
 
 use std::ffi::c_void;
 use std::fs;
-use std::os::windows::io::AsRawHandle;
 use std::path::PathBuf;
 use std::process::Command;
 
@@ -129,7 +128,6 @@ extern "system" {
     fn GetLastError() -> u32;
     fn FindWindowW(class: *const u16, title: *const u16) -> HWND;
     fn SetForegroundWindow(hwnd: HWND) -> i32;
-    fn LockFileEx(file: *mut c_void, flags: u32, reserved: u32, low: u32, high: u32, overlapped: *mut c_void) -> i32;
 }
 #[link(name = "comdlg32")]
 extern "system" {
@@ -926,23 +924,13 @@ fn raise_existing() {
     }
 }
 
-fn instance_owned(dir: &std::path::Path) -> bool {
+fn instance_owned() -> bool {
     unsafe {
         let name = wide("Local\\NRAPHostSingle");
-        let handle = CreateMutexW(std::ptr::null_mut(), 1, name.as_ptr());
-        if GetLastError() == 183 || handle.is_null() {
+        let handle = CreateMutexW(std::ptr::null_mut(), 0, name.as_ptr());
+        if handle.is_null() || GetLastError() == 183 {
             raise_existing();
             return false;
-        }
-        let path = dir.join("nrap.instance");
-        let file = std::fs::OpenOptions::new().read(true).write(true).create(true).open(&path);
-        if let Ok(file) = file {
-            let locked = LockFileEx(file.as_raw_handle() as *mut c_void, 3, 0, 1, 0, std::ptr::null_mut());
-            if locked == 0 {
-                raise_existing();
-                return false;
-            }
-            std::mem::forget(file);
         }
         INSTANCE = handle;
         true
@@ -951,7 +939,7 @@ fn instance_owned(dir: &std::path::Path) -> bool {
 
 fn main() {
     let dir = exe_dir();
-    if !instance_owned(&dir) {
+    if !instance_owned() {
         return;
     }
     rotate_log(&dir);
