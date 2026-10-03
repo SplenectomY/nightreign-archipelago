@@ -118,7 +118,7 @@ class NightreignWorld(World):
         for n in range(1, int(self.options.invader_count) + 1):
             hold_locs[f"Defeat Invaders {n}"] = LOCATION_NAME_TO_ID[f"Defeat Invaders {n}"]
         for n in range(1, int(self.options.buried_treasure_count) + 1):
-            hold_locs[f"Open Buried Treasure {n}"] = LOCATION_NAME_TO_ID[f"Open Buried Treasure {n}"]
+            hold_locs[f"Buried Treasure Map {n}"] = LOCATION_NAME_TO_ID[f"Buried Treasure Map {n}"]
         for loc_name, _item in self._nightlords() + self._everdark():
             hold_locs[loc_name] = LOCATION_NAME_TO_ID[loc_name]
         for name in ("Unlock Duchess", "Unlock Revenant"):
