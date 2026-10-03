@@ -221,12 +221,28 @@ class NightreignWorld(World):
             def two_nightlords(state) -> bool:
                 return sum(state.can_reach(name, "Location", player) for name in nightlords) >= 2
 
+            owners = {name.split(" - ", 1)[1] for name in self._nightfarers()}
+
+            def garb_owner(name: str) -> str:
+                return name.split(" - ", 1)[1].split(" ", 1)[0]
+
             for name in SHOP_LOCATIONS:
                 if name.startswith("Garb - "):
-                    set_rule(
-                        self.get_location(name),
-                        lambda state, name=name: state.has(name, player) and two_nightlords(state),
-                    )
+                    owner = garb_owner(name)
+                    if owner in owners:
+                        set_rule(
+                            self.get_location(name),
+                            lambda state, name=name, owner=owner: (
+                                state.has(name, player)
+                                and state.has(f"Nightfarer - {owner}", player)
+                                and two_nightlords(state)
+                            ),
+                        )
+                    else:
+                        set_rule(
+                            self.get_location(name),
+                            lambda state, name=name: state.has(name, player) and two_nightlords(state),
+                        )
                 else:
                     set_rule(
                         self.get_location(name),
