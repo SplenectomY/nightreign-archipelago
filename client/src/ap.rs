@@ -13,6 +13,7 @@ const GAME: &str = "Elden Ring Nightreign";
 const ITEMS_HANDLING: u8 = 0b111;
 
 pub static RECONNECT: AtomicBool = AtomicBool::new(false);
+static SHOP_HINTS: Mutex<Vec<i64>> = Mutex::new(Vec::new());
 
 pub fn request_reconnect() {
     RECONNECT.store(true, Ordering::SeqCst);
@@ -437,6 +438,27 @@ fn send_scouts(socket: &mut Socket, ids: &[i64]) -> Result<(), String> {
         .map_err(|e| format!("LocationScouts: {e}"))
 }
 
+
+fn flush_shop_hints(socket: &mut Socket, log: &impl Fn(&str)) {
+    let ids = {
+        let mut hints = SHOP_HINTS.lock().unwrap();
+        if hints.is_empty() {
+            return;
+        }
+        std::mem::take(&mut *hints)
+    };
+    match send_scouts(socket, &ids) {
+        Ok(()) => log(&format!(
+            "NRAP AP shop hint {}",
+            ids.iter().map(|id| id.to_string()).collect::<Vec<_>>().join(",")
+        )),
+        Err(e) => {
+            SHOP_HINTS.lock().unwrap().splice(0..0, ids);
+            log(&format!("NRAP AP shop hint failed: {e}"));
+        }
+    }
+}
+
 fn send_checks(socket: &mut Socket, ids: &[i64]) -> Result<(), String> {
     if ids.is_empty() {
         return Ok(());
@@ -475,6 +497,7 @@ pub fn run(mut cfg: ApConfig, rx: Receiver<i64>, say_rx: Receiver<String>, drop_
                         log(&format!("NRAP AP socket ended: {e}"));
                         break;
                     }
+                    flush_shop_hints(&mut socket, &log);
                     std::thread::sleep(Duration::from_millis(50));
                 }
                 if let Err(e) = send_checks(&mut socket, &pending) {
@@ -509,6 +532,7 @@ pub fn run(mut cfg: ApConfig, rx: Receiver<i64>, say_rx: Receiver<String>, drop_
                                 log(&format!("NRAP AP socket ended: {e}"));
                                 break;
                             }
+                            flush_shop_hints(&mut socket, &log);
                             match send_goal(&mut socket) {
                                 Ok(true) => log("NRAP AP goal sent"),
                                 Ok(false) => {}
@@ -520,6 +544,7 @@ pub fn run(mut cfg: ApConfig, rx: Receiver<i64>, say_rx: Receiver<String>, drop_
                                 log(&format!("NRAP AP socket ended: {e}"));
                                 break;
                             }
+                            flush_shop_hints(&mut socket, &log);
                             match send_goal(&mut socket) {
                                 Ok(true) => log("NRAP AP goal sent"),
                                 Ok(false) => {}
