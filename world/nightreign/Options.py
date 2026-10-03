@@ -153,8 +153,8 @@ class BuriedTreasureCount(Range):
     """How many buried treasure openings become locations. Flags 8120-8131 rise to 1 and clear on exit, so only the rise counts."""
     display_name = "Buried Treasure Count"
     range_start = 0
-    range_end = 40
-    default = 10
+    range_end = 50
+    default = 50
 
 
 class DeathLink(Toggle):
