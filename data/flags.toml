@@ -788,280 +788,280 @@ event_flag_id = 6039
 
 [[flag]]
 location = "Garb - Wylder Abysswalker"
-location_id = 839000800
+location_id = 839000840
 kind = "shop"
 event_flag_id = 68000
 release_flag = 68884
 
 [[flag]]
 location = "Garb - Wylder Lion Knight"
-location_id = 839000801
+location_id = 839000841
 kind = "shop"
 event_flag_id = 68010
 release_flag = 68885
 
 [[flag]]
 location = "Garb - Wylder Dawn"
-location_id = 839000802
+location_id = 839000842
 kind = "shop"
 event_flag_id = 68200
 release_flag = 68886
 
 [[flag]]
 location = "Garb - Wylder Darkness"
-location_id = 839000803
+location_id = 839000843
 kind = "shop"
 event_flag_id = 68210
 release_flag = 68887
 
 [[flag]]
 location = "Garb - Guardian Sunlight Knight"
-location_id = 839000804
+location_id = 839000844
 kind = "shop"
 event_flag_id = 68020
 release_flag = 68888
 
 [[flag]]
 location = "Garb - Guardian Wayfarer"
-location_id = 839000805
+location_id = 839000845
 kind = "shop"
 event_flag_id = 68030
 release_flag = 68889
 
 [[flag]]
 location = "Garb - Guardian Dawn"
-location_id = 839000806
+location_id = 839000846
 kind = "shop"
 event_flag_id = 68220
 release_flag = 68890
 
 [[flag]]
 location = "Garb - Guardian Darkness"
-location_id = 839000807
+location_id = 839000847
 kind = "shop"
 event_flag_id = 68230
 release_flag = 68891
 
 [[flag]]
 location = "Garb - Ironeye Ringfinger"
-location_id = 839000808
+location_id = 839000848
 kind = "shop"
 event_flag_id = 68040
 release_flag = 68892
 
 [[flag]]
 location = "Garb - Ironeye Sellsword"
-location_id = 839000809
+location_id = 839000849
 kind = "shop"
 event_flag_id = 68050
 release_flag = 68893
 
 [[flag]]
 location = "Garb - Ironeye Dawn"
-location_id = 839000810
+location_id = 839000850
 kind = "shop"
 event_flag_id = 68240
 release_flag = 68894
 
 [[flag]]
 location = "Garb - Ironeye Darkness"
-location_id = 839000811
+location_id = 839000851
 kind = "shop"
 event_flag_id = 68250
 release_flag = 68895
 
 [[flag]]
 location = "Garb - Duchess Black Leather"
-location_id = 839000812
+location_id = 839000852
 kind = "shop"
 event_flag_id = 68060
 release_flag = 68896
 
 [[flag]]
 location = "Garb - Duchess Wraith"
-location_id = 839000813
+location_id = 839000853
 kind = "shop"
 event_flag_id = 68070
 release_flag = 68897
 
 [[flag]]
 location = "Garb - Duchess Dawn"
-location_id = 839000814
+location_id = 839000854
 kind = "shop"
 event_flag_id = 68260
 release_flag = 68898
 
 [[flag]]
 location = "Garb - Duchess Darkness"
-location_id = 839000815
+location_id = 839000855
 kind = "shop"
 event_flag_id = 68270
 release_flag = 68899
 
 [[flag]]
 location = "Garb - Raider Rock-like"
-location_id = 839000816
+location_id = 839000856
 kind = "shop"
 event_flag_id = 68080
 release_flag = 68900
 
 [[flag]]
 location = "Garb - Raider Catarina"
-location_id = 839000817
+location_id = 839000857
 kind = "shop"
 event_flag_id = 68090
 release_flag = 68901
 
 [[flag]]
 location = "Garb - Raider Dawn"
-location_id = 839000818
+location_id = 839000858
 kind = "shop"
 event_flag_id = 68280
 release_flag = 68902
 
 [[flag]]
 location = "Garb - Raider Darkness"
-location_id = 839000819
+location_id = 839000859
 kind = "shop"
 event_flag_id = 68290
 release_flag = 68903
 
 [[flag]]
 location = "Garb - Revenant The Sister in the Painting"
-location_id = 839000820
+location_id = 839000860
 kind = "shop"
 event_flag_id = 68100
 release_flag = 68904
 
 [[flag]]
 location = "Garb - Revenant Dragon School"
-location_id = 839000821
+location_id = 839000861
 kind = "shop"
 event_flag_id = 68110
 release_flag = 68905
 
 [[flag]]
 location = "Garb - Revenant Dawn"
-location_id = 839000822
+location_id = 839000862
 kind = "shop"
 event_flag_id = 68300
 release_flag = 68906
 
 [[flag]]
 location = "Garb - Revenant Darkness"
-location_id = 839000823
+location_id = 839000863
 kind = "shop"
 event_flag_id = 68310
 release_flag = 68907
 
 [[flag]]
 location = "Garb - Recluse Heretic Sorcerer"
-location_id = 839000824
+location_id = 839000864
 kind = "shop"
 event_flag_id = 68120
 release_flag = 68908
 
 [[flag]]
 location = "Garb - Recluse Emerald Fate"
-location_id = 839000825
+location_id = 839000865
 kind = "shop"
 event_flag_id = 68130
 release_flag = 68909
 
 [[flag]]
 location = "Garb - Recluse Dawn"
-location_id = 839000826
+location_id = 839000866
 kind = "shop"
 event_flag_id = 68320
 release_flag = 68910
 
 [[flag]]
 location = "Garb - Recluse Darkness"
-location_id = 839000827
+location_id = 839000867
 kind = "shop"
 event_flag_id = 68330
 release_flag = 68911
 
 [[flag]]
 location = "Garb - Executor Thorns"
-location_id = 839000828
+location_id = 839000868
 kind = "shop"
 event_flag_id = 68140
 release_flag = 68912
 
 [[flag]]
 location = "Garb - Executor Sable Church"
-location_id = 839000829
+location_id = 839000869
 kind = "shop"
 event_flag_id = 68150
 release_flag = 68913
 
 [[flag]]
 location = "Garb - Executor Dawn"
-location_id = 839000830
+location_id = 839000870
 kind = "shop"
 event_flag_id = 68340
 release_flag = 68914
 
 [[flag]]
 location = "Garb - Executor Darkness"
-location_id = 839000831
+location_id = 839000871
 kind = "shop"
 event_flag_id = 68350
 release_flag = 68915
 
 [[flag]]
 location = "Garb - Scholar Dawn"
-location_id = 839000832
+location_id = 839000872
 kind = "shop"
 event_flag_id = 68400
 release_flag = 68916
 
 [[flag]]
 location = "Garb - Scholar Darkness"
-location_id = 839000833
+location_id = 839000873
 kind = "shop"
 event_flag_id = 68410
 release_flag = 68917
 
 [[flag]]
 location = "Garb - Scholar Pardoner"
-location_id = 839000834
+location_id = 839000874
 kind = "shop"
 event_flag_id = 68420
 release_flag = 68918
 
 [[flag]]
 location = "Garb - Scholar Xanthous"
-location_id = 839000835
+location_id = 839000875
 kind = "shop"
 event_flag_id = 68430
 release_flag = 68919
 
 [[flag]]
 location = "Garb - Undertaker Dawn"
-location_id = 839000836
+location_id = 839000876
 kind = "shop"
 event_flag_id = 68450
 release_flag = 68920
 
 [[flag]]
 location = "Garb - Undertaker Darkness"
-location_id = 839000837
+location_id = 839000877
 kind = "shop"
 event_flag_id = 68460
 release_flag = 68921
 
 [[flag]]
 location = "Garb - Undertaker Brass"
-location_id = 839000838
+location_id = 839000878
 kind = "shop"
 event_flag_id = 68470
 release_flag = 68922
 
 [[flag]]
 location = "Garb - Undertaker Lord's Blade"
-location_id = 839000839
+location_id = 839000879
 kind = "shop"
 event_flag_id = 68480
 release_flag = 68923
