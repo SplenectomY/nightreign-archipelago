@@ -549,7 +549,7 @@ pub fn note_toggle(flag: u32, rising: bool) -> Option<(u32, i64)> {
         let mut n = INVADER.lock().unwrap();
         *n += 1;
         (*n, 839001400 + *n as i64)
-    } else if (9100..=9111).contains(&flag) {
+    } else if (8120..=8131).contains(&flag) {
         let mut n = TREASURE.lock().unwrap();
         *n += 1;
         (*n, 839001500 + *n as i64)
