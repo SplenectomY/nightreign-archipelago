@@ -110,7 +110,7 @@ class NightreignWorld(World):
             for name in SHOP_LOCATIONS:
                 hold_locs[name] = LOCATION_NAME_TO_ID[name]
         for i in range(1, 28):
-            hold_locs[f"Murk {i}"] = LOCATION_NAME_TO_ID[f"Murk {i}"]
+            hold_locs[f"Unused {i}"] = LOCATION_NAME_TO_ID[f"Unused {i}"]
         for n in range(1, int(self.options.evergaol_count) + 1):
             hold_locs[f"Seal Evergaol {n}"] = LOCATION_NAME_TO_ID[f"Seal Evergaol {n}"]
         for n in range(1, int(self.options.tower_count) + 1):
