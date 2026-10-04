@@ -5,7 +5,7 @@ from typing import Dict, List
 
 from BaseClasses import Item, ItemClassification, Location, Region, Tutorial
 from worlds.AutoWorld import WebWorld, World
-from worlds.generic.Rules import set_rule
+from worlds.generic.Rules import add_item_rule, set_rule
 from BaseClasses import ItemClassification
 
 from .Items import (
@@ -372,6 +372,11 @@ class NightreignWorld(World):
                         lambda state, name=name: state.has(name, player) and shop_sphere(state, name),
                     )
         set_rule(self.get_location("Nightlord - Heolstor"), heolstor_gate)
+        if self.options.tutorial_margit:
+            add_item_rule(
+                self.get_location("Defeat Tutorial Margit"),
+                lambda item: not (item.classification & ItemClassification.filler),
+            )
         self._place_ladder(bands)
 
         goal = self.options.goal.current_key
