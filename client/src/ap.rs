@@ -1,7 +1,7 @@
 //! Blocking AP client. Own thread. Flag thread only pushes location ids.
 
 use std::net::TcpStream;
-use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering};
 use std::sync::Mutex;
 use std::sync::mpsc::{Receiver, RecvTimeoutError};
 use std::time::Duration;
@@ -13,6 +13,7 @@ const GAME: &str = "Elden Ring Nightreign";
 const ITEMS_HANDLING: u8 = 0b111;
 
 pub static RECONNECT: AtomicBool = AtomicBool::new(false);
+static BACKOFF: AtomicU64 = AtomicU64::new(1);
 static SHOP_HINTS: Mutex<Vec<i64>> = Mutex::new(Vec::new());
 
 pub fn request_reconnect() {
@@ -162,10 +163,26 @@ fn datapackage_request(games: &[String]) -> String {
     format!("[{{\"cmd\":\"GetDataPackage\",\"games\":[{list}]}}]")
 }
 
+fn package_dir() -> Option<std::path::PathBuf> {
+    let dir = crate::flag_write::cache_dir()?.join("datapackages");
+    let _ = std::fs::create_dir_all(&dir);
+    if let Some(root) = crate::flag_write::cache_dir() {
+        if let Ok(entries) = std::fs::read_dir(&root) {
+            for entry in entries.flatten() {
+                let name = entry.file_name().to_string_lossy().to_string();
+                if name.starts_with("datapackage") {
+                    let _ = std::fs::remove_file(entry.path());
+                }
+            }
+        }
+    }
+    Some(dir)
+}
+
 fn names_path() -> Option<std::path::PathBuf> {
     let seed = crate::flag_write::cache_seed();
     if seed.is_empty() { return None; }
-    crate::flag_write::cache_dir().map(|dir| dir.join(format!("datapackage_v2_{seed}.txt")))
+    package_dir().map(|dir| dir.join(format!("datapackage_v2_{seed}.txt")))
 }
 
 fn load_names() -> usize {
@@ -544,6 +561,14 @@ fn connect_and_handshake(
     tune(&mut socket, Duration::from_secs(8));
     if let Ok(Some(room)) = read_text(&mut socket) {
         handle_server_text(&room, log, next_index, drop_goods);
+        if let Some(dir) = package_dir() {
+            let raw = dir.join("preflight_package.txt");
+            if let Ok(text) = std::fs::read_to_string(&raw) {
+                ingest_package(&text);
+                save_names();
+                let _ = std::fs::remove_file(&raw);
+            }
+        }
         let cached = load_names();
         if cached > 0 {
             log(&format!("NRAP AP datapackage cache loaded {cached}"));
@@ -812,16 +837,46 @@ pub fn run(mut cfg: ApConfig, rx: Receiver<i64>, say_rx: Receiver<String>, drop_
                 }
             }
             Err(e) => {
-                if let Some(reason) = e.strip_prefix("hold:") {
+                let low = e.to_ascii_lowercase();
+                let fatal = e.contains("InvalidSlot") || e.starts_with("hold:") || low.contains("no such host") || low.contains("name or service not known") || e.contains("os error 11001");
+                if fatal {
+                    hold = true;
+                    log(&format!("NRAP AP reconnect cancelled: {e}"));
+                } else if let Some(reason) = e.strip_prefix("hold:") {
                     hold = true;
                     log(&format!("NRAP AP disconnected: {reason}. Press Reconnect after fixing the slot."));
                 } else {
                     log(&format!("NRAP AP not connected: {e}"));
                 }
+                let wait = if RECONNECT.load(Ordering::SeqCst) {
+                    Duration::from_millis(200)
+                } else if fatal {
+                    Duration::from_secs(3600)
+                } else if low.contains("timed out") || e.contains("os error 10060") {
+                    let step = BACKOFF.fetch_update(Ordering::SeqCst, Ordering::SeqCst, |n| Some((n.saturating_mul(2)).clamp(1, 30))).unwrap_or(1);
+                    log(&format!("NRAP AP timed out, retry in {step}s"));
+                    Duration::from_secs(step)
+                } else {
+                    BACKOFF.store(1, Ordering::SeqCst);
+                    Duration::from_secs(5)
+                };
+                let wait_until = std::time::Instant::now() + wait;
+                while std::time::Instant::now() < wait_until {
+                    match rx.recv_timeout(Duration::from_millis(250)) {
+                        Ok(id) => {
+                            if !pending.contains(&id) {
+                                pending.push(id);
+                                log(&format!("NRAP AP queued {id} (offline)"));
+                            }
+                        }
+                        Err(RecvTimeoutError::Timeout) => {}
+                        Err(RecvTimeoutError::Disconnected) => return,
+                    }
+                }
+                continue;
             }
         }
-        let wait = if RECONNECT.load(Ordering::SeqCst) { Duration::from_millis(200) } else { Duration::from_secs(5) };
-        let wait_until = std::time::Instant::now() + wait;
+        let wait_until = std::time::Instant::now() + Duration::from_secs(1);
         while std::time::Instant::now() < wait_until {
             match rx.recv_timeout(Duration::from_millis(250)) {
                 Ok(id) => {

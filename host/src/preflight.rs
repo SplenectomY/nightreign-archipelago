@@ -1,0 +1,76 @@
+use std::net::TcpStream;
+use std::path::PathBuf;
+use std::time::Duration;
+use tungstenite::{client, Message};
+
+pub enum Gate {
+    Ready,
+    InvalidSlot,
+    HostNotFound,
+    TimedOut,
+    Failed(String),
+}
+
+fn classify(err: &str) -> Gate {
+    let low = err.to_ascii_lowercase();
+    if low.contains("timed out") || low.contains("10060") {
+        Gate::TimedOut
+    } else if low.contains("no such host") || low.contains("name or service") || low.contains("11001") || low.contains("failed to lookup") {
+        Gate::HostNotFound
+    } else {
+        Gate::Failed(err.to_string())
+    }
+}
+
+pub fn connect_and_cache(host: &str, slot: &str, password: &str, dir: &PathBuf) -> Result<(), Gate> {
+    let addr = host.trim().trim_start_matches("wss://").trim_start_matches("ws://");
+    let local = addr.starts_with("127.") || addr.starts_with("localhost") || addr.starts_with("0.0.0.0") || addr.starts_with("[::1]");
+    let url = if local { format!("ws://{addr}") } else { format!("wss://{addr}") };
+    let tcp_addr = if addr.contains(':') { addr.to_string() } else { format!("{addr}:38281") };
+    let stream = TcpStream::connect_timeout(&tcp_addr.parse().map_err(|e: std::net::AddrParseError| classify(&e.to_string()))?, Duration::from_secs(8))
+        .map_err(|e| classify(&e.to_string()))?;
+    stream.set_read_timeout(Some(Duration::from_secs(8))).ok();
+    stream.set_write_timeout(Some(Duration::from_secs(8))).ok();
+    let mut socket = client(url, stream).map_err(|e| classify(&e.to_string()))?.0;
+    let connect_pkt = format!(
+        "[{{\"cmd\":\"Connect\",\"password\":\"{}\",\"game\":\"Elden Ring Nightreign\",\"name\":\"{}\",\"uuid\":\"\",\"version\":{{\"major\":0,\"minor\":5,\"build\":1,\"class\":\"Version\"}},\"items_handling\":7,\"tags\":[\"AP\"],\"slot_data\":true}}]",
+        password.replace('\\', "\\\\").replace('"', "\\\""),
+        slot.replace('\\', "\\\\").replace('"', "\\\"")
+    );
+    socket.send(Message::Text(connect_pkt.into())).map_err(|e| classify(&e.to_string()))?;
+    let mut package = String::new();
+    let mut connected = false;
+    for _ in 0..12 {
+        let text = socket.read().map_err(|e| classify(&e.to_string()))?.to_string();
+        if text.contains("InvalidSlot") {
+            return Err(Gate::InvalidSlot);
+        }
+        if text.contains("\"cmd\":\"Connected\"") || text.contains("\"cmd\": \"Connected\"") {
+            connected = true;
+            let _ = socket.send(Message::Text("[{\"cmd\":\"GetDataPackage\",\"games\":[\"Elden Ring Nightreign\"]}]".into()));
+        }
+        if text.contains("DataPackage") {
+            package = text;
+            break;
+        }
+    }
+    if !connected {
+        return Err(Gate::Failed("server did not accept the slot".into()));
+    }
+    if package.is_empty() {
+        return Err(Gate::Failed("data package was not downloaded".into()));
+    }
+    let folder = dir.join("datapackages");
+    std::fs::create_dir_all(&folder).map_err(|e| Gate::Failed(e.to_string()))?;
+    std::fs::write(folder.join("preflight_package.txt"), package).map_err(|e| Gate::Failed(e.to_string()))?;
+    let _ = socket.close(None);
+    Ok(())
+}
+
+pub fn game_open() -> bool {
+    std::process::Command::new("tasklist")
+        .args(["/FI", "IMAGENAME eq nightreign.exe", "/NH"])
+        .output()
+        .map(|out| String::from_utf8_lossy(&out.stdout).to_ascii_lowercase().contains("nightreign.exe"))
+        .unwrap_or(false)
+}

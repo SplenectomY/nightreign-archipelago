@@ -6,6 +6,8 @@ use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
 
+mod preflight;
+
 type HWND = *mut c_void;
 type HINSTANCE = *mut c_void;
 
@@ -52,6 +54,7 @@ const BROWSE_NRSC: isize = 111;
 const SEAMLESS: isize = 112;
 const BROWSE_ME3: isize = 115;
 const ME3: isize = 116;
+const STATUS: isize = 117;
 const EN_KILLFOCUS: u16 = 0x0200;
 const ES_AUTOHSCROLL: u32 = 0x0080;
 
@@ -81,6 +84,9 @@ struct App {
     log_off: u64,
     mod_off: u64,
     connected: bool,
+    status: HWND,
+    launch: HWND,
+    status_kind: u8,
 }
 
 struct OptWin {
@@ -597,9 +603,33 @@ fn append_raw(app: &App, chunk: &str) {
     }
 }
 
+fn set_status(app: &mut App, kind: u8) {
+    app.status_kind = kind;
+    let label = match kind {
+        1 => "Connected!",
+        2 => "Invalid Slot",
+        3 => "Host not found",
+        4 => "Timed out",
+        _ => "Not connected",
+    };
+    set_text(app.status, label);
+    unsafe { InvalidateRect(app.status, std::ptr::null(), 1); }
+    refresh_launch(app);
+}
+
+fn refresh_launch(app: &App) {
+    let busy = app.status_kind == 1 && preflight::game_open();
+    unsafe { EnableWindow(app.launch, if busy { 0 } else { 1 }); }
+}
+
 fn set_connected(app: &mut App, on: bool) {
-    if app.connected == on { return; }
+    if app.connected == on && app.status_kind == if on { 1 } else { 0 } { return; }
     app.connected = on;
+    if on {
+        set_status(app, 1);
+    } else if app.status_kind == 1 {
+        set_status(app, 0);
+    }
     unsafe {
         EnableWindow(app.cmd, if on { 1 } else { 0 });
         EnableWindow(app.send, if on { 1 } else { 0 });
@@ -609,7 +639,16 @@ fn set_connected(app: &mut App, on: bool) {
 fn note_connection(app: &mut App, chunk: &str) {
     let mut state: Option<bool> = None;
     for line in chunk.lines() {
-        if line.contains("NRAP AP not connected") || line.contains("NRAP AP socket ended") || line.contains("NRAP AP disconnecting") {
+        if line.contains("InvalidSlot") {
+            set_status(app, 2);
+            state = Some(false);
+        } else if line.contains("os error 11001") || line.to_ascii_lowercase().contains("no such host") {
+            set_status(app, 3);
+            state = Some(false);
+        } else if line.contains("NRAP AP timed out") {
+            set_status(app, 4);
+            state = Some(false);
+        } else if line.contains("NRAP AP not connected") || line.contains("NRAP AP socket ended") || line.contains("NRAP AP disconnecting") {
             state = Some(false);
         } else if line.contains("NRAP AP connected") {
             state = Some(true);
@@ -826,6 +865,44 @@ fn write_profile_paths(app: &App) -> Result<(), String> {
 
 fn launch(app: &App) {
     save_connection(app);
+    let host = text_of(app.host);
+    let slot = text_of(app.slot);
+    let password = text_of(app.pass);
+    let dir = app.dir.clone();
+    unsafe { EnableWindow(app.launch, 0); }
+    append_log(app, "Connecting to Archipelago before launch");
+    std::thread::spawn(move || {
+        let mut wait = 1u64;
+        loop {
+            match preflight::connect_and_cache(&host, &slot, &password, &dir) {
+                Ok(()) => {
+                    let _ = std::fs::write(dir.join("launch.ready"), "1");
+                    return;
+                }
+                Err(preflight::Gate::InvalidSlot) => {
+                    let _ = std::fs::write(dir.join("launch.status"), "2");
+                    return;
+                }
+                Err(preflight::Gate::HostNotFound) => {
+                    let _ = std::fs::write(dir.join("launch.status"), "3");
+                    return;
+                }
+                Err(preflight::Gate::TimedOut) => {
+                    let _ = std::fs::write(dir.join("launch.status"), "4");
+                    std::thread::sleep(std::time::Duration::from_secs(wait));
+                    wait = (wait.saturating_mul(2)).min(30);
+                }
+                Err(preflight::Gate::Failed(e)) => {
+                    let _ = std::fs::write(dir.join("launch.error"), e);
+                    let _ = std::fs::write(dir.join("launch.status"), "0");
+                    return;
+                }
+            }
+        }
+    });
+}
+
+fn launch_game(app: &App) {
     let exe = PathBuf::from(text_of(app.me3));
     if !exe.exists() {
         append_log(app, &format!("me3 not found at {}", exe.display()));
@@ -912,8 +989,19 @@ unsafe extern "system" fn wnd_proc(hwnd: HWND, msg: u32, w: usize, l: isize) -> 
             if bad { WARN_BRUSH } else { FIELD_BRUSH }
         }
         WM_CTLCOLORSTATIC => {
+            let status = !APP.is_null() && l as HWND == (*APP).status;
+            let color = if status {
+                match (*APP).status_kind {
+                    1 => 0x00006400,
+                    2 | 3 => 0x0000008B,
+                    4 => 0x000055AA,
+                    _ => 0x00666666,
+                }
+            } else {
+                0x00111111
+            };
             SetBkColor(w as *mut std::ffi::c_void, 0x00F2F2F2);
-            SetTextColor(w as *mut std::ffi::c_void, 0x00111111);
+            SetTextColor(w as *mut std::ffi::c_void, color);
             LABEL_BRUSH
         }
         WM_COMMAND => {
@@ -940,6 +1028,21 @@ unsafe extern "system" fn wnd_proc(hwnd: HWND, msg: u32, w: usize, l: isize) -> 
         WM_TIMER => {
             tail(&mut *APP);
             refresh_paths(&*APP);
+            let dir = (*APP).dir.clone();
+            if dir.join("launch.ready").is_file() {
+                let _ = std::fs::remove_file(dir.join("launch.ready"));
+                set_status(&mut *APP, 1);
+                launch_game(&*APP);
+            }
+            if let Ok(kind) = std::fs::read_to_string(dir.join("launch.status")) {
+                let _ = std::fs::remove_file(dir.join("launch.status"));
+                set_status(&mut *APP, kind.trim().parse().unwrap_or(0));
+            }
+            if let Ok(err) = std::fs::read_to_string(dir.join("launch.error")) {
+                let _ = std::fs::remove_file(dir.join("launch.error"));
+                append_log(&*APP, &format!("Archipelago preflight failed: {err}"));
+            }
+            refresh_launch(&*APP);
             if !SCROLLED {
                 scroll_bottom((*APP).log);
                 SCROLLED = true;
@@ -1025,6 +1128,7 @@ fn main() {
         CreateWindowExW(0, wide("STATIC").as_ptr(), wide("Password").as_ptr(), WS_CHILD | WS_VISIBLE, 12, 462, 64, 20, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
         let pass = CreateWindowExW(WS_EX_CLIENTEDGE, edit.as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE | ES_PASSWORD, 80, 458, 240, 24, win, PASS, std::ptr::null_mut(), std::ptr::null_mut());
         let reconnect = CreateWindowExW(0, button.as_ptr(), wide("Reconnect").as_ptr(), WS_CHILD, 336, 456, 120, 28, win, RECONNECT, std::ptr::null_mut(), std::ptr::null_mut());
+        let status = CreateWindowExW(0, wide("STATIC").as_ptr(), wide("Not connected").as_ptr(), WS_CHILD | WS_VISIBLE, 80, 486, 280, 20, win, STATUS, std::ptr::null_mut(), std::ptr::null_mut());
         CreateWindowExW(0, wide("STATIC").as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE | SS_ETCHEDHORZ, 12, 500, 720, 2, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
         CreateWindowExW(0, wide("STATIC").as_ptr(), wide("Must point to nrsc.dll").as_ptr(), WS_CHILD | WS_VISIBLE, 88, 514, 220, 18, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
         CreateWindowExW(0, wide("STATIC").as_ptr(), wide("Seamless").as_ptr(), WS_CHILD | WS_VISIBLE, 12, 542, 74, 20, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
@@ -1036,8 +1140,8 @@ fn main() {
         CreateWindowExW(0, button.as_ptr(), wide("Browse").as_ptr(), WS_CHILD | WS_VISIBLE, 596, 596, 70, 24, win, BROWSE_ME3, std::ptr::null_mut(), std::ptr::null_mut());
         CreateWindowExW(0, wide("STATIC").as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE | SS_ETCHEDHORZ, 12, 636, 720, 2, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
         CreateWindowExW(0, button.as_ptr(), wide("Options").as_ptr(), WS_CHILD | WS_VISIBLE, 280, 654, 200, 28, win, OPTIONS, std::ptr::null_mut(), std::ptr::null_mut());
-        CreateWindowExW(0, button.as_ptr(), wide("Launch").as_ptr(), WS_CHILD | WS_VISIBLE, 280, 694, 200, 42, win, LAUNCH, std::ptr::null_mut(), std::ptr::null_mut());
-        let mut app = App { log, cmd, send, host, slot, pass, nrsc, me3, reconnect, dir, log_off: 0, mod_off: 0, connected: false };
+        let launch = CreateWindowExW(0, button.as_ptr(), wide("Launch").as_ptr(), WS_CHILD | WS_VISIBLE, 280, 694, 200, 42, win, LAUNCH, std::ptr::null_mut(), std::ptr::null_mut());
+        let mut app = App { log, cmd, send, host, slot, pass, nrsc, me3, reconnect, dir, log_off: 0, mod_off: 0, connected: false, status, launch, status_kind: 0 };
         set_text(nrsc, &default_nrsc().display().to_string());
         set_text(me3, &me3_exe().display().to_string());
         refresh_paths(&app);
