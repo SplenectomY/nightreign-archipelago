@@ -529,10 +529,18 @@ fn worker() {
                                 log_line(&watch_dir, &format!("NRAP day boss {flag} count {n} loc {loc}"));
                             }
                         }
-                        if last.is_some() && *flag == 9041 && flag_write::in_expedition() && !on {
-                            if let Some((n, loc)) = flag_write::note_toggle(*flag, false) {
-                                let _ = watch_tx.send(loc);
-                                log_line(&watch_dir, &format!("NRAP flask {flag} count {n} loc {loc}"));
+                        if last.is_some() && *flag == 9041 {
+                            static SEEN_FALL: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+                            if !flag_write::in_expedition() {
+                                SEEN_FALL.store(false, Ordering::SeqCst);
+                            } else if !on || SEEN_FALL.load(Ordering::SeqCst) {
+                                if !on {
+                                    SEEN_FALL.store(true, Ordering::SeqCst);
+                                }
+                                if let Some((n, loc)) = flag_write::note_toggle(*flag, on) {
+                                    let _ = watch_tx.send(loc);
+                                    log_line(&watch_dir, &format!("NRAP flask {flag} count {n} loc {loc}"));
+                                }
                             }
                         }
                         if last.is_some() && matches!(*flag, 8140 | 8145 | 8155) {
