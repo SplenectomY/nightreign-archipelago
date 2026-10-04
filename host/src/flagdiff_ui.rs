@@ -15,7 +15,6 @@ const WS_TABSTOP: u32 = 0x00010000;
 const WS_EX_CLIENTEDGE: u32 = 0x00000200;
 const LVS_REPORT: u32 = 0x0001;
 const LVS_SHOWSELALWAYS: u32 = 0x0008;
-const LVS_SINGLESEL: u32 = 0x0004;
 const WM_COMMAND: u32 = 0x0111;
 const WM_NOTIFY: u32 = 0x004E;
 const WM_DESTROY: u32 = 0x0002;
@@ -31,7 +30,9 @@ const LVM_SETITEMW: u32 = LVM_FIRST + 76;
 const LVM_DELETEITEM: u32 = LVM_FIRST + 8;
 const LVM_GETITEMCOUNT: u32 = LVM_FIRST + 4;
 const LVM_SETEXTENDEDLISTVIEWSTYLE: u32 = LVM_FIRST + 54;
-const LVM_GETSUBITEMRECT: u32 = LVM_FIRST + 56;
+const LVM_GETITEMRECT: u32 = LVM_FIRST + 14;
+const LVM_GETCOLUMNWIDTH: u32 = LVM_FIRST + 29;
+const LVN_ITEMCHANGING: isize = -100;
 const LVS_EX_FULLROWSELECT: usize = 0x20;
 const LVS_EX_DOUBLEBUFFER: usize = 0x10000;
 const LVS_EX_CHECKBOXES: usize = 0x4;
@@ -63,6 +64,7 @@ extern "system" {
     fn CreateWindowExW(ex: u32, class: *const u16, title: *const u16, style: u32, x: i32, y: i32, w: i32, h: i32, parent: HWND, menu: isize, instance: HINSTANCE, param: *mut c_void) -> HWND;
     fn DefWindowProcW(hwnd: HWND, msg: u32, w: usize, l: isize) -> isize;
     fn SendMessageW(hwnd: HWND, msg: u32, w: usize, l: isize) -> isize;
+    fn GetKeyState(key: i32) -> i16;
     fn SetWindowTextW(hwnd: HWND, text: *const u16) -> i32;
     fn GetWindowTextW(hwnd: HWND, buf: *mut u16, max: i32) -> i32;
     fn DestroyWindow(hwnd: HWND) -> i32;
@@ -176,14 +178,23 @@ fn fill(list: HWND, rows: &[Row]) {
     }
 }
 
+fn desc_rect(list: HWND, item: i32) -> (i32, i32, i32, i32) {
+    let mut row = [0i32, 0, 0, 0];
+    unsafe { SendMessageW(list, LVM_GETITEMRECT, item as usize, row.as_mut_ptr() as isize); }
+    let flag_w = unsafe { SendMessageW(list, LVM_GETCOLUMNWIDTH, 0, 0) } as i32;
+    let desc_w = unsafe { SendMessageW(list, LVM_GETCOLUMNWIDTH, 1, 0) } as i32;
+    (flag_w.max(0), row[1], desc_w.max(80), (row[3] - row[1]).max(18))
+}
+
+fn shift_down() -> bool { unsafe { GetKeyState(0x10) } < 0 }
+
 fn begin_edit(item: i32) {
     unsafe {
-        if WIN.is_null() || item < 0 { return; }
+        if WIN.is_null() || item < 0 || shift_down() { return; }
         let win = &mut *WIN;
-        if !win.edit.is_null() { DestroyWindow(win.edit); win.edit = std::ptr::null_mut(); }
-        let mut rect = [1i32, 0, 0, 0];
-        SendMessageW(win.list, LVM_GETSUBITEMRECT, item as usize, rect.as_mut_ptr() as isize);
-        let edit = CreateWindowExW(WS_EX_CLIENTEDGE, wide("EDIT").as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE | WS_TABSTOP, rect[0], rect[1], (rect[2] - rect[0]).max(40), (rect[3] - rect[1]).max(18), win.list, 1, std::ptr::null_mut(), std::ptr::null_mut());
+        if !win.edit.is_null() { return; }
+        let (x, y, w, h) = desc_rect(win.list, item);
+        let edit = CreateWindowExW(WS_EX_CLIENTEDGE, wide("EDIT").as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE | WS_TABSTOP, x, y, w, h, win.list, 1, std::ptr::null_mut(), std::ptr::null_mut());
         set_text(edit, &win.rows[item as usize].desc);
         EDIT_OLD = SetWindowLongPtrW(edit, -4, edit_proc as usize);
         win.edit = edit;
@@ -225,15 +236,24 @@ unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: usize, l: isize) -> isiz
             let note = (w >> 16) as u16;
             if id == 3 { add_row(hwnd); }
             if id == 4 { if !WIN.is_null() { commit_edit(); save(&*WIN); } DestroyWindow(hwnd); }
-            if id == 1 && note == EN_KILLFOCUS { commit_edit(); }
+            let _ = note;
             0
         }
         WM_NOTIFY => {
             let code = std::ptr::read_unaligned((l as *const u8).add(16) as *const i32) as isize;
-            if !WIN.is_null() && (code == NM_CLICK || code == LVN_ITEMCHANGED) {
+            if !WIN.is_null() && (code == NM_CLICK || code == LVN_ITEMCHANGED || code == LVN_ITEMCHANGING) {
                 let item = std::ptr::read_unaligned((l as *const u8).add(24) as *const i32);
                 let sub = std::ptr::read_unaligned((l as *const u8).add(28) as *const i32);
-                if code == NM_CLICK && sub == 1 { begin_edit(item); }
+                let new_state = std::ptr::read_unaligned((l as *const u8).add(32) as *const u32);
+                let editing = !(*WIN).edit.is_null();
+                if editing && code == LVN_ITEMCHANGING && item != (*WIN).edit_item && new_state & 2 != 0 {
+                    return 1;
+                }
+                if editing && code == NM_CLICK {
+                    SetFocus((*WIN).edit);
+                    return 1;
+                }
+                if code == NM_CLICK && sub == 1 && !shift_down() { begin_edit(item); }
                 if code == LVN_ITEMCHANGED { save(&*WIN); }
             }
             0
@@ -286,7 +306,7 @@ pub fn open(dir: PathBuf) {
         set_text(min_e, &min.to_string());
         set_text(max_e, &max.to_string());
         CreateWindowExW(0, wide("STATIC").as_ptr(), wide("Unchecked rows are excluded. Flags not listed are included when inside the range.").as_ptr(), WS_CHILD | WS_VISIBLE, 440, 16, 450, 20, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
-        let list = CreateWindowExW(WS_EX_CLIENTEDGE, wide("SysListView32").as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE | WS_TABSTOP | WS_VSCROLL | LVS_REPORT | LVS_SINGLESEL | LVS_SHOWSELALWAYS, 16, 48, 872, 560, win, 2, std::ptr::null_mut(), std::ptr::null_mut());
+        let list = CreateWindowExW(WS_EX_CLIENTEDGE, wide("SysListView32").as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE | WS_TABSTOP | WS_VSCROLL | LVS_REPORT | LVS_SHOWSELALWAYS, 16, 48, 872, 560, win, 2, std::ptr::null_mut(), std::ptr::null_mut());
         SendMessageW(list, LVM_SETEXTENDEDLISTVIEWSTYLE, 0, (LVS_EX_FULLROWSELECT | LVS_EX_DOUBLEBUFFER | LVS_EX_CHECKBOXES) as isize);
         for (i, (title, width)) in ["Flag", "Description"].iter().zip([90, 760]).enumerate() {
             let mut t = wide(title);
