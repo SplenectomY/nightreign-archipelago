@@ -193,13 +193,51 @@ class NightreignWorld(World):
             classification = ItemClassification.progression_deprioritized
         return NightreignItem(name, classification, data.code, self.player)
 
+    def _required_nightlords(self) -> int:
+        goal = self.options.goal.current_key
+        if goal == "count":
+            return int(self.options.nightlord_count)
+        if goal == "specific":
+            return 1
+        return int(self.options.heolstor_unlock_count) + 1
+
     def set_rules(self) -> None:
         player = self.player
-        for n in range(6, int(self.options.invader_count) + 1):
-            set_rule(
-                self.get_location(f"Defeat Invaders {n}"),
-                lambda state: state.has("Expedition Unlock - Deep of Night", player),
-            )
+        bands = max(1, self._required_nightlords() - 1)
+        nightlords = [loc for loc, _item in self._nightlords()]
+        if "Nightlord - Heolstor" not in nightlords:
+            nightlords.append("Nightlord - Heolstor")
+
+        def band_of(n: int, total: int) -> int:
+            base, extra = divmod(total, bands)
+            cutoff = 0
+            for i in range(bands):
+                cutoff += base + (1 if i < extra else 0)
+                if n <= cutoff:
+                    return i
+            return bands - 1
+
+        families = [
+            ("Day 1 Boss", int(self.options.day1_boss_count)),
+            ("Day 2 Boss", int(self.options.day2_boss_count)),
+            ("Seal Evergaol", int(self.options.evergaol_count)),
+            ("Open Magician Tower", int(self.options.tower_count)),
+            ("Defeat Invaders", int(self.options.invader_count)),
+            ("Buried Treasure Map", int(self.options.buried_treasure_count)),
+        ]
+        for prefix, total in families:
+            for n in range(1, total + 1):
+                need = band_of(n, total)
+                depth = prefix == "Defeat Invaders" and n >= 6
+
+                def rule(state, need=need, depth=depth) -> bool:
+                    if depth and not state.has("Expedition Unlock - Deep of Night", player):
+                        return False
+                    if need <= 0:
+                        return True
+                    return sum(state.can_reach(name, "Location", player) for name in nightlords) >= need
+
+                set_rule(self.get_location(f"{prefix} {n}"), rule)
 
         defeats = [loc for loc, _item in self._nightlords() if loc != "Nightlord - Heolstor"]
         need = int(self.options.heolstor_unlock_count)
