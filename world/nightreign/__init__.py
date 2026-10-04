@@ -260,10 +260,16 @@ class NightreignWorld(World):
                 self.get_location("Unlock Revenant"),
                 lambda state: state.has("Shop - Besmirched Frame", player),
             )
-            nightlords = [loc for loc, _item in self._nightlords()] + ["Nightlord - Heolstor"]
+            # Garb opens after two base Nightlords. Dreglord, Harmonia, and Everdark Harmonia do not count.
+            garb_lords = [
+                loc for loc, _item in self._nightlords()
+                if loc not in {"Nightlord - Harmonia", "Nightlord - Straghess", "Everdark - Harmonia"}
+            ]
+            if "Nightlord - Heolstor" not in garb_lords:
+                garb_lords.append("Nightlord - Heolstor")
 
             def two_nightlords(state) -> bool:
-                return sum(state.can_reach(name, "Location", player) for name in nightlords) >= 2
+                return sum(state.can_reach(name, "Location", player) for name in garb_lords) >= 2
 
             owners = {name.split(" - ", 1)[1] for name in self._nightfarers()}
 
