@@ -98,7 +98,6 @@ class NightreignWorld(World):
             ],
             **({"Defeat Tutorial Margit": LOCATION_NAME_TO_ID["Defeat Tutorial Margit"]} if self.options.tutorial_margit else {}),
             "Nightlord - Heolstor": LOCATION_NAME_TO_ID["Nightlord - Heolstor"],
-            "Nightfarer Reserve": LOCATION_NAME_TO_ID["Nightfarer Reserve"],
         }
         if self.options.goal.current_key == "count":
             hold_locs["Goal - Nightlord Count"] = LOCATION_NAME_TO_ID["Goal - Nightlord Count"]
@@ -377,6 +376,10 @@ class NightreignWorld(World):
                 self.get_location("Defeat Tutorial Margit"),
                 lambda item: not (item.classification & ItemClassification.filler),
             )
+        add_item_rule(
+            self.get_location("Unlock Revenant"),
+            lambda item: not (item.classification & ItemClassification.filler),
+        )
         self._place_ladder(bands)
 
         goal = self.options.goal.current_key

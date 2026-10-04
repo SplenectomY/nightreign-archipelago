@@ -460,7 +460,6 @@ LOCATION_NAME_TO_ID: Dict[str, int] = {
     "Bosses Killed (5)": LOCATION_ID_BASE + 805,
     "Bosses Killed (10)": LOCATION_ID_BASE + 810,
     "Bosses Killed (20)": LOCATION_ID_BASE + 820,
-    "Nightfarer Reserve": LOCATION_ID_BASE + 600,
 }
 
 SHOP_LOCATIONS = [

@@ -1,6 +1,6 @@
 [package]
 name = "nightreign_ap"
-version = "0.6.25"
+version = "0.6.26"
 edition = "2021"
 description = "Archipelago runtime client for Elden Ring Nightreign"
 license = "MIT"
