@@ -5,7 +5,7 @@ from typing import Dict, List
 
 from BaseClasses import Item, ItemClassification, Location, Region, Tutorial
 from worlds.AutoWorld import WebWorld, World
-from worlds.generic.Rules import add_item_rule, set_rule
+from worlds.generic.Rules import set_rule
 from BaseClasses import ItemClassification
 
 from .Items import (
@@ -374,15 +374,6 @@ class NightreignWorld(World):
                         lambda state, name=name: state.has(name, player) and shop_sphere(state, name),
                     )
         set_rule(self.get_location("Nightlord - Heolstor"), heolstor_gate)
-        if self.options.tutorial_margit:
-            add_item_rule(
-                self.get_location("Defeat Tutorial Margit"),
-                lambda item: bool(item.classification & (ItemClassification.progression | ItemClassification.useful)),
-            )
-        add_item_rule(
-            self.get_location("Unlock Revenant"),
-            lambda item: bool(item.classification & (ItemClassification.progression | ItemClassification.useful)),
-        )
         self._place_ladder(bands)
 
         goal = self.options.goal.current_key
@@ -403,6 +394,21 @@ class NightreignWorld(World):
         goal_loc.place_locked_item(self.create_item("Victory"))
         self.multiworld.completion_condition[player] = lambda state: state.has("Victory", player)
 
+
+
+    def pre_fill(self) -> None:
+        location = self.get_location("Unlock Revenant")
+        pool = self.multiworld.itempool
+        candidates = [
+            item for item in pool
+            if item.player == self.player
+            and item.classification & (ItemClassification.progression | ItemClassification.useful)
+        ]
+        if not candidates:
+            raise Exception("Unlock Revenant needs a non-Murk item, but this pool has none")
+        item = self.random.choice(candidates)
+        pool.remove(item)
+        location.place_locked_item(item)
 
     def _place_ladder(self, bands: int) -> None:
         ladder = getattr(self, "_ladder", {})
