@@ -263,15 +263,6 @@ struct Watch {
     ignored: bool,
 }
 
-fn toml_key_value(line: &str) -> Option<(&str, &str)> {
-    let line = line.trim();
-    if line.starts_with('#') || line.starts_with('[') {
-        return None;
-    }
-    let (k, v) = line.split_once('=')?;
-    Some((k.trim(), v.trim().trim_matches('"')))
-}
-
 fn find_config(dll_dir: Option<&PathBuf>) -> Option<PathBuf> {
     if let Some(dir) = dll_dir {
         let local = dir.join("flags.toml");
@@ -339,7 +330,7 @@ fn worker() {
         overlay::start(body);
         log_line(&dir, "NRAP overlay started");
     }
-    let mut watches: Vec<Watch> = watches::WATCHES
+    let watches: Vec<Watch> = watches::WATCHES
         .iter()
         .map(|w| Watch {
             location: w.location.to_string(),
@@ -666,17 +657,6 @@ fn worker() {
                 log_line(&dir, &msg);
             }
         }
-        if let Some(msg) = drop::retry_pending() {
-            log_line(&dir, &msg);
-        }
-        static TOML_AT: std::sync::Mutex<Option<std::time::Instant>> = std::sync::Mutex::new(None);
-        static TOML: std::sync::Mutex<String> = std::sync::Mutex::new(String::new());
-        let due = TOML_AT.lock().unwrap().map(|t| t.elapsed().as_millis() >= 1000).unwrap_or(true);
-        if due {
-            *TOML_AT.lock().unwrap() = Some(std::time::Instant::now());
-            *TOML.lock().unwrap() = config.as_ref().and_then(|p| fs::read_to_string(p).ok()).unwrap_or_default();
-        }
-        let text = TOML.lock().unwrap().clone();
         thread::sleep(Duration::from_millis(200));
     }
 }

@@ -17,7 +17,6 @@ static UNLOCKS: Mutex<Vec<i64>> = Mutex::new(Vec::new());
 static COUNT_GOT: Mutex<Vec<u32>> = Mutex::new(Vec::new());
 static COUNT_SENT: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 static GRANTED_NIGHTFARERS: Mutex<Vec<u32>> = Mutex::new(Vec::new());
-static SUPPRESSED: Mutex<Vec<u32>> = Mutex::new(Vec::new());
 
 fn find_setter(span: ModuleSpan) -> Option<usize> {
     let rel = aob::find_pattern(span.slice(), BASE_A)?;
@@ -27,18 +26,6 @@ fn find_setter(span: ModuleSpan) -> Option<usize> {
 pub fn configure_heolstor(in_pool: bool, count: u32) {
     *HEOLSTOR_IN_POOL.lock().unwrap() = in_pool;
     *HEOLSTOR_NEED.lock().unwrap() = count.max(1);
-}
-
-pub fn suppress_flag(flag: u32) {
-    let mut held = SUPPRESSED.lock().unwrap();
-    if !held.contains(&flag) {
-        held.push(flag);
-    }
-    GRANTED_NIGHTFARERS.lock().unwrap().retain(|f| *f != flag);
-}
-
-pub fn set_flag(flag: u32, on: bool) -> Result<String, String> {
-    set_flag_from(flag, on, "direct")
 }
 
 pub fn set_flag_from(flag: u32, on: bool, why: &str) -> Result<String, String> {
@@ -809,9 +796,6 @@ pub fn note_defeat(flag: u32) -> Option<String> {
 }
 
 fn remember_nightfarer(flag: u32) {
-    if SUPPRESSED.lock().unwrap().contains(&flag) {
-        return;
-    }
     if is_nightfarer(flag) {
         let mut got = GRANTED_NIGHTFARERS.lock().unwrap();
         if !got.contains(&flag) {
@@ -910,13 +894,6 @@ pub fn apply_item(item_id: i64) -> Option<String> {
             Some(format!("NRAP SetEventFlag queued flag={flag} item={item_id} ({e})"))
         }
     }
-}
-
-pub fn apply_now(item_id: i64) -> Option<String> {
-    if flag_for_item(item_id).is_none() && shop_release(item_id).is_none() {
-        return None;
-    }
-    apply_item(item_id)
 }
 
 pub fn retry_pending() -> Option<String> {
