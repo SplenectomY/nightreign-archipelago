@@ -4,7 +4,6 @@ use std::time::Duration;
 use tungstenite::{client, Message};
 
 pub enum Gate {
-    Ready,
     InvalidSlot,
     HostNotFound,
     TimedOut,
