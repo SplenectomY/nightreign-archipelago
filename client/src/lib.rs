@@ -262,6 +262,29 @@ struct Watch {
     ignored: bool,
 }
 
+
+fn flagdiff_ids(text: &str) -> Vec<u32> {
+    let mut ids = Vec::new();
+    for line in text.lines() {
+        let line = line.trim();
+        if line.starts_with('#') || line.starts_with('[') {
+            continue;
+        }
+        let Some((k, v)) = line.split_once('=') else { continue };
+        if k.trim() != "flagdiff_ids" {
+            continue;
+        }
+        for part in v.trim().trim_matches('"').split(|c: char| !c.is_ascii_digit()) {
+            if let Ok(id) = part.parse::<u32>() {
+                if !ids.contains(&id) {
+                    ids.push(id);
+                }
+            }
+        }
+    }
+    ids
+}
+
 fn find_config(dll_dir: Option<&PathBuf>) -> Option<PathBuf> {
     if let Some(dir) = dll_dir {
         let local = dir.join("flags.toml");
@@ -577,7 +600,12 @@ fn worker() {
                 let due = LAST.lock().unwrap().map(|t| t.elapsed().as_millis() >= 2000).unwrap_or(true);
                 if due {
                     *LAST.lock().unwrap() = Some(std::time::Instant::now());
-                    let (rose, groups) = found.diff_rising(&mut PREV.lock().unwrap());
+                    let (mut rose, groups) = found.diff_rising(&mut PREV.lock().unwrap());
+                    let cfg = config.as_ref().and_then(|p| std::fs::read_to_string(p).ok()).unwrap_or_default();
+                    let wanted = flagdiff_ids(&cfg);
+                    if !wanted.is_empty() {
+                        rose.retain(|id| wanted.contains(id));
+                    }
                     if !rose.is_empty() {
                         let show: Vec<_> = rose.iter().take(24).map(|f| f.to_string()).collect();
                         log_line(&watch_dir, &format!("NRAP flag diff +{} groups={groups} {}", rose.len(), show.join(",")));

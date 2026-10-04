@@ -25,3 +25,6 @@ log_rewrites = false
 host = "127.0.0.1:38281"
 slot = "Player1"
 password = ""
+
+# Debug only. Printed when Log flagdiffs is on. Empty prints every rising flag. Not used for checks.
+flagdiff_ids = "7500, 7502, 7505, 7507, 7510, 7512, 8140, 8145, 8155, 7001, 2000, 2030"
