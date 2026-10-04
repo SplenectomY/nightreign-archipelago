@@ -265,16 +265,35 @@ struct Watch {
 
 fn flagdiff_ids(text: &str) -> Vec<u32> {
     let mut ids = Vec::new();
+    let mut body = String::new();
+    let mut reading = false;
     for line in text.lines() {
-        let line = line.trim();
-        if line.starts_with('#') || line.starts_with('[') {
+        let trimmed = line.trim();
+        if !reading {
+            let Some((k, v)) = trimmed.split_once('=') else { continue };
+            if k.trim() != "flagdiff_ids" {
+                continue;
+            }
+            reading = true;
+            body.push_str(v);
+            body.push('\n');
+            if v.contains(']') {
+                break;
+            }
             continue;
         }
-        let Some((k, v)) = line.split_once('=') else { continue };
-        if k.trim() != "flagdiff_ids" {
-            continue;
+        body.push_str(trimmed);
+        body.push('\n');
+        if trimmed.contains(']') {
+            break;
         }
-        for part in v.trim().trim_matches('"').split(|c: char| !c.is_ascii_digit()) {
+    }
+    if let Some(end) = body.find(']') {
+        body.truncate(end);
+    }
+    for line in body.lines() {
+        let code = line.split('#').next().unwrap_or("");
+        for part in code.split(|c: char| !c.is_ascii_digit()) {
             if let Ok(id) = part.parse::<u32>() {
                 if !ids.contains(&id) {
                     ids.push(id);

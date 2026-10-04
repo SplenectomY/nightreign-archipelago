@@ -27,4 +27,17 @@ slot = "Player1"
 password = ""
 
 # Debug only. Printed when Log flagdiffs is on. Empty prints every rising flag. Not used for checks.
-flagdiff_ids = "7500, 7502, 7505, 7507, 7510, 7512, 8140, 8145, 8155, 7001, 2000, 2030"
+flagdiff_ids = [
+    7500, # Day 1 started
+    7502, # Day 1 boss defeated
+    7505, # Day 2 started
+    7507, # Day 2 boss defeated
+    7510, # Day 3 started
+    7512, # Nightlord defeated
+    8140, # Magician tower opened
+    8145, # Evergaol sealed
+    8155, # Invader defeated
+    7001, # Game over
+    2000, # Title
+    2030, # Save started
+]
