@@ -108,7 +108,7 @@ Elden Ring Nightreign:
 
   # Buried treasure chests opened. Flags 8120-8131 rise to 1 and clear when the expedition ends.
   # Only the rise counts. 0 to 100. Default 50.
-  buried_treasure_count: 50
+  buried_treasure_count: 40
 
   # Not implemented. Leave false. A death does not kill other players.
   death_link: false
