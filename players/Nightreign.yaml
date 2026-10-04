@@ -124,6 +124,10 @@ Elden Ring Nightreign:
   # Only the rise counts. 0 to 100. Default 50.
   buried_treasure_count: 40
 
+  # Crimson flask max-use increases. Flag 9041 rises when the expedition starts, so the check is the later 1 to 0.
+  # Only counted during an expedition. 0 to 60. Default 30.
+  flask_count: 30
+
   # Not implemented. Leave false. A death does not kill other players.
   death_link: false
 

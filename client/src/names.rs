@@ -183,6 +183,9 @@ pub fn location_label(id: i64) -> Option<String> {
     if (1501..=1540).contains(&offset) {
         return Some(format!("Buried Treasure Map {}", offset - 1500));
     }
+    if (1601..=1660).contains(&offset) {
+        return Some(format!("Flask Max Uses Increased {}", offset - 1600));
+    }
     Some(match offset {
         1 => "Nightlord - Gladius",
         2 => "Nightlord - Adel",

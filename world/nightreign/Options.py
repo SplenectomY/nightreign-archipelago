@@ -174,6 +174,14 @@ class BuriedTreasureCount(Range):
     default = 40
 
 
+class FlaskCount(Range):
+    """How many crimson flask max-use increases become locations. Flag 9041 rises when an expedition starts, so the check is the later 1 to 0. Only read during an expedition."""
+    display_name = "Flask Count"
+    range_start = 0
+    range_end = 60
+    default = 30
+
+
 class DeathLink(Toggle):
     """Not implemented. Leave off. A death does not kill other players."""
     display_name = "Death Link"
@@ -202,4 +210,5 @@ class NightreignOptions(PerGameCommonOptions):
     tower_count: TowerCount
     invader_count: InvaderCount
     buried_treasure_count: BuriedTreasureCount
+    flask_count: FlaskCount
     death_link: DeathLink

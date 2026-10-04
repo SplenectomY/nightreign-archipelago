@@ -116,6 +116,8 @@ class NightreignWorld(World):
             hold_locs[f"Defeat Invaders {n}"] = LOCATION_NAME_TO_ID[f"Defeat Invaders {n}"]
         for n in range(1, int(self.options.buried_treasure_count) + 1):
             hold_locs[f"Buried Treasure Map {n}"] = LOCATION_NAME_TO_ID[f"Buried Treasure Map {n}"]
+        for n in range(1, int(self.options.flask_count) + 1):
+            hold_locs[f"Flask Max Uses Increased {n}"] = LOCATION_NAME_TO_ID[f"Flask Max Uses Increased {n}"]
         for loc_name, _item in self._nightlords() + self._everdark():
             hold_locs[loc_name] = LOCATION_NAME_TO_ID[loc_name]
         for name in ("Unlock Duchess", "Unlock Revenant"):
@@ -283,6 +285,7 @@ class NightreignWorld(World):
             ("Open Magician Tower", int(self.options.tower_count)),
             ("Defeat Invaders", min(5, int(self.options.invader_count))),
             ("Buried Treasure Map", int(self.options.buried_treasure_count)),
+            ("Flask Max Uses Increased", int(self.options.flask_count)),
         ]
         for prefix, total in families:
             for n in range(1, total + 1):
@@ -413,6 +416,7 @@ class NightreignWorld(World):
             ("Open Magician Tower", int(self.options.tower_count)),
             ("Defeat Invaders", int(self.options.invader_count)),
             ("Buried Treasure Map", int(self.options.buried_treasure_count)),
+            ("Flask Max Uses Increased", int(self.options.flask_count)),
         ]
 
         def band_of(n: int, total: int) -> int:

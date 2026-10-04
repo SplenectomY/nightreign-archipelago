@@ -499,8 +499,8 @@ fn worker() {
                 flag_write::set_in_expedition(expedition);
                 log_line(&watch_dir, &format!("NRAP expedition {}", if expedition { "started, unlock writes paused" } else { "ended" }));
             }
-            static DAY: std::sync::Mutex<[(u32, Option<bool>); 24]> = std::sync::Mutex::new([
-                (7500, None), (7505, None), (7510, None), (7502, None), (7507, None), (8140, None), (8145, None), (7001, None), (2000, None), (2030, None), (7512, None), (8155, None),
+            static DAY: std::sync::Mutex<[(u32, Option<bool>); 25]> = std::sync::Mutex::new([
+                (7500, None), (7505, None), (7510, None), (7502, None), (7507, None), (8140, None), (8145, None), (7001, None), (2000, None), (2030, None), (7512, None), (8155, None), (9041, None),
                 (8120, None), (8121, None), (8122, None), (8123, None), (8124, None), (8125, None),
                 (8126, None), (8127, None), (8128, None), (8129, None), (8130, None), (8131, None),
             ]);
@@ -515,7 +515,7 @@ fn worker() {
                         }
                         if last.is_some() && on && matches!(*flag, 7512 | 7001 | 2000) {
                             let mut latched = Vec::new();
-                            for counter in [8140u32, 8145, 8155] {
+                            for counter in [8140u32, 8145, 8155, 9041] {
                                 if found.get(counter) == Some(true) {
                                     flag_write::note_return(counter);
                                     latched.push(counter);
@@ -527,6 +527,12 @@ fn worker() {
                             if let Some((n, loc)) = flag_write::note_day_boss(*flag) {
                                 let _ = watch_tx.send(loc);
                                 log_line(&watch_dir, &format!("NRAP day boss {flag} count {n} loc {loc}"));
+                            }
+                        }
+                        if last.is_some() && *flag == 9041 && flag_write::in_expedition() && !on {
+                            if let Some((n, loc)) = flag_write::note_toggle(*flag, false) {
+                                let _ = watch_tx.send(loc);
+                                log_line(&watch_dir, &format!("NRAP flask {flag} count {n} loc {loc}"));
                             }
                         }
                         if last.is_some() && matches!(*flag, 8140 | 8145 | 8155) {
@@ -551,7 +557,7 @@ fn worker() {
             let cfg = config.as_ref().and_then(|p| std::fs::read_to_string(p).ok()).unwrap_or_default();
             static EXTRA: std::sync::Mutex<Vec<(u32, Option<bool>)>> = std::sync::Mutex::new(Vec::new());
             let mut extra = EXTRA.lock().unwrap();
-            const BUILTIN: [u32; 24] = [7500, 7505, 7510, 7502, 7507, 8140, 8145, 7001, 2000, 2030, 7512, 8155, 8120, 8121, 8122, 8123, 8124, 8125, 8126, 8127, 8128, 8129, 8130, 8131];
+            const BUILTIN: [u32; 25] = [7500, 7505, 7510, 7502, 7507, 8140, 8145, 7001, 2000, 2030, 7512, 8155, 9041, 8120, 8121, 8122, 8123, 8124, 8125, 8126, 8127, 8128, 8129, 8130, 8131];
             for id in dayflag_ids(&cfg) {
                 if BUILTIN.contains(&id) || extra.iter().any(|(flag, _)| *flag == id) {
                     continue;
