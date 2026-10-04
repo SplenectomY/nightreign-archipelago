@@ -186,7 +186,10 @@ fn desc_rect(list: HWND, item: i32) -> (i32, i32, i32, i32) {
     (flag_w.max(0), row[1], desc_w.max(80), (row[3] - row[1]).max(18))
 }
 
-fn shift_down() -> bool { unsafe { GetKeyState(0x10) } < 0 }
+fn shift_down() -> bool {
+    let state = unsafe { GetKeyState(0x10) };
+    state < 0
+}
 
 fn begin_edit(item: i32) {
     unsafe {
