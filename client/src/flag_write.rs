@@ -361,6 +361,7 @@ fn unlock_flag(item_id: i64) -> Option<u32> {
 static APPLIED: Mutex<Vec<u32>> = Mutex::new(Vec::new());
 static CACHED: Mutex<Vec<u32>> = Mutex::new(Vec::new());
 static SEEN: Mutex<Vec<i64>> = Mutex::new(Vec::new());
+static ITEMS: Mutex<Vec<(i64, i64)>> = Mutex::new(Vec::new());
 static GRANT_Q: Mutex<Vec<(i64, i64)>> = Mutex::new(Vec::new());
 static CACHE_PATH: Mutex<Option<std::path::PathBuf>> = Mutex::new(None);
 static CACHE_SEED: Mutex<String> = Mutex::new(String::new());
@@ -388,10 +389,14 @@ pub fn in_expedition() -> bool {
 
 fn write_cache(path: &std::path::PathBuf, seed: &str, flags: &[u32]) {
     let seen = SEEN.lock().unwrap().clone();
+    let items = ITEMS.lock().unwrap().clone();
     let mut body = format!("seed={seed}\n");
     for flag in flags {
         body.push_str(&flag.to_string());
         body.push('\n');
+    }
+    for (index, item_id) in &items {
+        body.push_str(&format!("item={index}:{item_id}\n"));
     }
     for index in seen {
         body.push_str(&format!("seen={index}\n"));
@@ -408,12 +413,24 @@ pub fn load_cache(dir: Option<&std::path::PathBuf>) -> String {
     let mut seed = String::new();
     let mut flags = Vec::new();
     let mut seen = Vec::new();
+    let mut items = Vec::new();
     for line in text.lines() {
         if let Some(rest) = line.trim().strip_prefix("seed=") {
             seed = rest.to_string();
         } else if let Some(rest) = line.trim().strip_prefix("seen=") {
             if let Ok(index) = rest.parse() {
                 seen.push(index);
+            }
+        } else if let Some(rest) = line.trim().strip_prefix("item=") {
+            if let Some((index, item_id)) = rest.split_once(':') {
+                if let (Ok(index), Ok(item_id)) = (index.parse::<i64>(), item_id.parse::<i64>()) {
+                    items.push((index, item_id));
+                    if let Some(flag) = unlock_flag(item_id) {
+                        if !flags.contains(&flag) {
+                            flags.push(flag);
+                        }
+                    }
+                }
             }
         } else if let Ok(flag) = line.trim().parse() {
             flags.push(match flag {
@@ -428,6 +445,7 @@ pub fn load_cache(dir: Option<&std::path::PathBuf>) -> String {
     *CACHE_SEED.lock().unwrap() = seed.clone();
     *CACHED.lock().unwrap() = flags.clone();
     *SEEN.lock().unwrap() = seen;
+    *ITEMS.lock().unwrap() = items;
     *CACHE_PATH.lock().unwrap() = Some(path);
     format!("NRAP unlock cache loaded {} seed={seed}", flags.len())
 }
@@ -545,6 +563,8 @@ pub fn bind_seed(seed: &str) -> String {
     let known = CACHE_SEED.lock().unwrap().clone();
     if !known.is_empty() && known != seed {
         CACHED.lock().unwrap().clear();
+        SEEN.lock().unwrap().clear();
+        ITEMS.lock().unwrap().clear();
         if let Some(path) = CACHE_PATH.lock().unwrap().as_ref() {
             write_cache(path, seed, &[]);
         }
@@ -585,6 +605,12 @@ pub fn enqueue_item(index: i64, item_id: i64) -> bool {
     }
     queued.push((index, item_id));
     drop(queued);
+    {
+        let mut items = ITEMS.lock().unwrap();
+        if !items.iter().any(|(have, _)| *have == index) {
+            items.push((index, item_id));
+        }
+    }
     remember_unlock(item_id);
     true
 }
