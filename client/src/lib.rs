@@ -551,10 +551,12 @@ fn worker() {
             let cfg = config.as_ref().and_then(|p| std::fs::read_to_string(p).ok()).unwrap_or_default();
             static EXTRA: std::sync::Mutex<Vec<(u32, Option<bool>)>> = std::sync::Mutex::new(Vec::new());
             let mut extra = EXTRA.lock().unwrap();
+            const BUILTIN: [u32; 24] = [7500, 7505, 7510, 7502, 7507, 8140, 8145, 7001, 2000, 2030, 7512, 8155, 8120, 8121, 8122, 8123, 8124, 8125, 8126, 8127, 8128, 8129, 8130, 8131];
             for id in dayflag_ids(&cfg) {
-                if !extra.iter().any(|(flag, _)| *flag == id) {
-                    extra.push((id, None));
+                if BUILTIN.contains(&id) || extra.iter().any(|(flag, _)| *flag == id) {
+                    continue;
                 }
+                extra.push((id, None));
             }
             for (flag, last) in extra.iter_mut() {
                 if let Some(on) = found.get(*flag) {
