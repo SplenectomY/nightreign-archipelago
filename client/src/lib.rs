@@ -263,7 +263,7 @@ struct Watch {
 }
 
 
-fn flagdiff_ids(text: &str) -> Vec<u32> {
+fn dayflag_ids(text: &str) -> Vec<u32> {
     let mut ids = Vec::new();
     let mut body = String::new();
     let mut reading = false;
@@ -271,7 +271,7 @@ fn flagdiff_ids(text: &str) -> Vec<u32> {
         let trimmed = line.trim();
         if !reading {
             let Some((k, v)) = trimmed.split_once('=') else { continue };
-            if k.trim() != "flagdiff_ids" {
+            if k.trim() != "dayflag_ids" {
                 continue;
             }
             reading = true;
@@ -508,7 +508,9 @@ fn worker() {
             for (flag, last) in day.iter_mut() {
                 if let Some(on) = found.get(*flag) {
                     if *last != Some(on) {
-                        if DEBUG.load(Ordering::SeqCst) && LOG_DAYFLAGS.load(Ordering::SeqCst) {
+                        let cfg = config.as_ref().and_then(|p| std::fs::read_to_string(p).ok()).unwrap_or_default();
+                        let listed = dayflag_ids(&cfg);
+                        if DEBUG.load(Ordering::SeqCst) && LOG_DAYFLAGS.load(Ordering::SeqCst) && (listed.is_empty() || listed.contains(flag)) {
                             log_line(&watch_dir, &format!("NRAP dayflag {flag} {}->{}", last.map(|v| if v {"1"} else {"0"}).unwrap_or("?"), if on {"1"} else {"0"}));
                         }
                         if last.is_some() && on && matches!(*flag, 7512 | 7001 | 2000) {
@@ -546,6 +548,23 @@ fn worker() {
                 }
             }
             drop(day);
+            let cfg = config.as_ref().and_then(|p| std::fs::read_to_string(p).ok()).unwrap_or_default();
+            static EXTRA: std::sync::Mutex<Vec<(u32, Option<bool>)>> = std::sync::Mutex::new(Vec::new());
+            let mut extra = EXTRA.lock().unwrap();
+            for id in dayflag_ids(&cfg) {
+                if !extra.iter().any(|(flag, _)| *flag == id) {
+                    extra.push((id, None));
+                }
+            }
+            for (flag, last) in extra.iter_mut() {
+                if let Some(on) = found.get(*flag) {
+                    if *last != Some(on) && DEBUG.load(Ordering::SeqCst) && LOG_DAYFLAGS.load(Ordering::SeqCst) {
+                        log_line(&watch_dir, &format!("NRAP dayflag {flag} {}->{}", last.map(|v| if v {"1"} else {"0"}).unwrap_or("?"), if on {"1"} else {"0"}));
+                        *last = Some(on);
+                    }
+                }
+            }
+            drop(extra);
             for w in &mut watches {
                 if flag_write::in_expedition() && w.location.starts_with("Shop - ") {
                     continue;
@@ -620,11 +639,6 @@ fn worker() {
                 if due {
                     *LAST.lock().unwrap() = Some(std::time::Instant::now());
                     let (mut rose, groups) = found.diff_rising(&mut PREV.lock().unwrap());
-                    let cfg = config.as_ref().and_then(|p| std::fs::read_to_string(p).ok()).unwrap_or_default();
-                    let wanted = flagdiff_ids(&cfg);
-                    if !wanted.is_empty() {
-                        rose.retain(|id| wanted.contains(id));
-                    }
                     if !rose.is_empty() {
                         let show: Vec<_> = rose.iter().take(24).map(|f| f.to_string()).collect();
                         log_line(&watch_dir, &format!("NRAP flag diff +{} groups={groups} {}", rose.len(), show.join(",")));
