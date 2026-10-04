@@ -13,6 +13,7 @@ mod menu;
 mod names;
 mod overlay;
 mod scan;
+mod watches;
 
 use std::ffi::c_void;
 use std::fs::{self, OpenOptions};
@@ -272,52 +273,6 @@ fn toml_key_value(line: &str) -> Option<(&str, &str)> {
     Some((k.trim(), v.trim().trim_matches('"')))
 }
 
-fn parse_watches(text: &str) -> Vec<Watch> {
-    let mut out = Vec::new();
-    let mut location = None::<String>;
-    let mut location_id = None::<i64>;
-    let mut flag = None::<u32>;
-    let flush = |location: &mut Option<String>,
-                 location_id: &mut Option<i64>,
-                 flag: &mut Option<u32>,
-                 out: &mut Vec<Watch>| {
-        if let (Some(loc), Some(id)) = (location.take(), flag.take()) {
-            if id != 0 {
-                out.push(Watch {
-                    location: loc,
-                    location_id: location_id.take().unwrap_or(0),
-                    flag: id,
-                    last: None,
-                    miss_logged: false,
-                    submitted: false,
-                    ignored: false,
-                });
-            }
-        }
-        let _ = location_id.take();
-    };
-    for line in text.lines() {
-        if line.trim().starts_with("[[flag]]") {
-            flush(&mut location, &mut location_id, &mut flag, &mut out);
-            continue;
-        }
-        let Some((k, v)) = toml_key_value(line) else {
-            continue;
-        };
-        if k == "location" {
-            location = Some(v.to_string());
-        }
-        if k == "location_id" {
-            location_id = v.parse().ok();
-        }
-        if k == "event_flag_id" {
-            flag = v.parse().ok();
-        }
-    }
-    flush(&mut location, &mut location_id, &mut flag, &mut out);
-    out
-}
-
 fn find_config(dll_dir: Option<&PathBuf>) -> Option<PathBuf> {
     if let Some(dir) = dll_dir {
         let local = dir.join("flags.toml");
@@ -390,20 +345,20 @@ fn worker() {
         let count = text.lines().find_map(|l| l.trim().strip_prefix("heolstor_unlock_count = ").and_then(|v| v.parse().ok())).unwrap_or(4);
         flag_write::configure_heolstor(in_pool, count);
     }
-    let mut watches = text.as_deref().map(parse_watches).unwrap_or_default();
-    if crate::ap::tutorial_margit() && !watches.iter().any(|w| w.flag == 6012) {
-        watches.push(Watch {
-            location: "Defeat Tutorial Margit".into(),
-            location_id: 839000210,
-            flag: 6012,
+    let mut watches: Vec<Watch> = watches::WATCHES
+        .iter()
+        .map(|w| Watch {
+            location: w.location.to_string(),
+            location_id: w.location_id,
+            flag: w.flag,
             last: None,
             miss_logged: false,
             submitted: false,
             ignored: false,
-        });
-    }
+        })
+        .collect();
     if watches.is_empty() {
-        log_line(&dir, "NRAP no event_flag_id values in flags.toml");
+        log_line(&dir, "NRAP no hardcoded location watches");
     } else {
         for w in &watches {
             log_line(
