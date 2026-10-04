@@ -4,7 +4,6 @@
 
 mod aob;
 mod ap;
-mod drop;
 mod flag_write;
 mod flagman;
 mod grant;
@@ -299,10 +298,6 @@ fn worker() {
                 .unwrap_or_else(|| "<unknown>".into())
         ),
     );
-    match drop::init() {
-        Ok(msg) => log_line(&dir, &msg),
-        Err(e) => log_line(&dir, &format!("NRAP drop init failed: {e}")),
-    }
     match grant::init() {
         Ok(msg) => log_line(&dir, &msg),
         Err(e) => log_line(&dir, &format!("NRAP murk init failed: {e}")),
