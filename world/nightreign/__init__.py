@@ -466,6 +466,11 @@ class NightreignWorld(World):
             "tutorial_margit": bool(self.options.tutorial_margit),
             "starting_nightfarers": int(self.options.starting_nightfarers),
             "shop_checks": self.options.shop_checks.current_key,
+            "murk_purse": int(self.options.murk_purse),
+            "murk_bundle": int(self.options.murk_bundle),
+            "murk_coffer": int(self.options.murk_coffer),
+            "murk_chest": int(self.options.murk_chest),
+            "murk_hoard": int(self.options.murk_hoard),
         }
 
 

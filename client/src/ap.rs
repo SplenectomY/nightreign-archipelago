@@ -404,12 +404,21 @@ fn json_u32(text: &str, key: &str) -> Option<u32> {
     rest.split(|c: char| !c.is_ascii_digit()).next()?.parse().ok()
 }
 
-fn apply_slot_data(text: &str) {
+fn apply_slot_data(text: &str, log: &impl Fn(&str)) {
     if !text.contains("slot_data") {
         return;
     }
     if let (Some(in_pool), Some(count)) = (json_bool(text, "heolstor_in_pool"), json_u32(text, "heolstor_unlock_count")) {
         crate::flag_write::configure_heolstor(in_pool, count);
+    }
+    if let (Some(purse), Some(bundle), Some(coffer), Some(chest), Some(hoard)) = (
+        json_u32(text, "murk_purse"),
+        json_u32(text, "murk_bundle"),
+        json_u32(text, "murk_coffer"),
+        json_u32(text, "murk_chest"),
+        json_u32(text, "murk_hoard"),
+    ) {
+        log(&crate::grant::configure(purse as i32, bundle as i32, coffer as i32, chest as i32, hoard as i32));
     }
 }
 
@@ -445,7 +454,7 @@ fn handle_server_text(text: &str, log: &impl Fn(&str), next_index: &mut i64, dro
             log(&format!("NRAP AP datapackage items {} locations {} cached", after, LOCATION_NAMES.lock().unwrap().len()));
         }
     }
-    apply_slot_data(text);
+    apply_slot_data(text, log);
     if !text.contains("ReceivedItems") {
         return;
     }

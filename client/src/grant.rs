@@ -67,16 +67,38 @@ fn add_murk(amount: i32) -> Result<String, String> {
     Ok(format!("player=0x{player:X} ret={ret}"))
 }
 
-// 32 of each is 96,000, about the 96,700 Small Jar + garb shop total.
+static PURSE: AtomicI32 = AtomicI32::new(150);
+static BUNDLE_AMT: AtomicI32 = AtomicI32::new(300);
+static COFFER: AtomicI32 = AtomicI32::new(500);
+static CHEST: AtomicI32 = AtomicI32::new(750);
+static HOARD: AtomicI32 = AtomicI32::new(1300);
+
+pub fn configure(purse: i32, bundle: i32, coffer: i32, chest: i32, hoard: i32) -> String {
+    if purse > 0 { PURSE.store(purse, Ordering::SeqCst); }
+    if bundle > 0 { BUNDLE_AMT.store(bundle, Ordering::SeqCst); }
+    if coffer > 0 { COFFER.store(coffer, Ordering::SeqCst); }
+    if chest > 0 { CHEST.store(chest, Ordering::SeqCst); }
+    if hoard > 0 { HOARD.store(hoard, Ordering::SeqCst); }
+    format!(
+        "NRAP murk amounts purse={} bundle={} coffer={} chest={} hoard={}",
+        PURSE.load(Ordering::SeqCst),
+        BUNDLE_AMT.load(Ordering::SeqCst),
+        COFFER.load(Ordering::SeqCst),
+        CHEST.load(Ordering::SeqCst),
+        HOARD.load(Ordering::SeqCst),
+    )
+}
+
 fn murk_amount(item_id: i64) -> Option<i32> {
-    match item_id {
-        839_100_105 => Some(150),   // Purse
-        839_100_101 => Some(300),   // Bundle
-        839_100_102 => Some(500),   // Coffer
-        839_100_103 => Some(750),   // Chest
-        839_100_104 => Some(1300),  // Hoard
-        _ => None,
-    }
+    let amount = match item_id {
+        839_100_105 => PURSE.load(Ordering::SeqCst),
+        839_100_101 => BUNDLE_AMT.load(Ordering::SeqCst),
+        839_100_102 => COFFER.load(Ordering::SeqCst),
+        839_100_103 => CHEST.load(Ordering::SeqCst),
+        839_100_104 => HOARD.load(Ordering::SeqCst),
+        _ => return None,
+    };
+    (amount > 0).then_some(amount)
 }
 
 fn murk_path(dir: &std::path::Path) -> std::path::PathBuf {

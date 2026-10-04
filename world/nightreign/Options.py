@@ -182,6 +182,46 @@ class FlaskCount(Range):
     default = 30
 
 
+class MurkPurse(Range):
+    """Murk granted by each Murk Purse. 1 to 100000. Default 150."""
+    display_name = "Murk Purse"
+    range_start = 1
+    range_end = 100000
+    default = 150
+
+
+class MurkBundle(Range):
+    """Murk granted by each Murk Bundle. 1 to 100000. Default 300."""
+    display_name = "Murk Bundle"
+    range_start = 1
+    range_end = 100000
+    default = 300
+
+
+class MurkCoffer(Range):
+    """Murk granted by each Murk Coffer. 1 to 100000. Default 500."""
+    display_name = "Murk Coffer"
+    range_start = 1
+    range_end = 100000
+    default = 500
+
+
+class MurkChest(Range):
+    """Murk granted by each Murk Chest. 1 to 100000. Default 750."""
+    display_name = "Murk Chest"
+    range_start = 1
+    range_end = 100000
+    default = 750
+
+
+class MurkHoard(Range):
+    """Murk granted by each Murk Hoard. 1 to 100000. Default 1300."""
+    display_name = "Murk Hoard"
+    range_start = 1
+    range_end = 100000
+    default = 1300
+
+
 class DeathLink(Toggle):
     """Not implemented. Leave off. A death does not kill other players."""
     display_name = "Death Link"
@@ -211,4 +251,9 @@ class NightreignOptions(PerGameCommonOptions):
     invader_count: InvaderCount
     buried_treasure_count: BuriedTreasureCount
     flask_count: FlaskCount
+    murk_purse: MurkPurse
+    murk_bundle: MurkBundle
+    murk_coffer: MurkCoffer
+    murk_chest: MurkChest
+    murk_hoard: MurkHoard
     death_link: DeathLink
