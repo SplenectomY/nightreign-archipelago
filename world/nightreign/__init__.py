@@ -160,13 +160,15 @@ class NightreignWorld(World):
             start_pool = [n for n in unlocks if n not in ("Expedition Unlock - Heolstor", "Expedition Unlock - Deep of Night")] or unlocks
         start = self.random.choice(start_pool)
         self.push_precollected(self.create_item(start))
+        self._ladder = self._unlock_ladder(unlocks, everdark, start)
         roster = self._nightfarers()
         self.random.shuffle(roster)
         start_count = min(int(self.options.starting_nightfarers), len(roster))
         for name in roster[:start_count]:
             self.push_precollected(self.create_item(name))
-        pool: List[Item] = [self.create_item(name) for name in unlocks if name != start]
-        pool += [self.create_item(name) for name in everdark if name != start]
+        ladder = getattr(self, "_ladder", {})
+        pool: List[Item] = [self.create_item(name) for name in unlocks if name != start and name not in ladder]
+        pool += [self.create_item(name) for name in everdark if name != start and name not in ladder]
         pool += [self.create_item(name) for name in roster[start_count:]]
         shop = list(SHOP_ITEMS) if self.options.shop_checks.current_key != "none" else []
         self.random.shuffle(shop)
@@ -182,10 +184,46 @@ class NightreignWorld(World):
         # Victory is locked in set_rules, so leave one location empty.
         # Fill only the leftover slots, rotating murk types so a small world is not flooded with purses.
         murk_types = ["Murk Purse", "Murk Bundle", "Murk Coffer", "Murk Chest", "Murk Hoard"]
-        slots = max(0, unfilled - 1 - len(pool))
+        slots = max(0, unfilled - 1 - len(pool) - len(getattr(self, "_ladder", {})))
         for i in range(slots):
             pool.append(self.create_item(murk_types[i % len(murk_types)]))
         self.multiworld.itempool += pool
+
+
+    def _sphere_count(self) -> int:
+        goal = self.options.goal.current_key
+        if goal == "specific":
+            return 1
+        if goal == "heolstor" and self.options.heolstor_in_pool:
+            others = [name for name in self._unlocks() if name not in ("Expedition Unlock - Heolstor", "Expedition Unlock - Deep of Night")]
+            return min(4, max(1, len(others)))
+        return max(1, self._required_nightlords() - 1)
+
+    def _late_heavy(self, count: int, spheres: int) -> List[int]:
+        if count <= 0 or spheres <= 1:
+            return [0] * count
+        order: List[int] = list(range(spheres))
+        order.extend([spheres - 1, spheres - 1])
+        order.extend(range(spheres - 2, -1, -1))
+        while len(order) < count:
+            order.append(spheres - 1)
+            order.extend(range(spheres - 2, -1, -1))
+        return order[:count]
+
+    def _unlock_ladder(self, unlocks: List[str], everdark: List[str], start: str) -> Dict[str, int]:
+        names = [name for name in unlocks if name != start and name != "Expedition Unlock - Deep of Night"]
+        heolstor = "Expedition Unlock - Heolstor"
+        pin_heolstor = self.options.goal.current_key == "heolstor" and self.options.heolstor_in_pool and heolstor in names
+        if pin_heolstor:
+            names.remove(heolstor)
+        spheres = self._sphere_count()
+        if spheres <= 1 and not pin_heolstor:
+            return {}
+        self.random.shuffle(names)
+        assigned = {name: sphere for name, sphere in zip(names, self._late_heavy(len(names), spheres))}
+        if pin_heolstor:
+            assigned[heolstor] = max(0, spheres - 1)
+        return assigned
 
     def _goal_unlocks(self, unlocks: List[str]) -> set:
         """Expedition unlocks that are the goal. Specific names one. Count names every pooled Nightlord unlock."""
@@ -225,7 +263,7 @@ class NightreignWorld(World):
 
     def set_rules(self) -> None:
         player = self.player
-        bands = max(1, self._required_nightlords() - 1)
+        bands = self._sphere_count()
         nightlords = [loc for loc, _item in self._nightlords()]
         if "Nightlord - Heolstor" not in nightlords:
             nightlords.append("Nightlord - Heolstor")
@@ -244,7 +282,7 @@ class NightreignWorld(World):
             ("Day 2 Boss", int(self.options.day2_boss_count)),
             ("Seal Evergaol", int(self.options.evergaol_count)),
             ("Open Magician Tower", int(self.options.tower_count)),
-            ("Defeat Invaders", int(self.options.invader_count)),
+            ("Defeat Invaders", min(5, int(self.options.invader_count))),
             ("Buried Treasure Map", int(self.options.buried_treasure_count)),
         ]
         for prefix, total in families:
@@ -334,6 +372,7 @@ class NightreignWorld(World):
                         lambda state, name=name: state.has(name, player) and shop_sphere(state, name),
                     )
         set_rule(self.get_location("Nightlord - Heolstor"), heolstor_gate)
+        self._place_ladder(bands)
 
         goal = self.options.goal.current_key
         if goal == "count":
@@ -352,6 +391,50 @@ class NightreignWorld(World):
 
         goal_loc.place_locked_item(self.create_item("Victory"))
         self.multiworld.completion_condition[player] = lambda state: state.has("Victory", player)
+
+
+    def _place_ladder(self, bands: int) -> None:
+        ladder = getattr(self, "_ladder", {})
+        if not ladder:
+            return
+        hosts: Dict[int, List[str]] = {sphere: [] for sphere in range(bands)}
+        families = [
+            ("Day 1 Boss", int(self.options.day1_boss_count)),
+            ("Day 2 Boss", int(self.options.day2_boss_count)),
+            ("Seal Evergaol", int(self.options.evergaol_count)),
+            ("Open Magician Tower", int(self.options.tower_count)),
+            ("Defeat Invaders", int(self.options.invader_count)),
+            ("Buried Treasure Map", int(self.options.buried_treasure_count)),
+        ]
+
+        def band_of(n: int, total: int) -> int:
+            base, extra = divmod(total, bands)
+            cutoff = 0
+            for i in range(bands):
+                cutoff += base + (1 if i < extra else 0)
+                if n <= cutoff:
+                    return i
+            return bands - 1
+
+        for prefix, total in families:
+            for n in range(1, total + 1):
+                hosts.setdefault(band_of(n, total), []).append(f"{prefix} {n}")
+        if self.options.shop_checks.current_key != "none":
+            shops = list(SHOP_LOCATIONS)
+            self.random.shuffle(shops)
+            for i, name in enumerate(shops, 1):
+                hosts.setdefault(band_of(i, len(shops)), []).append(name)
+        for sphere in hosts:
+            self.random.shuffle(hosts[sphere])
+        for name, sphere in ladder.items():
+            sphere = min(sphere, bands - 1)
+            while sphere >= 0 and not hosts.get(sphere):
+                sphere -= 1
+            if sphere < 0 or not hosts.get(sphere):
+                self.multiworld.itempool.append(self.create_item(name))
+                continue
+            host = hosts[sphere].pop()
+            self.get_location(host).place_locked_item(self.create_item(name))
 
     def fill_slot_data(self) -> Dict[str, object]:
         return {
