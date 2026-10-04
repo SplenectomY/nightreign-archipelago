@@ -85,7 +85,7 @@ Elden Ring Nightreign:
   starting_shop_min: 3
   starting_shop_max: 6
 
-  # Counter checks are split across (required Nightlords - 1) spheres. Sphere 0 is open. Each later sphere requires one more Nightlord defeat. Invaders 6 and up also require Deep of Night.
+  # Counter checks are split across (required Nightlords - 1) spheres. Sphere 0 is open. Each later sphere requires one more Nightlord defeat. Invaders 6 and up also require Deep of Night. Shop and garb purchases are shuffled into the same spheres.
   # Day 1 night-boss defeats that become locations.
   # 1 to 30. Default 10. A wipe after the kill still keeps the check.
   day1_boss_count: 10

@@ -270,6 +270,16 @@ class NightreignWorld(World):
             def garb_owner(name: str) -> str:
                 return name.split(" - ", 1)[1].split(" ", 1)[0]
 
+            shops = list(SHOP_LOCATIONS)
+            self.random.shuffle(shops)
+            shop_need = {name: band_of(i, len(shops)) for i, name in enumerate(shops, 1)}
+
+            def shop_sphere(state, name: str) -> bool:
+                need = shop_need[name]
+                if need <= 0:
+                    return True
+                return sum(state.can_reach(loc, "Location", player) for loc in nightlords) >= need
+
             for name in SHOP_LOCATIONS:
                 if name.startswith("Garb - "):
                     owner = garb_owner(name)
@@ -280,17 +290,20 @@ class NightreignWorld(World):
                                 state.has(name, player)
                                 and state.has(f"Nightfarer - {owner}", player)
                                 and two_nightlords(state)
+                                and shop_sphere(state, name)
                             ),
                         )
                     else:
                         set_rule(
                             self.get_location(name),
-                            lambda state, name=name: state.has(name, player) and two_nightlords(state),
+                            lambda state, name=name: (
+                                state.has(name, player) and two_nightlords(state) and shop_sphere(state, name)
+                            ),
                         )
                 else:
                     set_rule(
                         self.get_location(name),
-                        lambda state, name=name: state.has(name, player),
+                        lambda state, name=name: state.has(name, player) and shop_sphere(state, name),
                     )
         set_rule(self.get_location("Nightlord - Heolstor"), heolstor_gate)
 
