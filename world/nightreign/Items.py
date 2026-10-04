@@ -21,7 +21,7 @@ item_table: Dict[str, ItemSpec] = {
     "Expedition Unlock - Heolstor": ItemSpec(ITEM_ID_BASE + 8, ItemClassification.progression),
     "Expedition Unlock - Harmonia": ItemSpec(ITEM_ID_BASE + 9, ItemClassification.progression),
     "Expedition Unlock - Straghess": ItemSpec(ITEM_ID_BASE + 10, ItemClassification.progression),
-    "Expedition Unlock - Deep of Night": ItemSpec(ITEM_ID_BASE + 11, ItemClassification.useful),
+    "Expedition Unlock - Deep of Night": ItemSpec(ITEM_ID_BASE + 11, ItemClassification.progression),
     "Everdark Unlock - Gladius": ItemSpec(ITEM_ID_BASE + 111, ItemClassification.progression),
     "Everdark Unlock - Adel": ItemSpec(ITEM_ID_BASE + 112, ItemClassification.progression),
     "Everdark Unlock - Gnoster": ItemSpec(ITEM_ID_BASE + 113, ItemClassification.progression),
