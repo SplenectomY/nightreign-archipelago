@@ -134,9 +134,31 @@ class NightreignWorld(World):
         unlocks = self._unlocks()
         everdark = [item for _loc, item in self._everdark()]
         self._late_unlocks = self._goal_unlocks(unlocks)
-        late = self._late_unlocks
-        start_pool = [n for n in unlocks if n not in late and n not in ("Expedition Unlock - Heolstor", "Expedition Unlock - Deep of Night")]
-        start = self.random.choice(start_pool or [n for n in unlocks if n not in ("Expedition Unlock - Heolstor", "Expedition Unlock - Deep of Night")] or unlocks)
+        start_names = {
+            "gladius": "Expedition Unlock - Tricephalos",
+            "adel": "Expedition Unlock - Adel",
+            "gnoster": "Expedition Unlock - Gnoster",
+            "maris": "Expedition Unlock - Maris",
+            "libra": "Expedition Unlock - Libra",
+            "fulghor": "Expedition Unlock - Fulghor",
+            "caligo": "Expedition Unlock - Caligo",
+            "heolstor": "Expedition Unlock - Heolstor",
+            "harmonia": "Expedition Unlock - Harmonia",
+            "straghess": "Expedition Unlock - Straghess",
+            "everdark_gladius": "Everdark Unlock - Gladius",
+            "everdark_adel": "Everdark Unlock - Adel",
+            "everdark_gnoster": "Everdark Unlock - Gnoster",
+            "everdark_maris": "Everdark Unlock - Maris",
+            "everdark_libra": "Everdark Unlock - Libra",
+            "everdark_fulghor": "Everdark Unlock - Fulghor",
+            "everdark_caligo": "Everdark Unlock - Caligo",
+            "everdark_harmonia": "Everdark Unlock - Harmonia",
+        }
+        available = set(unlocks) | set(everdark)
+        start_pool = [start_names[key] for key in self.options.starting_nightlords if start_names.get(key) in available]
+        if not start_pool:
+            start_pool = [n for n in unlocks if n not in ("Expedition Unlock - Heolstor", "Expedition Unlock - Deep of Night")] or unlocks
+        start = self.random.choice(start_pool)
         self.push_precollected(self.create_item(start))
         roster = self._nightfarers()
         self.random.shuffle(roster)
@@ -144,7 +166,7 @@ class NightreignWorld(World):
         for name in roster[:start_count]:
             self.push_precollected(self.create_item(name))
         pool: List[Item] = [self.create_item(name) for name in unlocks if name != start]
-        pool += [self.create_item(name) for name in everdark]
+        pool += [self.create_item(name) for name in everdark if name != start]
         pool += [self.create_item(name) for name in roster[start_count:]]
         shop = list(SHOP_ITEMS) if self.options.shop_checks.current_key != "none" else []
         self.random.shuffle(shop)

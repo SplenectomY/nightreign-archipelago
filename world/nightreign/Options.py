@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from Options import Choice, Range, Toggle, PerGameCommonOptions
+from Options import Choice, OptionSet, Range, Toggle, PerGameCommonOptions
 
 
 class Goal(Choice):
@@ -83,6 +83,23 @@ class ShopChecks(Choice):
     option_none = 0
     option_unique_only = 1
     default = 1
+
+
+class StartingNightlords(OptionSet):
+    """Nightlords eligible to be the starting expedition. One is chosen at random.
+    Possible values: gladius, adel, gnoster, maris, libra, fulghor, caligo, heolstor, harmonia, straghess,
+    everdark_gladius, everdark_adel, everdark_gnoster, everdark_maris, everdark_libra, everdark_fulghor,
+    everdark_caligo, everdark_harmonia.
+    gladius is Tricephalos. harmonia and straghess are the DLC bosses. Default excludes everdarks, Heolstor, and DLC.
+    """
+    display_name = "Starting Nightlords"
+    valid_keys = {
+        "gladius", "adel", "gnoster", "maris", "libra", "fulghor", "caligo", "heolstor",
+        "harmonia", "straghess",
+        "everdark_gladius", "everdark_adel", "everdark_gnoster", "everdark_maris",
+        "everdark_libra", "everdark_fulghor", "everdark_caligo", "everdark_harmonia",
+    }
+    default = {"gladius", "adel", "gnoster", "maris", "libra", "fulghor", "caligo"}
 
 
 class StartingNightfarers(Range):
@@ -174,6 +191,7 @@ class NightreignOptions(PerGameCommonOptions):
     include_dlc: IncludeDlc
     tutorial_margit: TutorialMargit
     shop_checks: ShopChecks
+    starting_nightlords: StartingNightlords
     starting_nightfarers: StartingNightfarers
     starting_shop_min: StartingShopMin
     starting_shop_min: StartingShopMin

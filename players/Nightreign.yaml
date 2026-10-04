@@ -75,6 +75,20 @@ Elden Ring Nightreign:
     unique_only: 50
     none: 0
 
+  # Nightlords eligible to be the starting expedition. One is chosen at random.
+  # Possible values: gladius, adel, gnoster, maris, libra, fulghor, caligo, heolstor, harmonia, straghess,
+  # everdark_gladius, everdark_adel, everdark_gnoster, everdark_maris, everdark_libra, everdark_fulghor,
+  # everdark_caligo, everdark_harmonia.
+  # gladius is Tricephalos. harmonia and straghess are the DLC bosses. Default excludes everdarks, Heolstor, and DLC.
+  starting_nightlords:
+    - gladius
+    - adel
+    - gnoster
+    - maris
+    - libra
+    - fulghor
+    - caligo
+
   # Nightfarers unlocked at the start, chosen at random from the enabled roster.
   # 1 is the intended seed. Higher values put fewer Nightfarers in the pool. 1 to 10.
   starting_nightfarers: 1
