@@ -373,7 +373,7 @@ fn open_options(app: &App) {
     unsafe {
         if !OPT.is_null() { return; }
         let class = wide("NRAPOptions");
-        let wc = WndClass { style: 0, wnd_proc: Some(opt_proc), cls_extra: 0, wnd_extra: 0, instance: std::ptr::null_mut(), icon: app_icon(), cursor: std::ptr::null_mut(), background: std::ptr::null_mut(), menu_name: std::ptr::null(), class_name: class.as_ptr() };
+        let wc = WndClass { style: 0, wnd_proc: Some(opt_proc), cls_extra: 0, wnd_extra: 0, instance: std::ptr::null_mut(), icon: app_icon(), cursor: std::ptr::null_mut(), background: LABEL_BRUSH as *mut c_void, menu_name: std::ptr::null(), class_name: class.as_ptr() };
         RegisterClassW(&wc);
         let win = CreateWindowExW(0, class.as_ptr(), wide("NRAP Options").as_ptr(), WS_OVERLAPPEDWINDOW | WS_VISIBLE, 140, 80, 420, 900, std::ptr::null_mut(), 0, std::ptr::null_mut(), std::ptr::null_mut());
         let edit = wide("EDIT");
@@ -988,6 +988,8 @@ unsafe extern "system" fn opt_proc(hwnd: HWND, msg: u32, w: usize, l: isize) -> 
                 let show = SendMessageW(opt.debug, BM_GETCHECK, 0, 0) == 1;
                 for hwnd in [opt.log_sticky, opt.log_dayflags, opt.log_flagdiffs, opt.log_rewrites] {
                     ShowWindow(hwnd, if show { 5 } else { 0 });
+                    EnableWindow(hwnd, if show { 1 } else { 0 });
+                    if !show { erase_control(hwnd); }
                 }
             }
             if id == 220 {
