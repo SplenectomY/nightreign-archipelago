@@ -1,4 +1,3 @@
-
 [overlay]
 enable = true
 x = 24
@@ -17,30 +16,12 @@ color_item = "5DC8C8"
 color_location = "6BE36B"
 
 debug = false
-flag_diff = false
-# Nightreign 1.3.3.0
-# Keep [goal] in sync with Player1.yaml. Client opens Heolstor (flag 196) locally.
-
-game_version = "1.3.3.0"
+log_sticky = false
+log_dayflags = false
+log_flagdiffs = false
+log_rewrites = false
 
 [ap]
 host = "127.0.0.1:38281"
 slot = "Player1"
-password = "
-
-[goal]
-heolstor_in_pool = false
-heolstor_unlock_count = 4
-
-[scan]
-enable = false
-murk = 0
-grant_now = 0
-
-[grant]
-drop_item_id = 0
-
-[debug]
-set_flag = 0
-clear_flag = 0
-drop_item = 0
+password = ""

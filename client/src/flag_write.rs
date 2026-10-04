@@ -29,38 +29,6 @@ pub fn configure_heolstor(in_pool: bool, count: u32) {
     *HEOLSTOR_NEED.lock().unwrap() = count.max(1);
 }
 
-fn debug_value(text: &str, key: &str) -> Option<u32> {
-    let mut in_debug = false;
-    for line in text.lines() {
-        let line = line.trim();
-        if line.starts_with('[') {
-            in_debug = line == "[debug]";
-            continue;
-        }
-        if !in_debug || line.starts_with('#') {
-            continue;
-        }
-        if let Some((k, v)) = line.split_once('=') {
-            if k.trim() == key {
-                let n: u32 = v.trim().parse().ok()?;
-                if n == 0 {
-                    return None;
-                }
-                return Some(n);
-            }
-        }
-    }
-    None
-}
-
-pub fn debug_flag_from_toml(text: &str) -> Option<u32> {
-    debug_value(text, "set_flag")
-}
-
-pub fn debug_clear_flag_from_toml(text: &str) -> Option<u32> {
-    debug_value(text, "clear_flag")
-}
-
 pub fn suppress_flag(flag: u32) {
     let mut held = SUPPRESSED.lock().unwrap();
     if !held.contains(&flag) {

@@ -193,7 +193,7 @@ MultiServer connected:
 Log line "NRAP check: Nightlord - Gladius": yes/no
 ```
 
-Put the finished report in a GitHub issue on this repo or paste it in chat. I will write the ID into `data/flags.toml` and wire the client poller.
+Put the finished report in a GitHub issue on this repo or paste it in chat. I will add the ID to `client/src/watches.rs`.
 
 ## 9. Optional same-session extras (only after 7 is green)
 

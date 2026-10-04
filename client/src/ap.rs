@@ -373,6 +373,29 @@ fn printjson_text(text: &str) -> Option<String> {
     Some(parts.join(""))
 }
 
+fn json_bool(text: &str, key: &str) -> Option<bool> {
+    let needle = format!("\"{key}\":");
+    let at = text.find(&needle)?;
+    let rest = text[at + needle.len()..].trim_start();
+    if rest.starts_with("true") { Some(true) } else if rest.starts_with("false") { Some(false) } else { None }
+}
+
+fn json_u32(text: &str, key: &str) -> Option<u32> {
+    let needle = format!("\"{key}\":");
+    let at = text.find(&needle)?;
+    let rest = text[at + needle.len()..].trim_start();
+    rest.split(|c: char| !c.is_ascii_digit()).next()?.parse().ok()
+}
+
+fn apply_slot_data(text: &str) {
+    if !text.contains("slot_data") {
+        return;
+    }
+    if let (Some(in_pool), Some(count)) = (json_bool(text, "heolstor_in_pool"), json_u32(text, "heolstor_unlock_count")) {
+        crate::flag_write::configure_heolstor(in_pool, count);
+    }
+}
+
 fn handle_server_text(text: &str, log: &impl Fn(&str), next_index: &mut i64, drop_goods: i32) {
     if text.contains("\"type\":\"ItemSend\"") || text.contains("\"type\": \"ItemSend\"") {
         if let Some(msg) = printjson_text(text) {
@@ -405,6 +428,7 @@ fn handle_server_text(text: &str, log: &impl Fn(&str), next_index: &mut i64, dro
             log(&format!("NRAP AP datapackage items {} locations {} cached", after, LOCATION_NAMES.lock().unwrap().len()));
         }
     }
+    apply_slot_data(text);
     if !text.contains("ReceivedItems") {
         return;
     }

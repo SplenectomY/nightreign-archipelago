@@ -64,21 +64,7 @@ A shop check is the purchase transaction, not "item is in the relic inventory." 
 
 ## How to record a flag in-repo
 
-Add a block to `data/flags.toml`. Do not invent IDs. Example:
-
-```toml
-[[flag]]
-location = "Nightlord - Gladius"
-kind = "event_flag"
-event_flag_id = 0          # replace
-pointer_note = "CSEventFlagMan+0x?? / bit offset"
-verified_version = "1.xx.x"
-survives_hold = true
-survives_relaunch = true
-zero_on_new_save = true
-```
-
-Raw addresses go in `verified_version` notes only. The client must resolve through a pointer or a flag-manager helper, not a frozen heap VA.
+Add the confirmed flag to `client/src/watches.rs`. Do not invent IDs. The client resolves flags through the flag manager, not a frozen heap address.
 
 ## Tools
 

@@ -12,7 +12,6 @@ mod hero;
 mod menu;
 mod names;
 mod overlay;
-mod scan;
 mod watches;
 
 use std::ffi::c_void;
@@ -340,11 +339,6 @@ fn worker() {
         overlay::start(body);
         log_line(&dir, "NRAP overlay started");
     }
-    if let Some(text) = text.as_ref() {
-        let in_pool = text.lines().any(|l| l.trim() == "heolstor_in_pool = true");
-        let count = text.lines().find_map(|l| l.trim().strip_prefix("heolstor_unlock_count = ").and_then(|v| v.parse().ok())).unwrap_or(4);
-        flag_write::configure_heolstor(in_pool, count);
-    }
     let mut watches: Vec<Watch> = watches::WATCHES
         .iter()
         .map(|w| Watch {
@@ -376,7 +370,7 @@ fn worker() {
     if let Some(text) = text.as_deref() {
         let ap_cfg = ap::ApConfig::from_toml(text);
         let dir_ap = dir.clone();
-        let drop_goods = drop::drop_item_id_from_toml(text);
+        let drop_goods = 0;
         thread::spawn(move || {
             let config_path = dir_ap.clone().unwrap_or_default().join("flags.toml");
             ap::run(ap_cfg, rx, say_rx, drop_goods, config_path, |msg| log_line(&dir_ap, msg));
@@ -623,9 +617,6 @@ fn worker() {
         }
         thread::sleep(Duration::from_millis(200));
     });
-    let mut last_debug_flag = 0u32;
-    let mut last_clear_flag = 0u32;
-    let mut last_debug_drop = 0i32;
     loop {
         if !flag_write::in_session() {
             thread::sleep(Duration::from_millis(200));
@@ -650,13 +641,6 @@ fn worker() {
             }
             if landed {
                 flag_write::mark_granted(index);
-            }
-            if id != 839_100_100 {
-                let toml = TOML.lock().unwrap().clone();
-                let goods = drop::drop_item_id_from_toml(&toml);
-                if let Some(msg) = drop::apply_item(id, goods) {
-                    log_line(&dir, &msg);
-                }
             }
         }
         if let Some(msg) = flag_write::retry_pending() {
@@ -693,39 +677,6 @@ fn worker() {
             *TOML.lock().unwrap() = config.as_ref().and_then(|p| fs::read_to_string(p).ok()).unwrap_or_default();
         }
         let text = TOML.lock().unwrap().clone();
-        if !text.is_empty() {
-            if let Some(flag) = flag_write::debug_flag_from_toml(&text) {
-                if flag != last_debug_flag {
-                    last_debug_flag = flag;
-                    match flag_write::set_flag(flag, true) {
-                        Ok(msg) => log_line(&dir, &msg),
-                        Err(e) => log_line(&dir, &format!("NRAP SetEventFlag failed: {e}")),
-                    }
-                }
-            } else {
-                last_debug_flag = 0;
-            }
-            if let Some(flag) = flag_write::debug_clear_flag_from_toml(&text) {
-                if flag != last_clear_flag {
-                    last_clear_flag = flag;
-                    flag_write::suppress_flag(flag);
-                    match flag_write::set_flag(flag, false) {
-                        Ok(msg) => log_line(&dir, &msg),
-                        Err(e) => log_line(&dir, &format!("NRAP clear_flag failed: {e}")),
-                    }
-                }
-            } else {
-                last_clear_flag = 0;
-            }
-            if let Some(id) = drop::debug_drop_from_toml(&text) {
-                if id != last_debug_drop {
-                    last_debug_drop = id;
-                    log_line(&dir, &drop::debug_drop(id));
-                }
-            } else {
-                last_debug_drop = 0;
-            }
-        }
         thread::sleep(Duration::from_millis(200));
     }
 }
