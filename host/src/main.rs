@@ -618,8 +618,12 @@ fn set_status(app: &mut App, kind: u8) {
 }
 
 fn refresh_launch(app: &App) {
-    let busy = app.status_kind == 1 && preflight::game_open();
-    unsafe { EnableWindow(app.launch, if busy { 0 } else { 1 }); }
+    let open = preflight::game_open();
+    let busy = app.status_kind == 1 && open;
+    unsafe {
+        EnableWindow(app.launch, if busy { 0 } else { 1 });
+        ShowWindow(app.reconnect, if open { 5 } else { 0 });
+    }
 }
 
 fn set_connected(app: &mut App, on: bool) {
@@ -925,7 +929,7 @@ fn launch_game(app: &App) {
         .arg(&profile)
         .spawn()
     {
-        Ok(_) => { unsafe { ShowWindow(app.reconnect, 5); } append_log(app, &format!("Launched me3 -p {profile}")); }
+        Ok(_) => append_log(app, &format!("Launched me3 -p {profile}")),
         Err(e) => append_log(app, &format!("Launch failed: {e}")),
     }
 }
