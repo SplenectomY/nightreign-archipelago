@@ -571,6 +571,9 @@ fn connect_and_handshake(
         reply = read_text(&mut socket)?.ok_or_else(|| "no Connect reply".to_string())?;
     }
     if reply.contains("ConnectionRefused") {
+        if let Some(reason) = hard_refusal(&reply) {
+            return Err(format!("hold:{reason}: {reply}"));
+        }
         return Err(format!("ConnectionRefused: {reply}"));
     }
     if !(reply.contains("Connected") || reply.contains("RoomInfo")) {
@@ -580,6 +583,15 @@ fn connect_and_handshake(
     tune(&mut socket, Duration::from_millis(80));
     let _ = socket.send(Message::Text("[{\"cmd\":\"Sync\"}]".into()));
     Ok(socket)
+}
+
+fn hard_refusal(text: &str) -> Option<&'static str> {
+    for reason in ["InvalidSlot", "InvalidPassword", "InvalidGame", "IncompatibleVersion"] {
+        if text.contains(reason) {
+            return Some(reason);
+        }
+    }
+    None
 }
 
 fn send_goal(socket: &mut Socket) -> Result<bool, String> {
@@ -706,11 +718,26 @@ fn send_checks(socket: &mut Socket, ids: &[i64]) -> Result<(), String> {
 pub fn run(mut cfg: ApConfig, rx: Receiver<i64>, say_rx: Receiver<String>, drop_goods: i32, config_path: std::path::PathBuf, log: impl Fn(&str)) {
     log(&format!("NRAP AP targeting {} slot {}", cfg.host, cfg.slot));
     let mut pending: Vec<i64> = Vec::new();
+    let mut hold = false;
     loop {
         let trigger = config_path.parent().map(|p| p.join("reconnect.trigger"));
         let triggered = RECONNECT.swap(false, Ordering::SeqCst)
             || trigger.as_ref().is_some_and(|p| p.is_file());
+        if hold && !triggered {
+            match rx.recv_timeout(Duration::from_millis(250)) {
+                Ok(id) => {
+                    if !pending.contains(&id) {
+                        pending.push(id);
+                        log(&format!("NRAP AP queued {id} (offline)"));
+                    }
+                }
+                Err(RecvTimeoutError::Timeout) => {}
+                Err(RecvTimeoutError::Disconnected) => return,
+            }
+            continue;
+        }
         if triggered {
+            hold = false;
             if let Some(path) = &trigger { let _ = std::fs::remove_file(path); }
             if let Ok(text) = std::fs::read_to_string(&config_path) {
                 cfg = ApConfig::from_toml(&text);
@@ -785,7 +812,12 @@ pub fn run(mut cfg: ApConfig, rx: Receiver<i64>, say_rx: Receiver<String>, drop_
                 }
             }
             Err(e) => {
-                log(&format!("NRAP AP not connected: {e}"));
+                if let Some(reason) = e.strip_prefix("hold:") {
+                    hold = true;
+                    log(&format!("NRAP AP disconnected: {reason}. Press Reconnect after fixing the slot."));
+                } else {
+                    log(&format!("NRAP AP not connected: {e}"));
+                }
             }
         }
         let wait = if RECONNECT.load(Ordering::SeqCst) { Duration::from_millis(200) } else { Duration::from_secs(5) };
