@@ -7,6 +7,7 @@ use std::path::PathBuf;
 use std::process::Command;
 
 mod preflight;
+mod flagdiff_ui;
 
 type HWND = *mut c_void;
 type HINSTANCE = *mut c_void;
@@ -111,6 +112,7 @@ struct OptWin {
     log_dayflags: HWND,
     log_flagdiffs: HWND,
     log_rewrites: HWND,
+    flagdiff_gear: HWND,
 }
 
 #[link(name = "user32")]
@@ -416,7 +418,8 @@ fn open_options(app: &App) {
         let extra = if on { WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX } else { WS_CHILD | BS_AUTOCHECKBOX };
         let log_sticky = CreateWindowExW(0, button.as_ptr(), wide("Log sticky writes").as_ptr(), extra, 48, 696, 220, 22, win, 231, std::ptr::null_mut(), std::ptr::null_mut());
         let log_dayflags = CreateWindowExW(0, button.as_ptr(), wide("Log dayflags").as_ptr(), extra, 48, 720, 220, 22, win, 232, std::ptr::null_mut(), std::ptr::null_mut());
-        let log_flagdiffs = CreateWindowExW(0, button.as_ptr(), wide("Log flagdiffs").as_ptr(), extra, 48, 744, 220, 22, win, 233, std::ptr::null_mut(), std::ptr::null_mut());
+        let log_flagdiffs = CreateWindowExW(0, button.as_ptr(), wide("Log flagdiffs").as_ptr(), extra, 48, 744, 180, 22, win, 233, std::ptr::null_mut(), std::ptr::null_mut());
+        let flagdiff_gear = CreateWindowExW(0, button.as_ptr(), wide("...").as_ptr(), extra & !0x0003 | 0x0000, 232, 742, 36, 24, win, 235, std::ptr::null_mut(), std::ptr::null_mut());
         let log_rewrites = CreateWindowExW(0, button.as_ptr(), wide("Log rewrites").as_ptr(), extra, 48, 768, 220, 22, win, 234, std::ptr::null_mut(), std::ptr::null_mut());
         let checked = |key: &str| text.lines().any(|l| l.trim() == format!("{key} = true"));
         SendMessageW(log_sticky, BM_SETCHECK, if checked("log_sticky") { 1 } else { 0 }, 0);
@@ -424,7 +427,7 @@ fn open_options(app: &App) {
         SendMessageW(log_flagdiffs, BM_SETCHECK, if checked("log_flagdiffs") { 1 } else { 0 }, 0);
         SendMessageW(log_rewrites, BM_SETCHECK, if checked("log_rewrites") { 1 } else { 0 }, 0);
         CreateWindowExW(0, button.as_ptr(), wide("Close").as_ptr(), WS_CHILD | WS_VISIBLE, 110, 808, 200, 32, win, 220, std::ptr::null_mut(), std::ptr::null_mut());
-        let boxed = Box::new(OptWin { x, y, width, height, fade, font, local, remote, item, location, text: text_color, host_text, host_local, host_remote, host_item, host_location, debug, log_sticky, log_dayflags, log_flagdiffs, log_rewrites });
+        let boxed = Box::new(OptWin { x, y, width, height, fade, font, local, remote, item, location, text: text_color, host_text, host_local, host_remote, host_item, host_location, debug, log_sticky, log_dayflags, log_flagdiffs, log_rewrites, flagdiff_gear });
         OPT = Box::into_raw(boxed);
     }
 }
@@ -986,12 +989,13 @@ unsafe extern "system" fn opt_proc(hwnd: HWND, msg: u32, w: usize, l: isize) -> 
             if id == 216 && !OPT.is_null() {
                 let opt = &*OPT;
                 let show = SendMessageW(opt.debug, BM_GETCHECK, 0, 0) == 1;
-                for hwnd in [opt.log_sticky, opt.log_dayflags, opt.log_flagdiffs, opt.log_rewrites] {
+                for hwnd in [opt.log_sticky, opt.log_dayflags, opt.log_flagdiffs, opt.flagdiff_gear, opt.log_rewrites] {
                     ShowWindow(hwnd, if show { 5 } else { 0 });
                     EnableWindow(hwnd, if show { 1 } else { 0 });
                     if !show { erase_control(hwnd); }
                 }
             }
+            if id == 235 && !APP.is_null() { flagdiff_ui::open((*APP).dir.clone()); }
             if id == 220 {
                 if !APP.is_null() { save_options(&*APP); }
                 OPT = std::ptr::null_mut();

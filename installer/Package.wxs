@@ -31,6 +31,9 @@
       <Component Guid="B1E2C3D4-1111-4A20-9C20-7B6E8A1D2F43">
         <File Source="$(var.Stage)\flags.toml" KeyPath="yes" />
       </Component>
+      <Component Guid="B1E2C3D4-1111-4A20-9C20-7B6E8A1D2F47">
+        <File Source="$(var.Stage)\flagdiff_options" KeyPath="yes" />
+      </Component>
       <Component Guid="B1E2C3D4-1111-4A20-9C20-7B6E8A1D2F44">
         <File Source="$(var.Stage)\README.txt" KeyPath="yes" />
       </Component>

@@ -4,6 +4,7 @@
 
 mod aob;
 mod ap;
+mod flagdiff_opts;
 mod flag_write;
 mod flagman;
 mod grant;
@@ -655,6 +656,8 @@ fn worker() {
                 if due {
                     *LAST.lock().unwrap() = Some(std::time::Instant::now());
                     let (mut rose, groups) = found.diff_rising(&mut PREV.lock().unwrap());
+                    if let Some(dir) = watch_dir.as_ref() { flagdiff_opts::reload(dir); }
+                    rose.retain(|id| flagdiff_opts::allows(*id));
                     if !rose.is_empty() {
                         let show: Vec<_> = rose.iter().take(24).map(|f| f.to_string()).collect();
                         log_line(&watch_dir, &format!("NRAP flag diff +{} groups={groups} {}", rose.len(), show.join(",")));

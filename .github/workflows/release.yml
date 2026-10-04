@@ -46,6 +46,7 @@ jobs:
           cp client/target/x86_64-pc-windows-msvc/release/nightreign_ap.dll dist/nightreign-ap/
           cp host/target/x86_64-pc-windows-msvc/release/nrap.exe dist/nightreign-ap/
           cp data/flags.toml dist/nightreign-ap/
+          cp data/flagdiff_options dist/nightreign-ap/
           cp docs/INSTALL.md dist/nightreign-ap/
           mkdir -p dist/nightreign-ap/regulation
           cp regulation/regulation.bin dist/nightreign-ap/regulation/
