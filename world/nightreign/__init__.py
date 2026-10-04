@@ -374,11 +374,11 @@ class NightreignWorld(World):
         if self.options.tutorial_margit:
             add_item_rule(
                 self.get_location("Defeat Tutorial Margit"),
-                lambda item: not (item.classification & ItemClassification.filler),
+                lambda item: bool(item.classification & (ItemClassification.progression | ItemClassification.useful)),
             )
         add_item_rule(
             self.get_location("Unlock Revenant"),
-            lambda item: not (item.classification & ItemClassification.filler),
+            lambda item: bool(item.classification & (ItemClassification.progression | ItemClassification.useful)),
         )
         self._place_ladder(bands)
 
