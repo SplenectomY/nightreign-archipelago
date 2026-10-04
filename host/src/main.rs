@@ -128,6 +128,8 @@ extern "system" {
     fn GetWindowTextW(hwnd: HWND, buf: *mut u16, max: i32) -> i32;
     fn LoadLibraryW(name: *const u16) -> *mut c_void;
     fn ShowWindow(hwnd: HWND, cmd: i32) -> i32;
+    fn GetParent(hwnd: HWND) -> HWND;
+    fn IsWindowVisible(hwnd: HWND) -> i32;
     fn DestroyWindow(hwnd: HWND) -> i32;
     fn InvalidateRect(hwnd: HWND, rect: *const c_void, erase: i32) -> i32;
     fn FillRect(hdc: *mut c_void, rect: *const [i32; 4], brush: *mut c_void) -> i32;
@@ -622,7 +624,13 @@ fn refresh_launch(app: &App) {
     let busy = app.status_kind == 1 && open;
     unsafe {
         EnableWindow(app.launch, if busy { 0 } else { 1 });
-        ShowWindow(app.reconnect, if open { 5 } else { 0 });
+        let shown = IsWindowVisible(app.reconnect) != 0;
+        if shown != open {
+            ShowWindow(app.reconnect, if open { 5 } else { 0 });
+            EnableWindow(app.reconnect, if open { 1 } else { 0 });
+            let parent = GetParent(app.reconnect);
+            if !parent.is_null() { InvalidateRect(parent, std::ptr::null(), 1); }
+        }
     }
 }
 
