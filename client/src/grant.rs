@@ -67,13 +67,14 @@ fn add_murk(amount: i32) -> Result<String, String> {
     Ok(format!("player=0x{player:X} ret={ret}"))
 }
 
+// 32 of each is 96,000, about the 96,700 Small Jar + garb shop total.
 fn murk_amount(item_id: i64) -> Option<i32> {
     match item_id {
-        839_100_105 => Some(1000),
-        839_100_101 => Some(2000),
-        839_100_102 => Some(4000),
-        839_100_103 => Some(6000),
-        839_100_104 => Some(10000),
+        839_100_105 => Some(150),   // Purse
+        839_100_101 => Some(300),   // Bundle
+        839_100_102 => Some(500),   // Coffer
+        839_100_103 => Some(750),   // Chest
+        839_100_104 => Some(1300),  // Hoard
         _ => None,
     }
 }
