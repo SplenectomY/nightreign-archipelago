@@ -130,6 +130,10 @@ extern "system" {
     fn ShowWindow(hwnd: HWND, cmd: i32) -> i32;
     fn GetParent(hwnd: HWND) -> HWND;
     fn IsWindowVisible(hwnd: HWND) -> i32;
+    fn GetWindowRect(hwnd: HWND, rect: *mut i32) -> i32;
+    fn ScreenToClient(hwnd: HWND, pt: *mut i32) -> i32;
+    fn GetDC(hwnd: HWND) -> *mut c_void;
+    fn ReleaseDC(hwnd: HWND, hdc: *mut c_void) -> i32;
     fn DestroyWindow(hwnd: HWND) -> i32;
     fn InvalidateRect(hwnd: HWND, rect: *const c_void, erase: i32) -> i32;
     fn FillRect(hdc: *mut c_void, rect: *const [i32; 4], brush: *mut c_void) -> i32;
@@ -619,6 +623,24 @@ fn set_status(app: &mut App, kind: u8) {
     refresh_launch(app);
 }
 
+fn erase_control(hwnd: HWND) {
+    unsafe {
+        let parent = GetParent(hwnd);
+        if parent.is_null() { return; }
+        let mut rect = [0i32; 4];
+        if GetWindowRect(hwnd, rect.as_mut_ptr()) == 0 { return; }
+        let mut origin = [rect[0], rect[1]];
+        ScreenToClient(parent, origin.as_mut_ptr());
+        let local = [origin[0] - 2, origin[1] - 2, origin[0] + (rect[2] - rect[0]) + 2, origin[1] + (rect[3] - rect[1]) + 2];
+        let hdc = GetDC(parent);
+        if !hdc.is_null() {
+            FillRect(hdc, &local, LABEL_BRUSH as *mut c_void);
+            ReleaseDC(parent, hdc);
+        }
+        InvalidateRect(parent, &local as *const _ as *const c_void, 1);
+    }
+}
+
 fn refresh_launch(app: &App) {
     let open = preflight::game_open();
     let busy = app.status_kind == 1 && open;
@@ -628,8 +650,7 @@ fn refresh_launch(app: &App) {
         if shown != open {
             ShowWindow(app.reconnect, if open { 5 } else { 0 });
             EnableWindow(app.reconnect, if open { 1 } else { 0 });
-            let parent = GetParent(app.reconnect);
-            if !parent.is_null() { InvalidateRect(parent, std::ptr::null(), 1); }
+            if !open { erase_control(app.reconnect); }
         }
     }
 }
@@ -1103,6 +1124,7 @@ fn main() {
     if legacy.is_dir() && legacy != dir { rotate_log(&legacy); }
     let _ = fs::create_dir_all(&dir);
     unsafe {
+        LABEL_BRUSH = CreateSolidBrush(0x00F2F2F2) as isize;
         let class = wide("NRAPHost");
         let title = wide("NRAP");
         let wc = WndClass {
@@ -1113,13 +1135,12 @@ fn main() {
             instance: std::ptr::null_mut(),
             icon: app_icon(),
             cursor: std::ptr::null_mut(),
-            background: std::ptr::null_mut(),
+            background: LABEL_BRUSH as *mut c_void,
             menu_name: std::ptr::null(),
             class_name: class.as_ptr(),
         };
         RegisterClassW(&wc);
         FIELD_BRUSH = CreateSolidBrush(0x00FFFFFF) as isize;
-        LABEL_BRUSH = CreateSolidBrush(0x00F2F2F2) as isize;
         WARN_BRUSH = CreateSolidBrush(0x006464FF) as isize;
         let win = CreateWindowExW(0, class.as_ptr(), title.as_ptr(), WS_OVERLAPPEDWINDOW | WS_VISIBLE, 80, 80, 760, 868, std::ptr::null_mut(), 0, std::ptr::null_mut(), std::ptr::null_mut());
         LoadLibraryW(wide("Msftedit.dll").as_ptr());
