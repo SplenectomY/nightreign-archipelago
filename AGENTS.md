@@ -37,3 +37,16 @@ Copy-Item -Force .\nightreign.apworld C:\ProgramData\Archipelago\custom_worlds\n
 ## Releases
 
 Ship the installer, apworld, and yaml as separate release assets. Do not attach source-code links.
+
+Release procedure:
+
+1. Bump `client/Cargo.toml` and `host/Cargo.toml` to the release version in one commit and push `main`.
+2. Wait for the CI run on that commit to pass.
+3. Tag `vX.Y.Z` to match the Cargo version and push the tag: `git tag vX.Y.Z && git push origin vX.Y.Z`. The tag push starts the Release workflow.
+4. If the tag push is refused, start the Release workflow manually with the tag as input. Some agent sessions only allow pushes to `refs/heads/*` and return HTTP 403 for tags. The workflow creates the tag on `main` itself:
+
+   ```
+   gh api -X POST repos/SplenectomY/nightreign-archipelago/actions/workflows/release.yml/dispatches -f ref=main -f 'inputs[tag]=vX.Y.Z' -F 'inputs[prerelease]=false'
+   ```
+
+5. Watch the run finish, then confirm the release exists at `vX.Y.Z` with exactly three assets: `NightreignArchipelago.msi`, `nightreign.apworld`, `Nightreign.yaml`.
