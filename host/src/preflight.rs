@@ -51,6 +51,9 @@ pub fn connect_and_cache(host: &str, slot: &str, password: &str, dir: &PathBuf) 
         }
         if text.contains("\"cmd\":\"Connected\"") || text.contains("\"cmd\": \"Connected\"") {
             connected = true;
+            if let Some(seed) = seed_name(&text) {
+                let _ = std::fs::write(dir.join("launch.seed"), &seed);
+            }
             let _ = socket.send(Message::Text("[{\"cmd\":\"GetDataPackage\",\"games\":[\"Elden Ring Nightreign\"]}]".into()));
         }
         if text.contains("DataPackage") {
@@ -77,4 +80,18 @@ pub fn game_open() -> bool {
         .output()
         .map(|out| String::from_utf8_lossy(&out.stdout).to_ascii_lowercase().contains("nightreign.exe"))
         .unwrap_or(false)
+}
+
+fn seed_name(text: &str) -> Option<String> {
+    for key in ["\"seed_name\":\"", "\"seed_name\": \""] {
+        if let Some(at) = text.find(key) {
+            let rest = &text[at + key.len()..];
+            if let Some(end) = rest.find('"') {
+                if end > 0 {
+                    return Some(rest[..end].to_string());
+                }
+            }
+        }
+    }
+    None
 }

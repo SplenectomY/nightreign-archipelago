@@ -7,6 +7,7 @@ use std::path::PathBuf;
 use std::process::Command;
 
 mod preflight;
+mod saves;
 mod flagdiff_ui;
 mod testing_ui;
 
@@ -940,19 +941,19 @@ fn launch(app: &App) {
     });
 }
 
-fn launch_game(app: &App) {
+fn launch_game(app: &App) -> bool {
     let exe = PathBuf::from(text_of(app.me3));
     if !exe.exists() {
         append_log(app, &format!("me3 not found at {}", exe.display()));
-        return;
+        return false;
     }
     let Some(profile) = profile_path() else {
         append_log(app, r"nightreign-ap.me3 was not found in the me3 profiles folder or C:/Mods/nightreign-ap");
-        return;
+        return false;
     };
     if let Err(e) = write_profile_paths(app) {
         append_log(app, &format!("Could not write me3 paths: {e}"));
-        return;
+        return false;
     }
     let profile = profile.display().to_string().replace('\\', "/");
     match Command::new(&exe)
@@ -963,8 +964,8 @@ fn launch_game(app: &App) {
         .arg(&profile)
         .spawn()
     {
-        Ok(_) => append_log(app, &format!("Launched me3 -p {profile}")),
-        Err(e) => append_log(app, &format!("Launch failed: {e}")),
+        Ok(_) => { append_log(app, &format!("Launched me3 -p {profile}")); true }
+        Err(e) => { append_log(app, &format!("Launch failed: {e}")); false }
     }
 }
 
@@ -1074,7 +1075,23 @@ unsafe extern "system" fn wnd_proc(hwnd: HWND, msg: u32, w: usize, l: isize) -> 
             if dir.join("launch.ready").is_file() {
                 let _ = std::fs::remove_file(dir.join("launch.ready"));
                 set_status(&mut *APP, 1);
-                launch_game(&*APP);
+                let seed = std::fs::read_to_string(dir.join("launch.seed")).unwrap_or_default();
+                match saves::stage(&dir, seed.trim()) {
+                    Ok(msg) => {
+                        append_log(&*APP, &msg);
+                        if launch_game(&*APP) {
+                            if let Err(e) = saves::commit(&dir, seed.trim()) {
+                                append_log(&*APP, &format!("NRAP save seed write failed: {e}"));
+                            } else {
+                                append_log(&*APP, &format!("NRAP save seed {} confirmed", seed.trim()));
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        append_log(&*APP, &format!("NRAP save swap failed: {e}"));
+                        EnableWindow((*APP).launch, 1);
+                    }
+                }
             }
             if let Ok(kind) = std::fs::read_to_string(dir.join("launch.status")) {
                 let _ = std::fs::remove_file(dir.join("launch.status"));

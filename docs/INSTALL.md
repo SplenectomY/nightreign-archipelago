@@ -11,7 +11,7 @@ The first screen only shows Don't run. More info reveals the app name and Run an
 
 3. Open `nrap.exe`. Check the NRAP DLL, regulation folder, and Seamless DLL. Launch writes `nightreign-ap.me3` into the me3 profiles folder.
 4. Copy the apworld to your Archipelago installation's custom_worlds folder and the yaml to the Players folder (or give these files to whoever is generating your world). See https://archipelago.gg/tutorial/Archipelago/setup_en#playing-with-custom-worlds for more information.
-5. Generate, host, then launch with me3. Do not also run `nrsc_launcher.exe`.
+5. Generate, host, then launch with me3. Launch connects to Archipelago first, then swaps the Seamless `.co2` save for that seed. Do not also run `nrsc_launcher.exe`.
 6. Expect `NRAP attached 0.5.0` and `NRAP AP connected`.
 
 `flags.toml` host is `host:port` with no scheme. `archipelago.gg` is connected with `wss`. Localhost stays `ws`.
