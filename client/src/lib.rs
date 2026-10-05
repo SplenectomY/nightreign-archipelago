@@ -488,6 +488,9 @@ fn worker() {
                 flag_write::set_in_session(in_game);
                 log_line(&watch_dir, &format!("NRAP session {}", if in_game { "in game" } else { "title, flag work paused" }));
             }
+            if FLAG_DIFF.load(Ordering::SeqCst) {
+                scan_flag_diff(&found, &watch_dir);
+            }
             if !in_game {
                 if flag_write::in_expedition() {
                     flag_write::set_in_expedition(false);
@@ -647,28 +650,6 @@ fn worker() {
                 }
             }
         }
-        if FLAG_DIFF.load(Ordering::SeqCst) {
-            if let Some(found) = man {
-                static LAST: std::sync::Mutex<Option<std::time::Instant>> = std::sync::Mutex::new(None);
-                static IDLE: std::sync::Mutex<Option<std::time::Instant>> = std::sync::Mutex::new(None);
-                static PREV: std::sync::Mutex<Vec<Vec<u8>>> = std::sync::Mutex::new(Vec::new());
-                let due = LAST.lock().unwrap().map(|t| t.elapsed().as_millis() >= 2000).unwrap_or(true);
-                if due {
-                    *LAST.lock().unwrap() = Some(std::time::Instant::now());
-                    let (mut rose, groups) = found.diff_rising(&mut PREV.lock().unwrap());
-                    if let Some(dir) = watch_dir.as_ref() { flagdiff_opts::reload(dir); }
-                    rose.retain(|id| flagdiff_opts::allows(*id));
-                    if !rose.is_empty() {
-                        let show: Vec<_> = rose.iter().take(24).map(|f| f.to_string()).collect();
-                        log_line(&watch_dir, &format!("NRAP flag diff +{} groups={groups} {}", rose.len(), show.join(",")));
-                        *IDLE.lock().unwrap() = Some(std::time::Instant::now());
-                    } else if IDLE.lock().unwrap().map(|t| t.elapsed().as_secs() >= 10).unwrap_or(true) {
-                        *IDLE.lock().unwrap() = Some(std::time::Instant::now());
-                        log_line(&watch_dir, &format!("NRAP flag diff idle groups={groups}"));
-                    }
-                }
-            }
-        }
             thread::sleep(Duration::from_millis(200));
         }
     });
@@ -735,3 +716,24 @@ fn worker() {
         thread::sleep(Duration::from_millis(200));
     }
 }
+
+fn scan_flag_diff(found: &flagman::FlagMan, watch_dir: &Option<std::path::PathBuf>) {
+    static LAST: std::sync::Mutex<Option<std::time::Instant>> = std::sync::Mutex::new(None);
+    static IDLE: std::sync::Mutex<Option<std::time::Instant>> = std::sync::Mutex::new(None);
+    static PREV: std::sync::Mutex<Vec<Vec<u8>>> = std::sync::Mutex::new(Vec::new());
+    let due = LAST.lock().unwrap().map(|t| t.elapsed().as_millis() >= 2000).unwrap_or(true);
+    if !due { return; }
+    *LAST.lock().unwrap() = Some(std::time::Instant::now());
+    let (mut rose, groups) = found.diff_rising(&mut PREV.lock().unwrap());
+    if let Some(dir) = watch_dir.as_ref() { flagdiff_opts::reload(dir); }
+    rose.retain(|id| flagdiff_opts::allows(*id));
+    if !rose.is_empty() {
+        let show: Vec<_> = rose.iter().take(24).map(|f| f.to_string()).collect();
+        log_line(watch_dir, &format!("NRAP flag diff +{} groups={groups} {}", rose.len(), show.join(",")));
+        *IDLE.lock().unwrap() = Some(std::time::Instant::now());
+    } else if IDLE.lock().unwrap().map(|t| t.elapsed().as_secs() >= 10).unwrap_or(true) {
+        *IDLE.lock().unwrap() = Some(std::time::Instant::now());
+        log_line(watch_dir, &format!("NRAP flag diff idle groups={groups}"));
+    }
+}
+
