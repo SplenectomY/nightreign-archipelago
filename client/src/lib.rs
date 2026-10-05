@@ -451,6 +451,17 @@ fn worker() {
                 DEBUG.store(on, Ordering::SeqCst);
                 log_line(&console_dir, &format!("NRAP debug {}", if on { "on" } else { "off" }));
             }
+            if lower.starts_with("/testdeath") {
+                let arg = lower.split_whitespace().nth(1).unwrap_or("");
+                if arg == "send" {
+                    ap::force_local_death();
+                    log_line(&console_dir, "NRAP test death link send");
+                } else if arg == "recv" {
+                    ap::force_incoming_death();
+                    log_line(&console_dir, "NRAP test death link received");
+                }
+                continue;
+            }
             if lower.starts_with("/flagdiff") {
                 let arg = lower.split_whitespace().nth(1).unwrap_or("");
                 let on = match arg {

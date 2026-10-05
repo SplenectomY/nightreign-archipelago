@@ -32,6 +32,14 @@ pub fn take_death() -> bool {
     INCOMING_DEATH.swap(false, Ordering::SeqCst)
 }
 
+pub fn force_local_death() {
+    LOCAL_DEATH.store(true, Ordering::SeqCst);
+}
+
+pub fn force_incoming_death() {
+    INCOMING_DEATH.store(true, Ordering::SeqCst);
+}
+
 
 pub fn request_reconnect() {
     RECONNECT.store(true, Ordering::SeqCst);

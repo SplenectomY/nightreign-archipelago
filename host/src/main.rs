@@ -8,6 +8,7 @@ use std::process::Command;
 
 mod preflight;
 mod flagdiff_ui;
+mod testing_ui;
 
 type HWND = *mut c_void;
 type HINSTANCE = *mut c_void;
@@ -412,6 +413,7 @@ fn open_options(app: &App) {
         let host_item = row("Item", 564, 224, &host_color("color_item", "5DC8C8"), true);
         let host_location = row("Location", 600, 225, &host_color("color_location", "6BE36B"), true);
         CreateWindowExW(0, wide("STATIC").as_ptr(), wide("Debug").as_ptr(), WS_CHILD | WS_VISIBLE, 16, 640, 200, 20, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
+        CreateWindowExW(0, button.as_ptr(), wide("Testing").as_ptr(), WS_CHILD | WS_VISIBLE, 220, 636, 140, 28, win, 236, std::ptr::null_mut(), std::ptr::null_mut());
         let debug = CreateWindowExW(0, button.as_ptr(), wide("Debug log").as_ptr(), WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX, 28, 668, 160, 24, win, 216, std::ptr::null_mut(), std::ptr::null_mut());
         let on = text.lines().any(|l| l.trim() == "debug = true");
         SendMessageW(debug, BM_SETCHECK, if on { 1 } else { 0 }, 0);
@@ -996,6 +998,7 @@ unsafe extern "system" fn opt_proc(hwnd: HWND, msg: u32, w: usize, l: isize) -> 
                 }
             }
             if id == 235 && !APP.is_null() { flagdiff_ui::open((*APP).dir.clone()); }
+            if id == 236 && !APP.is_null() { testing_ui::open((*APP).dir.clone()); }
             if id == 220 {
                 if !APP.is_null() { save_options(&*APP); }
                 OPT = std::ptr::null_mut();
