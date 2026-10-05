@@ -1,7 +1,8 @@
-use std::net::{TcpStream, ToSocketAddrs};
+use std::net::TcpStream;
 use std::path::PathBuf;
 use std::time::Duration;
-use tungstenite::{client, Message};
+use tungstenite::stream::MaybeTlsStream;
+use tungstenite::{connect, Message};
 
 pub enum Gate {
     InvalidSlot,
@@ -25,13 +26,16 @@ pub fn connect_and_cache(host: &str, slot: &str, password: &str, dir: &PathBuf) 
     let addr = host.trim().trim_start_matches("wss://").trim_start_matches("ws://").trim_end_matches('/');
     let addr = addr.replace(['\u{ff1a}', '\u{2236}'], ":");
     let local = addr.starts_with("127.") || addr.starts_with("localhost") || addr.starts_with("0.0.0.0") || addr.starts_with("[::1]");
+    let addr = if addr.contains(':') { addr.to_string() } else { format!("{addr}:38281") };
     let url = if local { format!("ws://{addr}") } else { format!("wss://{addr}") };
-    let tcp_addr = if addr.contains(':') { addr.to_string() } else { format!("{addr}:38281") };
-    let socket_addr = tcp_addr.to_socket_addrs().map_err(|e| classify(&e.to_string()))?.next().ok_or(Gate::HostNotFound)?;
-    let stream = TcpStream::connect_timeout(&socket_addr, Duration::from_secs(8)).map_err(|e| classify(&e.to_string()))?;
-    stream.set_read_timeout(Some(Duration::from_secs(8))).ok();
-    stream.set_write_timeout(Some(Duration::from_secs(8))).ok();
-    let mut socket = client(url, stream).map_err(|e| classify(&e.to_string()))?.0;
+    let (mut socket, _) = connect(&url).map_err(|e| classify(&e.to_string()))?;
+    let tcp = match socket.get_ref() {
+        MaybeTlsStream::Plain(stream) => stream,
+        MaybeTlsStream::NativeTls(stream) => stream.get_ref(),
+        _ => return Err(Gate::Failed("unsupported socket".into())),
+    };
+    tcp.set_read_timeout(Some(Duration::from_secs(12))).ok();
+    tcp.set_write_timeout(Some(Duration::from_secs(12))).ok();
     let connect_pkt = format!(
         "[{{\"cmd\":\"Connect\",\"password\":\"{}\",\"game\":\"Elden Ring Nightreign\",\"name\":\"{}\",\"uuid\":\"\",\"version\":{{\"major\":0,\"minor\":5,\"build\":1,\"class\":\"Version\"}},\"items_handling\":7,\"tags\":[\"AP\"],\"slot_data\":true}}]",
         password.replace('\\', "\\\\").replace('"', "\\\""),
