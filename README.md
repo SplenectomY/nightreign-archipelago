@@ -14,6 +14,7 @@ Archipelago world for *Elden Ring Nightreign*
 - Custom launcher GUI with built-in AP client
 - Configurable onscreen overlay (requires Borderless Window display setting)
 - Fresh save game per seed
+- Deathlink with various modes
 
 ## Notes
 - Garb shop purchase checks are logically gated behind having access to two non-dlc expeditions. Per normal game logic, you must defeat two nightlords to access the garb shop.
