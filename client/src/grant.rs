@@ -201,14 +201,18 @@ struct RuneBank {
     paid_this_rise: bool,
 }
 
-static RUNES: Mutex<RuneBank> = Mutex::new(RuneBank {
-    seed: String::new(),
-    piles: HashMap::new(),
-    paid_now: HashMap::new(),
-    day1_at: None,
-    saw_day1: false,
-    paid_this_rise: false,
-});
+fn empty_bank() -> RuneBank {
+    RuneBank {
+        seed: String::new(),
+        piles: HashMap::new(),
+        paid_now: HashMap::new(),
+        day1_at: None,
+        saw_day1: false,
+        paid_this_rise: false,
+    }
+}
+
+static RUNES: std::sync::LazyLock<Mutex<RuneBank>> = std::sync::LazyLock::new(|| Mutex::new(empty_bank()));
 
 fn rune_amount(item_id: i64) -> Option<i32> {
     match item_id {
