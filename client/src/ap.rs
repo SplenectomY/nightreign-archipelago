@@ -17,16 +17,34 @@ pub static RECONNECT: AtomicBool = AtomicBool::new(false);
 static BACKOFF: AtomicU64 = AtomicU64::new(1);
 static SHOP_HINTS: Mutex<Vec<i64>> = Mutex::new(Vec::new());
 static DEATH_LINK: AtomicBool = AtomicBool::new(false);
+static DEATH_MODE: AtomicU32 = AtomicU32::new(0);
+static DEATH_PERCENT: AtomicU32 = AtomicU32::new(50);
+static DEATH_CHANCE: AtomicU32 = AtomicU32::new(50);
 static LOCAL_DEATH: AtomicBool = AtomicBool::new(false);
 static INCOMING_DEATH: AtomicBool = AtomicBool::new(false);
 static LAST_SENT: AtomicU64 = AtomicU64::new(0);
+static SUPPRESS_UNTIL: AtomicU64 = AtomicU64::new(0);
 static SLOT_NAME: Mutex<String> = Mutex::new(String::new());
 
 pub fn note_local_death() {
-    if DEATH_LINK.load(Ordering::SeqCst) {
-        LOCAL_DEATH.store(true, Ordering::SeqCst);
+    if !DEATH_LINK.load(Ordering::SeqCst) {
+        return;
     }
+    let now = SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
+    if now < SUPPRESS_UNTIL.load(Ordering::SeqCst) {
+        return;
+    }
+    LOCAL_DEATH.store(true, Ordering::SeqCst);
 }
+
+pub fn suppress_local_death(secs: u64) {
+    let now = SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
+    SUPPRESS_UNTIL.store(now.saturating_add(secs), Ordering::SeqCst);
+}
+
+pub fn death_mode() -> u32 { DEATH_MODE.load(Ordering::SeqCst) }
+pub fn death_percent() -> u32 { DEATH_PERCENT.load(Ordering::SeqCst).clamp(1, 100) }
+pub fn death_chance() -> u32 { DEATH_CHANCE.load(Ordering::SeqCst).clamp(1, 100) }
 
 pub fn death_pending() -> bool {
     INCOMING_DEATH.load(Ordering::SeqCst)
@@ -489,6 +507,15 @@ fn json_u32(text: &str, key: &str) -> Option<u32> {
     rest.split(|c: char| !c.is_ascii_digit()).next()?.parse().ok()
 }
 
+fn json_str(text: &str, key: &str) -> Option<String> {
+    let needle = format!("\"{key}\":");
+    let at = text.find(&needle)?;
+    let rest = text[at + needle.len()..].trim_start();
+    let rest = rest.strip_prefix('"')?;
+    let end = rest.find('"')?;
+    Some(rest[..end].to_string())
+}
+
 fn apply_slot_data(text: &str, log: &impl Fn(&str)) {
     if !text.contains("slot_data") {
         return;
@@ -498,7 +525,17 @@ fn apply_slot_data(text: &str, log: &impl Fn(&str)) {
     }
     if let Some(on) = json_bool(text, "death_link") {
         DEATH_LINK.store(on, Ordering::SeqCst);
-        log(&format!("NRAP death link {}", if on { "on" } else { "off" }));
+        let mode = json_str(text, "death_link_mode").unwrap_or_else(|| json_u32(text, "death_link_mode").map(|n| n.to_string()).unwrap_or_else(|| "instant".into()));
+        let mode_id = match mode.as_str() { "percent" | "1" => 1, "dice" | "2" => 2, _ => 0 };
+        DEATH_MODE.store(mode_id, Ordering::SeqCst);
+        if let Some(pct) = json_u32(text, "death_link_percent") { DEATH_PERCENT.store(pct.clamp(1, 100), Ordering::SeqCst); }
+        if let Some(chance) = json_u32(text, "death_link_chance") { DEATH_CHANCE.store(chance.clamp(1, 100), Ordering::SeqCst); }
+        log(&format!(
+            "NRAP death link {} mode={mode} percent={} chance={}",
+            if on { "on" } else { "off" },
+            death_percent(),
+            death_chance()
+        ));
     }
     if let (Some(purse), Some(bundle), Some(coffer), Some(chest), Some(hoard)) = (
         json_u32(text, "murk_purse"),

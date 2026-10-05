@@ -48,13 +48,30 @@ fn current_hp_addr() -> Option<usize> {
     Some(stats + HP_OFFSET)
 }
 
-pub fn set_zero() -> Result<String, String> {
+fn live_hp() -> Result<(usize, i32, i32), String> {
     if SLOT.load(Ordering::SeqCst) == 0 {
-        init().map_err(|e| e)?;
+        init()?;
     }
     let addr = current_hp_addr().ok_or_else(|| "player HP not live".to_string())?;
-    let before = unsafe { std::ptr::read_unaligned(addr as *const i32) };
+    let current = unsafe { std::ptr::read_unaligned(addr as *const i32) };
+    let raw_max = unsafe { std::ptr::read_unaligned((addr + 4) as *const i32) };
+    let max = if (1..=200_000).contains(&raw_max) && raw_max >= current { raw_max } else { current.max(1) };
+    Ok((addr, current, max))
+}
+
+pub fn set_zero() -> Result<String, String> {
+    let (addr, before, _) = live_hp()?;
     unsafe { std::ptr::write_unaligned(addr as *mut i32, 0) };
     let after = unsafe { std::ptr::read_unaligned(addr as *const i32) };
     Ok(format!("NRAP hp {before}->{after} at 0x{addr:X}"))
+}
+
+pub fn apply_percent(percent: u32) -> Result<String, String> {
+    let (addr, before, max) = live_hp()?;
+    let pct = percent.clamp(1, 100);
+    let damage = ((max as i64) * pct as i64 / 100).max(1) as i32;
+    let after_target = before.saturating_sub(damage);
+    unsafe { std::ptr::write_unaligned(addr as *mut i32, after_target) };
+    let after = unsafe { std::ptr::read_unaligned(addr as *const i32) };
+    Ok(format!("NRAP hp percent {pct} max={max} damage={damage} {before}->{after} at 0x{addr:X}"))
 }

@@ -516,10 +516,7 @@ fn worker() {
             if ap::death_pending() {
                 ap::take_death();
                 if expedition_now {
-                    match hp::set_zero() {
-                        Ok(msg) => log_line(&watch_dir, &msg),
-                        Err(e) => log_line(&watch_dir, &format!("NRAP hp kill failed: {e}")),
-                    }
+                    log_line(&watch_dir, &apply_death_link());
                 } else {
                     log_line(&watch_dir, "NRAP death link ignored, not in an expedition");
                 }
@@ -780,6 +777,35 @@ fn scan_flag_diff(found: &flagman::FlagMan, watch_dir: &Option<std::path::PathBu
     } else if IDLE.lock().unwrap().map(|t| t.elapsed().as_secs() >= 10).unwrap_or(true) {
         *IDLE.lock().unwrap() = Some(std::time::Instant::now());
         log_line(watch_dir, &format!("NRAP flag diff idle groups={groups}"));
+    }
+}
+
+
+fn apply_death_link() -> String {
+    match ap::death_mode() {
+        1 => match hp::apply_percent(ap::death_percent()) {
+            Ok(msg) => {
+                if msg.contains("->0 ") || msg.ends_with("->0") { ap::suppress_local_death(8); }
+                msg
+            }
+            Err(e) => format!("NRAP hp percent failed: {e}"),
+        },
+        2 => {
+            let chance = ap::death_chance();
+            let roll = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.subsec_nanos() % 100).unwrap_or(0) + 1;
+            if roll <= chance {
+                match hp::set_zero() {
+                    Ok(msg) => { ap::suppress_local_death(8); format!("NRAP death link dice {roll}/{chance} hit; {msg}") }
+                    Err(e) => format!("NRAP death link dice {roll}/{chance} hit; hp kill failed: {e}"),
+                }
+            } else {
+                format!("NRAP death link dice {roll}/{chance} miss")
+            }
+        }
+        _ => match hp::set_zero() {
+            Ok(msg) => { ap::suppress_local_death(8); format!("NRAP death link instant; {msg}") }
+            Err(e) => format!("NRAP hp kill failed: {e}"),
+        },
     }
 }
 

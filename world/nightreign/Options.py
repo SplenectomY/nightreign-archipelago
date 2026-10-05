@@ -262,9 +262,40 @@ class StartingRunes10000Count(Range):
 
 
 class DeathLink(Toggle):
-    """On: a run-ending death (flag 9017) kills every other Nightreign player with this on. Their current HP is set to 0."""
+    """On: a run-ending death (flag 9017) sends a Death Link to other Nightreign players with this on.
+    Off: deaths stay local, and incoming Death Links are ignored. Ignored outside an expedition."""
     display_name = "Death Link"
     default = False
+
+
+class DeathLinkMode(Choice):
+    """How a received Death Link is applied. Only used when Death Link is on.
+    instant: set current HP to 0.
+    percent: remove this percent of max HP. Kills if current HP cannot cover it.
+    dice: instant death if the roll succeeds. A miss does nothing."""
+    display_name = "Death Link Mode"
+    option_instant = 0
+    option_percent = 1
+    option_dice = 2
+    default = 0
+
+
+class DeathLinkPercent(Range):
+    """Percent of max HP removed by a percent-mode Death Link. 1 to 100. Default 50.
+    Ignored unless Death Link Mode is percent."""
+    display_name = "Death Link percent"
+    range_start = 1
+    range_end = 100
+    default = 50
+
+
+class DeathLinkChance(Range):
+    """Percent chance a dice-mode Death Link kills. 1 to 100. Default 50.
+    Ignored unless Death Link Mode is dice. A failed roll does nothing."""
+    display_name = "Death Link chance"
+    range_start = 1
+    range_end = 100
+    default = 50
 
 
 @dataclass
@@ -299,3 +330,6 @@ class NightreignOptions(PerGameCommonOptions):
     starting_runes_5000_count: StartingRunes5000Count
     starting_runes_10000_count: StartingRunes10000Count
     death_link: DeathLink
+    death_link_mode: DeathLinkMode
+    death_link_percent: DeathLinkPercent
+    death_link_chance: DeathLinkChance

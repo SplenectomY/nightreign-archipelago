@@ -154,8 +154,14 @@ Elden Ring Nightreign:
   starting_runes_5000_count: 10
   starting_runes_10000_count: 5
 
-  # Not implemented. Leave false. A death does not kill other players.
+  # Death Link. Off ignores deaths and incoming links. Only applies in an expedition.
+  # mode: instant (HP to 0), percent (remove death_link_percent of max HP), dice (instant kill on a roll).
+  # death_link_percent: 1 to 100, used by percent. Default 50.
+  # death_link_chance: 1 to 100, used by dice. Default 50. A miss does nothing.
   death_link: false
+  death_link_mode: instant
+  death_link_percent: 50
+  death_link_chance: 50
 
   # Common Archipelago options. These are optional.
   #

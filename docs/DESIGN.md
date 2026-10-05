@@ -120,9 +120,13 @@ Seamless Coop is the tested launch path, including more than one Archipelago slo
 4. More overworld checks, where a stable flag exists.
 5. Walking model update when the active Nightfarer is forced off Wylder.
 
+## Death Link
+
+On sends flag 9017 to other Nightreign slots with Death Link on. Incoming links are ignored outside an expedition.
+instant sets HP to 0. percent removes a yaml percent of max HP. dice kills on a yaml chance and does nothing on a miss.
+
 ## Out of scope
 
 - Named catalog of every field boss
 - In-run weapon shuffle
-- DeathLink
 - Official online
