@@ -44,26 +44,42 @@ pub fn connect_and_cache(host: &str, slot: &str, password: &str, dir: &PathBuf) 
     socket.send(Message::Text(connect_pkt.into())).map_err(|e| classify(&e.to_string()))?;
     let mut package = String::new();
     let mut connected = false;
+    let mut seed = String::new();
     for _ in 0..12 {
-        let text = socket.read().map_err(|e| classify(&e.to_string()))?.to_string();
+        let msg = socket.read().map_err(|e| classify(&e.to_string()))?;
+        let text = match msg {
+            Message::Text(t) => t.to_string(),
+            Message::Binary(b) => String::from_utf8_lossy(&b).to_string(),
+            Message::Ping(p) => { let _ = socket.send(Message::Pong(p)); continue; }
+            Message::Pong(_) | Message::Frame(_) => continue,
+            Message::Close(_) => break,
+        };
         if text.contains("InvalidSlot") {
             return Err(Gate::InvalidSlot);
         }
+        if seed.is_empty() {
+            if let Some(found) = seed_name(&text) {
+                seed = found;
+            }
+        }
         if text.contains("\"cmd\":\"Connected\"") || text.contains("\"cmd\": \"Connected\"") {
             connected = true;
-            if let Some(seed) = seed_name(&text) {
-                let _ = std::fs::write(dir.join("launch.seed"), &seed);
-            }
             let _ = socket.send(Message::Text("[{\"cmd\":\"GetDataPackage\",\"games\":[\"Elden Ring Nightreign\"]}]".into()));
         }
         if text.contains("DataPackage") {
             package = text;
-            break;
+            if connected && !seed.is_empty() {
+                break;
+            }
         }
     }
     if !connected {
         return Err(Gate::Failed("server did not accept the slot".into()));
     }
+    if seed.is_empty() {
+        return Err(Gate::Failed("server did not send a seed name".into()));
+    }
+    std::fs::write(dir.join("launch.seed"), &seed).map_err(|e| Gate::Failed(e.to_string()))?;
     if package.is_empty() {
         return Err(Gate::Failed("data package was not downloaded".into()));
     }
@@ -83,7 +99,7 @@ pub fn game_open() -> bool {
 }
 
 fn seed_name(text: &str) -> Option<String> {
-    for key in ["\"seed_name\":\"", "\"seed_name\": \""] {
+    for key in ["\"seed_name\":\"", "\"seed_name\": \"", "\"seed\":\"", "\"seed\": \""] {
         if let Some(at) = text.find(key) {
             let rest = &text[at + key.len()..];
             if let Some(end) = rest.find('"') {
