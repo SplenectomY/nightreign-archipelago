@@ -45,7 +45,7 @@ The zip must contain `nightreign\__init__.py`, not `world\nightreign\__init__.py
 ## 3. Player yaml
 
 ```powershell
-Copy-Item C:\Dev\nightreign-archipelago\data\Player1.yaml C:\ProgramData\Archipelago\Players\Player1.yaml -Force
+Copy-Item C:\Dev\nightreign-archipelago\players\Nightreign.yaml C:\ProgramData\Archipelago\Players\Player1.yaml -Force
 ```
 
 Leave only this yaml in `Players` for the first seed (move other yamls out).
@@ -59,7 +59,7 @@ Success: a new `AP_*.zip` in `C:\ProgramData\Archipelago\output`.
 Failure: paste the Generate console. Common causes:
 - `nightreign.apworld` missing or zip layout wrong
 - extra yamls for games you do not have worlds for
-- option name mismatch (use the repo `Player1.yaml` as-is)
+- option name mismatch (use the repo `players/Nightreign.yaml` as-is)
 
 ## 5. Host locally
 
