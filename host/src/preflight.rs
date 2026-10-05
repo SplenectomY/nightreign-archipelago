@@ -23,7 +23,7 @@ fn classify(err: &str) -> Gate {
 
 pub fn connect_and_cache(host: &str, slot: &str, password: &str, dir: &PathBuf) -> Result<(), Gate> {
     let addr = host.trim().trim_start_matches("wss://").trim_start_matches("ws://").trim_end_matches('/');
-    let addr = addr.replace([\u{ff1a}, \u{2236}], ":");
+    let addr = addr.replace(['\u{ff1a}', '\u{2236}'], ':');
     let local = addr.starts_with("127.") || addr.starts_with("localhost") || addr.starts_with("0.0.0.0") || addr.starts_with("[::1]");
     let url = if local { format!("ws://{addr}") } else { format!("wss://{addr}") };
     let tcp_addr = if addr.contains(':') { addr.to_string() } else { format!("{addr}:38281") };
