@@ -464,6 +464,12 @@ fn worker() {
                         Ok(msg) => log_line(&console_dir, &msg),
                         Err(e) => log_line(&console_dir, &format!("NRAP runes failed: {e}")),
                     }
+                } else if arg == "half" || arg == "double" {
+                    let factor = if arg == "half" { 0.5 } else { 2.0 };
+                    match crate::hp::scale_model(factor) {
+                        Ok(msg) => log_line(&console_dir, &msg),
+                        Err(e) => log_line(&console_dir, &format!("NRAP model scale failed: {e}")),
+                    }
                 }
                 continue;
             }

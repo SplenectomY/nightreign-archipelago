@@ -75,3 +75,25 @@ pub fn apply_percent(percent: u32) -> Result<String, String> {
     let after = unsafe { std::ptr::read_unaligned(addr as *const i32) };
     Ok(format!("NRAP hp percent {pct} max={max} damage={damage} {before}->{after} at 0x{addr:X}"))
 }
+
+const MODEL_SCALE: usize = 0x6B0;
+
+pub fn scale_model(factor: f32) -> Result<String, String> {
+    if !(0.05..=8.0).contains(&factor) {
+        return Err("scale factor out of range".into());
+    }
+    if SLOT.load(Ordering::SeqCst) == 0 {
+        init()?;
+    }
+    let slot = SLOT.load(Ordering::SeqCst);
+    let man = read_usize(slot).ok_or_else(|| "WorldChrMan not live".to_string())?;
+    let player = read_usize(man + PLAYER_OFFSET).ok_or_else(|| "player not live".to_string())?;
+    let addr = player + MODEL_SCALE;
+    let before = unsafe { std::ptr::read_unaligned(addr as *const f32) };
+    if !before.is_finite() || !(0.05..=8.0).contains(&before) {
+        return Err(format!("model scale {before} is not a live size"));
+    }
+    let after = (before * factor).clamp(0.05, 8.0);
+    unsafe { std::ptr::write_unaligned(addr as *mut f32, after) };
+    Ok(format!("NRAP model scale {before:.3}->{after:.3} at 0x{addr:X}"))
+}
