@@ -9,7 +9,7 @@ What 0.5.0 ships, then what is still planned.
 - Nightfarer unlocks, one random at start.
 - Small Jar Bazaar rows. Finding the item stocks it. Buying it is the check. Three to six start unlocked.
 - Murk purses, bundles, coffers, chests, and hoards.
-- Starting Runes + 1000 / + 5000 / + 10000. Useful. Larger piles are kept out of early spheres.
+- Starting Runes + 1000 / + 5000 / + 10000. Useful. Larger piles are kept out of early spheres. The full total is granted 5 seconds after day 1 starts, on every run.
 - Day 1 boss, Day 2 boss, evergaol, and magician tower counters. First credit is 1.
 - Goal: Nightlord count, or a named Nightlord. Default Heolstor.
 

@@ -148,7 +148,7 @@ Elden Ring Nightreign:
 
   # Starting runes. Useful items, so they take leftover slots before Murk filler.
   # +1000 can be anywhere. +5000 needs one Nightlord defeat. +10000 needs the back half of spheres.
-  # Received during an expedition, granted immediately. Otherwise paid 5 seconds after day 1 starts.
+  # Banked when received, including during an expedition. Paid in full 5 seconds after flag 7500 rises, on every run.
   # 0 to 100. Defaults 20, 10, and 5.
   starting_runes_1000_count: 20
   starting_runes_5000_count: 10

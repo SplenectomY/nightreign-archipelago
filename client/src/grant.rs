@@ -184,7 +184,7 @@ pub fn retry() -> Option<String> {
     }
 }
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
@@ -194,16 +194,18 @@ const RUNE_10000: i64 = 839_100_123;
 
 struct RuneBank {
     seed: String,
-    pending: HashMap<i64, (i32, bool)>,
-    granted: HashSet<i64>,
+    piles: HashMap<i64, i32>,
     day1_at: Option<Instant>,
+    saw_day1: bool,
+    paid_this_rise: bool,
 }
 
 static RUNES: Mutex<RuneBank> = Mutex::new(RuneBank {
     seed: String::new(),
-    pending: HashMap::new(),
-    granted: HashSet::new(),
+    piles: HashMap::new(),
     day1_at: None,
+    saw_day1: false,
+    paid_this_rise: false,
 });
 
 fn rune_amount(item_id: i64) -> Option<i32> {
@@ -222,82 +224,63 @@ pub fn is_starting_rune(item_id: i64) -> bool {
 fn bind_seed(bank: &mut RuneBank, seed: &str) {
     if bank.seed != seed {
         bank.seed = seed.to_string();
-        bank.pending.clear();
-        bank.granted.clear();
+        bank.piles.clear();
         bank.day1_at = None;
+        bank.saw_day1 = false;
+        bank.paid_this_rise = false;
     }
 }
 
-pub fn note_starting_runes(seed: &str, index: i64, item_id: i64, expedition: bool) -> Option<String> {
+pub fn note_starting_runes(seed: &str, index: i64, item_id: i64, _expedition: bool) -> Option<String> {
     let amt = rune_amount(item_id)?;
     let mut bank = RUNES.lock().unwrap();
     bind_seed(&mut bank, seed);
-    if bank.granted.contains(&index) || bank.pending.contains_key(&index) {
+    if bank.piles.contains_key(&index) {
         return Some(format!("NRAP starting runes skip already {} ({item_id}) index={index}", crate::ap::item_name(item_id)));
     }
-    if expedition {
-        drop(bank);
-        match add_runes(amt) {
-            Ok(detail) => {
-                RUNES.lock().unwrap().granted.insert(index);
-                return Some(format!("NRAP starting runes +{amt} {} ({item_id}) index={index} {detail}", crate::ap::item_name(item_id)));
-            }
-            Err(e) => {
-                RUNES.lock().unwrap().pending.insert(index, (amt, true));
-                return Some(format!("NRAP starting runes retry +{amt} index={index} ({e})"));
-            }
-        }
-    }
-    bank.pending.insert(index, (amt, false));
-    let total: i32 = bank.pending.values().map(|v| v.0).sum();
-    Some(format!("NRAP starting runes banked +{amt} {} ({item_id}) index={index} pending={total}", crate::ap::item_name(item_id)))
+    bank.piles.insert(index, amt);
+    let total: i32 = bank.piles.values().sum();
+    Some(format!(
+        "NRAP starting runes banked +{amt} {} ({item_id}) index={index} total={total}",
+        crate::ap::item_name(item_id)
+    ))
 }
 
 pub fn tick_starting_runes(seed: &str, day1: bool) -> Option<String> {
     let mut bank = RUNES.lock().unwrap();
     bind_seed(&mut bank, seed);
-    if bank.pending.is_empty() {
+    if bank.piles.is_empty() {
         bank.day1_at = None;
+        bank.saw_day1 = day1;
+        bank.paid_this_rise = day1;
         return None;
     }
-    let rush = bank.pending.values().any(|v| v.1);
-    let hold = bank.pending.values().any(|v| !v.1);
-    if rush {
-        let total: i32 = bank.pending.values().filter(|v| v.1).map(|v| v.0).sum();
-        let keys: Vec<i64> = bank.pending.iter().filter(|(_, v)| v.1).map(|(k, _)| *k).collect();
-        drop(bank);
-        match add_runes(total) {
-            Ok(detail) => {
-                let mut bank = RUNES.lock().unwrap();
-                for k in keys { bank.pending.remove(&k); bank.granted.insert(k); }
-                return Some(format!("NRAP starting runes +{total} field retry {detail}"));
-            }
-            Err(_) => return None,
-        }
+    if !day1 {
+        bank.day1_at = None;
+        bank.saw_day1 = false;
+        bank.paid_this_rise = false;
+        return None;
     }
-    if !hold || !day1 {
-        if !day1 { bank.day1_at = None; }
+    if !bank.saw_day1 {
+        bank.saw_day1 = true;
+        bank.day1_at = Some(Instant::now());
+        bank.paid_this_rise = false;
+    }
+    if bank.paid_this_rise {
         return None;
     }
     let started = bank.day1_at.get_or_insert_with(Instant::now);
     if started.elapsed() < Duration::from_secs(5) {
         return None;
     }
-    let total: i32 = bank.pending.values().map(|v| v.0).sum();
-    let n = bank.pending.len();
-    let saved = bank.pending.clone();
-    bank.granted.extend(bank.pending.keys().copied());
-    bank.pending.clear();
-    bank.day1_at = None;
+    let total: i32 = bank.piles.values().sum();
+    let n = bank.piles.len();
     drop(bank);
     match add_runes(total) {
-        Ok(detail) => Some(format!("NRAP starting runes payout +{total} from {n} after day 1 {detail}")),
-        Err(e) => {
-            let mut bank = RUNES.lock().unwrap();
-            bank.pending = saved;
-            for k in bank.pending.keys() { bank.granted.remove(k); }
-            bank.day1_at = Some(Instant::now());
-            Some(format!("NRAP starting runes payout failed +{total} ({e})"))
+        Ok(detail) => {
+            RUNES.lock().unwrap().paid_this_rise = true;
+            Some(format!("NRAP starting runes payout +{total} from {n} after day 1 {detail}"))
         }
+        Err(e) => Some(format!("NRAP starting runes payout failed +{total} ({e})")),
     }
 }
