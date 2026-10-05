@@ -21,6 +21,7 @@ Archipelago world for *Elden Ring Nightreign*
 - Invader kill checks past the first handful are logically gated behind having the Deep of Night expedition unlocked (easy Calamity spawns)
 - Logical spheres for counter checks are equally divided by the number of nightlords you need to kill to win. This is to help prevent other players' early sphere items from being buried in your late checks
 - It is perfectly valid and might be helpful to other players to spam day-1-only expeditions where you rush churches, fort map rooms, gaols, towers and invader camps, if they hint something they need that's buried under those checks
+- Revenant character unlock battle is gated behind being able to purchase the Besmirched Frame
 
 ## Planned features
 
