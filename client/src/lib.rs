@@ -459,6 +459,11 @@ fn worker() {
                 } else if arg == "recv" {
                     ap::force_incoming_death();
                     log_line(&console_dir, "NRAP test death link received");
+                } else if arg == "runes" {
+                    match crate::grant::add_runes(1000) {
+                        Ok(msg) => log_line(&console_dir, &msg),
+                        Err(e) => log_line(&console_dir, &format!("NRAP runes failed: {e}")),
+                    }
                 }
                 continue;
             }
@@ -507,10 +512,18 @@ fn worker() {
             if FLAG_DIFF.load(Ordering::SeqCst) {
                 scan_flag_diff(&found, &watch_dir);
             }
-            if ap::take_death() {
-                match hp::set_zero() {
-                    Ok(msg) => log_line(&watch_dir, &msg),
-                    Err(e) => log_line(&watch_dir, &format!("NRAP hp kill failed: {e}")),
+            let expedition_now = found.get(7500) == Some(true) || found.get(7505) == Some(true) || found.get(7510) == Some(true);
+            static HELD: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+            if ap::death_pending() {
+                if expedition_now {
+                    ap::take_death();
+                    HELD.store(false, Ordering::SeqCst);
+                    match hp::set_zero() {
+                        Ok(msg) => log_line(&watch_dir, &msg),
+                        Err(e) => log_line(&watch_dir, &format!("NRAP hp kill failed: {e}")),
+                    }
+                } else if !HELD.swap(true, Ordering::SeqCst) {
+                    log_line(&watch_dir, "NRAP death link held, not in an expedition");
                 }
             }
             static DEAD: std::sync::Mutex<Option<bool>> = std::sync::Mutex::new(None);

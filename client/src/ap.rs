@@ -28,6 +28,10 @@ pub fn note_local_death() {
     }
 }
 
+pub fn death_pending() -> bool {
+    INCOMING_DEATH.load(Ordering::SeqCst)
+}
+
 pub fn take_death() -> bool {
     INCOMING_DEATH.swap(false, Ordering::SeqCst)
 }

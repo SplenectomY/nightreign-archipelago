@@ -10,11 +10,13 @@ use std::sync::atomic::{AtomicI32, AtomicUsize, Ordering};
 const DEFAULT_BUNDLE: i32 = 1000;
 const GAMEDATA_AOB: &str = "48 8B 0D ?? ?? ?? ?? F3 48 0F 2C C0";
 const MURK_AOB: &str = "?? 8B 81 D0 00 00 00 ?? 8B D1 B9";
+const RUNE_AOB: &str = "?? 8B D9 ?? 8D 04 17";
 
 static BUNDLE: AtomicI32 = AtomicI32::new(DEFAULT_BUNDLE);
 static PENDING: AtomicI32 = AtomicI32::new(0);
 static SLOT: AtomicUsize = AtomicUsize::new(0);
 static FUNC: AtomicUsize = AtomicUsize::new(0);
+static RUNE_FUNC: AtomicUsize = AtomicUsize::new(0);
 
 type AddFn = unsafe extern "C" fn(player: usize, amount: i32) -> i32;
 
@@ -36,11 +38,24 @@ pub fn init() -> Result<String, String> {
     let slot = rip_slot(span, data_rel).ok_or_else(|| "GameDataMan slot unresolved".to_string())?;
     SLOT.store(slot, Ordering::SeqCst);
     FUNC.store(span.base + fn_rel, Ordering::SeqCst);
+    let rune = aob::find_pattern(span.slice(), RUNE_AOB).map(|rel| span.base + rel.saturating_sub(0xD)).unwrap_or(0);
+    RUNE_FUNC.store(rune, Ordering::SeqCst);
     Ok(format!(
-        "NRAP murk fn=0x{:X} gamedata=0x{slot:X} bundle={}",
+        "NRAP murk fn=0x{:X} rune fn=0x{rune:X} gamedata=0x{slot:X} bundle={}",
         span.base + fn_rel,
         BUNDLE.load(Ordering::SeqCst)
     ))
+}
+
+pub fn add_runes(amount: i32) -> Result<String, String> {
+    let func = RUNE_FUNC.load(Ordering::SeqCst);
+    let player = player_data().ok_or_else(|| "GameDataMan+8 not live".to_string())?;
+    if func < 0x10000 || amount == 0 {
+        return Err("rune function missing".into());
+    }
+    let f: AddFn = unsafe { std::mem::transmute(func) };
+    let ret = unsafe { f(player, amount) };
+    Ok(format!("NRAP runes +{amount} player=0x{player:X} ret={ret}"))
 }
 
 fn player_data() -> Option<usize> {

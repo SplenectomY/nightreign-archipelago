@@ -59,6 +59,7 @@ unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: usize, l: isize) -> isiz
             match (w & 0xffff) as isize {
                 1 => queue("/testdeath send"),
                 2 => queue("/testdeath recv"),
+                3 => queue("/testdeath runes"),
                 _ => {}
             }
             0
@@ -78,10 +79,11 @@ pub fn open(dir: PathBuf) {
         let class = wide("NRAPTesting");
         let wc = WndClass { style: 0, wnd_proc: Some(proc), cls_extra: 0, wnd_extra: 0, instance: std::ptr::null_mut(), icon: std::ptr::null_mut(), cursor: std::ptr::null_mut(), background: 16 as *mut c_void, menu_name: std::ptr::null(), class_name: class.as_ptr() };
         RegisterClassW(&wc);
-        let win = CreateWindowExW(0, class.as_ptr(), wide("NRAP Testing").as_ptr(), WS_OVERLAPPEDWINDOW | WS_VISIBLE, 220, 140, 360, 180, std::ptr::null_mut(), 0, std::ptr::null_mut(), std::ptr::null_mut());
+        let win = CreateWindowExW(0, class.as_ptr(), wide("NRAP Testing").as_ptr(), WS_OVERLAPPEDWINDOW | WS_VISIBLE, 220, 140, 360, 240, std::ptr::null_mut(), 0, std::ptr::null_mut(), std::ptr::null_mut());
         let button = wide("BUTTON");
         CreateWindowExW(0, button.as_ptr(), wide("Test Death Link Send").as_ptr(), WS_CHILD | WS_VISIBLE, 40, 24, 260, 36, win, 1, std::ptr::null_mut(), std::ptr::null_mut());
         CreateWindowExW(0, button.as_ptr(), wide("Test Death Link Received").as_ptr(), WS_CHILD | WS_VISIBLE, 40, 76, 260, 36, win, 2, std::ptr::null_mut(), std::ptr::null_mut());
+        CreateWindowExW(0, button.as_ptr(), wide("Add 1000 runes").as_ptr(), WS_CHILD | WS_VISIBLE, 40, 128, 260, 36, win, 3, std::ptr::null_mut(), std::ptr::null_mut());
         WIN = win;
     }
 }
