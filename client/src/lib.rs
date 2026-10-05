@@ -513,17 +513,15 @@ fn worker() {
                 scan_flag_diff(&found, &watch_dir);
             }
             let expedition_now = found.get(7500) == Some(true) || found.get(7505) == Some(true) || found.get(7510) == Some(true);
-            static HELD: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
             if ap::death_pending() {
+                ap::take_death();
                 if expedition_now {
-                    ap::take_death();
-                    HELD.store(false, Ordering::SeqCst);
                     match hp::set_zero() {
                         Ok(msg) => log_line(&watch_dir, &msg),
                         Err(e) => log_line(&watch_dir, &format!("NRAP hp kill failed: {e}")),
                     }
-                } else if !HELD.swap(true, Ordering::SeqCst) {
-                    log_line(&watch_dir, "NRAP death link held, not in an expedition");
+                } else {
+                    log_line(&watch_dir, "NRAP death link ignored, not in an expedition");
                 }
             }
             static DEAD: std::sync::Mutex<Option<bool>> = std::sync::Mutex::new(None);
