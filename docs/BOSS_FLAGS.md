@@ -5,3 +5,4 @@ One row per boss. Flags are the bits that rose on the kill. No nightlord column:
 | Boss | Death flags |
 |---|---|
 | Stoneskin Lords | 995000, 995014, 995016, 995017, 995018 |
+| Erdtree Avatar | 815003 |

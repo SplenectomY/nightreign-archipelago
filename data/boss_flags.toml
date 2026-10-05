@@ -3,3 +3,7 @@
 [[boss]]
 name = "Stoneskin Lords"
 flags = [995000, 995014, 995016, 995017, 995018]
+
+[[boss]]
+name = "Erdtree Avatar"
+flags = [815003]
