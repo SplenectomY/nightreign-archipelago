@@ -7,7 +7,7 @@ Archipelago world for *Elden Ring Nightreign*
 - Seamless Coop launch path, tested with more than one Archipelago slot in the same session. `nrsc.dll` loads from the me3 profile and writes `.co2` saves. Each connected client submits its own checks. A player who is not on the Archipelago server can still join the Seamless session and help a slot.
 - One random expedition and one random Nightfarer are granted at start. Heolstor stays out of the pool unless `heolstor_in_pool` is set, and unlocks locally after `heolstor_unlock_count` Nightlord defeats.
 - Nightlord and Everdark defeat checks. A Nightlord defeat counts only if that expedition is unlocked, so helping another player when you don't have that Nightlord unlocked will grant no credit to you.
-- Shop checks for the Small Jar Bazaar and Garb Shop. Rows stay hidden until the item is found, then the purchase is the check. A random 3 to 6 bazaar shop items start unlocked.
+- Shop checks (with auto hints!) for the Small Jar Bazaar and Garb Shop. Rows stay hidden until the item is found, then the purchase is the check. A random 3 to 6 bazaar shop items start unlocked.
 - Murk and starting runes as items
 - Checks (as counters): Day 1 bosses, Day 2 bosses, evergaol seals, magician tower unlocks, invader kills, max flask uses increases, treasure map discoveries, character unlocks (Duchess stopwatch turn in, Revenant battle, talking to Undertaker and Scholar), defeating tutorial Margit
 - Goal: Kill Heolstor, kill X Nightlords or kill a specific Nightlord
@@ -17,7 +17,7 @@ Archipelago world for *Elden Ring Nightreign*
 
 ## Notes
 - Garb shop purchase checks are logically gated behind having access to two non-dlc expeditions. Per normal game logic, you must defeat two nightlords to access the garb shop.
-- Defeating tutorial Margit right off the rip has a chance to give you some murk to immediately make the starting shop purchases for some early sphere 0 checks, pre-first-expedition
+- Defeating tutorial Margit right off the rip has a chance to give you some murk to immediately buy the starting shop purchases for some early sphere 0 checks, pre-first-expedition
 - Invader kill checks past the first handful are logically gated behind having the Deep of Night expedition unlocked (easy Calamity spawns)
 - Logical spheres for counter checks are equally divided by the number of nightlords you need to kill to win. This is to help prevent other players' early sphere items from being buried in your late checks
 - It is perfectly valid and might be helpful to other players to spam day-1-only expeditions where you rush churches, fort map rooms, gaols, towers and invader camps, if they hint something they need that's buried under those checks
