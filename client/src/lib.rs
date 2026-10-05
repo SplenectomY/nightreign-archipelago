@@ -541,6 +541,7 @@ fn worker() {
                 continue;
             }
             let expedition = found.get(7500) == Some(true) || found.get(7505) == Some(true) || found.get(7510) == Some(true);
+            flag_write::set_day1(found.get(7500) == Some(true));
             if flag_write::in_expedition() != expedition {
                 flag_write::set_in_expedition(expedition);
                 log_line(&watch_dir, &format!("NRAP expedition {}", if expedition { "started, unlock writes paused" } else { "ended" }));
@@ -754,6 +755,9 @@ fn worker() {
             if let Some(msg) = grant::retry() {
                 log_line(&dir, &msg);
             }
+        }
+        if let Some(msg) = grant::tick_starting_runes(&flag_write::cache_seed(), flag_write::day1()) {
+            log_line(&dir, &msg);
         }
         thread::sleep(Duration::from_millis(200));
     }

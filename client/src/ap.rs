@@ -570,6 +570,19 @@ fn handle_server_text(text: &str, log: &impl Fn(&str), next_index: &mut i64, dro
             "NRAP received {} ({id}) index {ap_index}",
             item_name(id)
         ));
+        if crate::grant::is_starting_rune(id) {
+            if let Some(msg) = crate::grant::note_starting_runes(
+                &crate::flag_write::cache_seed(),
+                ap_index,
+                id,
+                crate::flag_write::in_expedition(),
+            ) {
+                log(&msg);
+            }
+            count += 1;
+            from = at + 8;
+            continue;
+        }
         if crate::flag_write::enqueue_item(ap_index, id) {
             log(&format!("NRAP grant queued {} ({id}) index {ap_index}", item_name(id)));
         } else {

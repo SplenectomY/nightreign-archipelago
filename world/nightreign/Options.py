@@ -234,6 +234,33 @@ class MurkHoard(Range):
     default = 1300
 
 
+class StartingRunes1000Count(Range):
+    """Copies of Starting Runes + 1000 in the pool. Useful, not filler. 0 to 100. Default 20.
+    Legal in every sphere, so this is the only denomination that can appear before the first Nightlord."""
+    display_name = "Starting Runes + 1000 count"
+    range_start = 0
+    range_end = 100
+    default = 20
+
+
+class StartingRunes5000Count(Range):
+    """Copies of Starting Runes + 5000. 0 to 100. Default 10.
+    Banned from sphere 0. First legal sphere is 1, after one Nightlord defeat."""
+    display_name = "Starting Runes + 5000 count"
+    range_start = 0
+    range_end = 100
+    default = 10
+
+
+class StartingRunes10000Count(Range):
+    """Copies of Starting Runes + 10000. 0 to 100. Default 5.
+    Banned from the first half of spheres. With the default 4 spheres, first legal sphere is 2."""
+    display_name = "Starting Runes + 10000 count"
+    range_start = 0
+    range_end = 100
+    default = 5
+
+
 class DeathLink(Toggle):
     """On: a run-ending death (flag 9017) kills every other Nightreign player with this on. Their current HP is set to 0."""
     display_name = "Death Link"
@@ -268,4 +295,7 @@ class NightreignOptions(PerGameCommonOptions):
     murk_coffer: MurkCoffer
     murk_chest: MurkChest
     murk_hoard: MurkHoard
+    starting_runes_1000_count: StartingRunes1000Count
+    starting_runes_5000_count: StartingRunes5000Count
+    starting_runes_10000_count: StartingRunes10000Count
     death_link: DeathLink

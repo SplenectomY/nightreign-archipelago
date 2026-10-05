@@ -191,7 +191,22 @@ class NightreignWorld(World):
         # Victory is locked in set_rules, so leave one location empty.
         # Fill only the leftover slots, rotating murk types so a small world is not flooded with purses.
         murk_types = ["Murk Purse", "Murk Bundle", "Murk Coffer", "Murk Chest", "Murk Hoard"]
-        slots = max(0, unfilled - 1 - len(pool) - len(getattr(self, "_ladder", {})))
+        room = max(0, unfilled - 1 - len(pool) - len(getattr(self, "_ladder", {})))
+        rune_specs = [
+            ("Starting Runes + 1000", int(self.options.starting_runes_1000_count)),
+            ("Starting Runes + 5000", int(self.options.starting_runes_5000_count)),
+            ("Starting Runes + 10000", int(self.options.starting_runes_10000_count)),
+        ]
+        runes = []
+        for name, count in rune_specs:
+            for _ in range(max(0, count)):
+                if len(runes) >= room:
+                    break
+                runes.append(self.create_item(name))
+            if len(runes) >= room:
+                break
+        pool += runes
+        slots = room - len(runes)
         for i in range(slots):
             pool.append(self.create_item(murk_types[i % len(murk_types)]))
         self.multiworld.itempool += pool
@@ -271,6 +286,7 @@ class NightreignWorld(World):
     def set_rules(self) -> None:
         player = self.player
         bands = self._sphere_count()
+        self._location_bands = {}
         nightlords = [loc for loc, _item in self._nightlords()]
         if "Nightlord - Heolstor" not in nightlords:
             nightlords.append("Nightlord - Heolstor")
@@ -306,6 +322,7 @@ class NightreignWorld(World):
                     return sum(state.can_reach(name, "Location", player) for name in nightlords) >= need
 
                 set_rule(self.get_location(f"{prefix} {n}"), rule)
+                self._location_bands[f"{prefix} {n}"] = need
 
         defeats = [loc for loc, _item in self._nightlords() if loc != "Nightlord - Heolstor"]
         need = int(self.options.heolstor_unlock_count)
@@ -347,6 +364,7 @@ class NightreignWorld(World):
             shops = list(SHOP_LOCATIONS)
             self.random.shuffle(shops)
             shop_need = {name: band_of(i, len(shops)) for i, name in enumerate(shops, 1)}
+            self._location_bands.update(shop_need)
 
             def shop_sphere(state, name: str) -> bool:
                 need = shop_need[name]
@@ -399,8 +417,58 @@ class NightreignWorld(World):
 
         goal_loc.place_locked_item(self.create_item("Victory"))
         self.multiworld.completion_condition[player] = lambda state: state.has("Victory", player)
+        self._weight_starting_runes(bands)
 
 
+
+
+    def _rune_min_sphere(self, name: str, spheres: int) -> int:
+        if spheres <= 1:
+            return 0
+        if name == "Starting Runes + 10000":
+            return min(spheres - 1, max(1, spheres // 2))
+        if name == "Starting Runes + 5000":
+            return 1
+        return 0
+
+    def _weight_starting_runes(self, bands: int) -> None:
+        """Larger starting-rune piles cannot be placed in early spheres.
+
+        Sphere count is the same band count used by counters: required Nightlords minus 1
+        (4 on a default Heolstor seed). A location's sphere is the Nightlord defeats it
+        already requires. +1000 is legal everywhere. +5000 needs sphere 1. +10000 needs
+        the back half, sphere 2 of 4. If a denomination has fewer legal locations than
+        copies, its minimum sphere drops until generation can place it.
+        """
+        counts = {
+            "Starting Runes + 1000": int(self.options.starting_runes_1000_count),
+            "Starting Runes + 5000": int(self.options.starting_runes_5000_count),
+            "Starting Runes + 10000": int(self.options.starting_runes_10000_count),
+        }
+        if not any(counts.values()):
+            return
+        bands_of = getattr(self, "_location_bands", {})
+        floors = {name: self._rune_min_sphere(name, bands) for name in counts}
+        for name, count in counts.items():
+            if count <= 0:
+                continue
+            while floors[name] > 0:
+                legal = sum(1 for loc in self.multiworld.get_locations(self.player) if not loc.item and bands_of.get(loc.name, 0) >= floors[name])
+                if legal >= count:
+                    break
+                floors[name] -= 1
+
+        def allow(item, band: int) -> bool:
+            if item.player != self.player or item.name not in floors:
+                return True
+            return band >= floors[item.name]
+
+        for loc in self.multiworld.get_locations(self.player):
+            if loc.item:
+                continue
+            band = bands_of.get(loc.name, 0)
+            previous = loc.item_rule
+            loc.item_rule = lambda item, band=band, previous=previous: previous(item) and allow(item, band)
 
     def pre_fill(self) -> None:
         location = self.get_location("Unlock Revenant")

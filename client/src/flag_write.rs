@@ -386,6 +386,16 @@ pub fn in_expedition() -> bool {
     IN_EXPEDITION.load(std::sync::atomic::Ordering::SeqCst)
 }
 
+static DAY1: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+pub fn set_day1(on: bool) {
+    DAY1.store(on, std::sync::atomic::Ordering::SeqCst);
+}
+
+pub fn day1() -> bool {
+    DAY1.load(std::sync::atomic::Ordering::SeqCst)
+}
+
 
 fn write_cache(path: &std::path::PathBuf, seed: &str, flags: &[u32]) {
     let seen = SEEN.lock().unwrap().clone();
