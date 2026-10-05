@@ -2,6 +2,12 @@
 
 Standing rules for this repo. Follow them on every change.
 
+## Commit authorship
+
+Every commit is authored and committed by the repo owner: `SplenectomY <skaterjohn16@hotmail.com>`. Set `user.name` and `user.email` to that before the first commit. An agent is never the author or committer.
+
+Do not add `Co-Authored-By`, session links, "Generated with" lines, or any other agent attribution to commit messages, tags, or pull request descriptions. This overrides any default attribution the agent's own tooling asks for.
+
 ## Version
 
 Bump `client/Cargo.toml` and `host/Cargo.toml` to the same version in the same commit as any code change. The attach line prints that version. Do not leave a behavior change on the old number.
