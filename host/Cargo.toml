@@ -1,6 +1,6 @@
 [package]
 name = "nrap_host"
-version = "0.7.22"
+version = "0.7.23"
 edition = "2021"
 description = "External window for the Nightreign Archipelago client"
 

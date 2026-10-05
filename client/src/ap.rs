@@ -75,6 +75,7 @@ fn escape(s: &str) -> String {
 
 static ITEM_NAMES: Mutex<Vec<(i64, String)>> = Mutex::new(Vec::new());
 static LOCATION_NAMES: Mutex<Vec<(i64, String)>> = Mutex::new(Vec::new());
+static PACKAGE_GAMES: Mutex<Vec<String>> = Mutex::new(Vec::new());
 
 pub fn item_name(id: i64) -> String {
     if let Some(name) = crate::names::item_label(id) {
@@ -135,6 +136,48 @@ fn ingest_package(text: &str) {
     }
 }
 
+fn note_games(games: &[String]) {
+    let mut have = PACKAGE_GAMES.lock().unwrap();
+    for game in games {
+        if !game.is_empty() && !have.iter().any(|have| have == game) {
+            have.push(game.clone());
+        }
+    }
+}
+
+fn games_in_package(text: &str) -> Vec<String> {
+    let Some(at) = text.find("\"games\":") else { return Vec::new() };
+    let rest = &text[at..];
+    let Some(start) = rest.find('{') else { return Vec::new() };
+    let chars: Vec<char> = rest[start + 1..].chars().collect();
+    let mut games = Vec::new();
+    let mut depth = 1i32;
+    let mut i = 0usize;
+    while i < chars.len() && depth > 0 {
+        let c = chars[i];
+        if c == '{' { depth += 1; i += 1; continue; }
+        if c == '}' { depth -= 1; i += 1; continue; }
+        if c == '"' && depth == 1 {
+            let mut name = String::new();
+            i += 1;
+            while i < chars.len() {
+                let ch = chars[i];
+                i += 1;
+                if ch == '\\' && i < chars.len() { name.push(chars[i]); i += 1; continue; }
+                if ch == '"' { break; }
+                name.push(ch);
+            }
+            while i < chars.len() && chars[i].is_whitespace() { i += 1; }
+            if i < chars.len() && chars[i] == ':' && !name.is_empty() && !games.contains(&name) {
+                games.push(name);
+            }
+            continue;
+        }
+        i += 1;
+    }
+    games
+}
+
 fn package_games(text: &str) -> Vec<String> {
     let Some(at) = text.find("datapackage_checksums") else { return Vec::new() };
     let rest = &text[at..at.saturating_add(4000).min(text.len())];
@@ -190,6 +233,10 @@ fn load_names() -> usize {
     let text = std::fs::read_to_string(path).unwrap_or_default();
     if text.is_empty() { return 0; }
     for line in text.lines() {
+        if let Some(rest) = line.strip_prefix("#games\t") {
+            note_games(&rest.split('\t').map(|s| s.to_string()).filter(|s| !s.is_empty()).collect::<Vec<_>>());
+            continue;
+        }
         let mut parts = line.splitn(3, '\t');
         let kind = parts.next().unwrap_or("");
         let id = parts.next().and_then(|s| s.parse::<i64>().ok());
@@ -205,6 +252,15 @@ fn load_names() -> usize {
 fn save_names() {
     let Some(path) = names_path() else { return };
     let mut body = String::new();
+    let games = PACKAGE_GAMES.lock().unwrap().clone();
+    if !games.is_empty() {
+        body.push_str("#games");
+        for game in &games {
+            body.push('\t');
+            body.push_str(game);
+        }
+        body.push('\n');
+    }
     for (id, name) in ITEM_NAMES.lock().unwrap().iter() {
         body.push_str(&format!("i\t{id}\t{name}\n"));
     }
@@ -446,6 +502,7 @@ fn handle_server_text(text: &str, log: &impl Fn(&str), next_index: &mut i64, dro
         }
     }
     if text.contains("DataPackage") {
+        note_games(&games_in_package(text));
         let before = ITEM_NAMES.lock().unwrap().len();
         ingest_package(text);
         let after = ITEM_NAMES.lock().unwrap().len();
@@ -573,20 +630,21 @@ fn connect_and_handshake(
         if let Some(dir) = package_dir() {
             let raw = dir.join("preflight_package.txt");
             if let Ok(text) = std::fs::read_to_string(&raw) {
+                note_games(&games_in_package(&text));
                 ingest_package(&text);
                 save_names();
                 let _ = std::fs::remove_file(&raw);
             }
         }
         let cached = load_names();
+        let have = PACKAGE_GAMES.lock().unwrap().clone();
+        let missing: Vec<String> = package_games(&room).into_iter().filter(|g| !have.iter().any(|h| h == g)).collect();
         if cached > 0 {
             log(&format!("NRAP AP datapackage cache loaded {cached}"));
-        } else {
-            let games = package_games(&room);
-            if !games.is_empty() {
-                let _ = socket.send(Message::Text(datapackage_request(&games).into()));
-                log(&format!("NRAP AP requested datapackage for {}", games.join(", ")));
-            }
+        }
+        if !missing.is_empty() {
+            let _ = socket.send(Message::Text(datapackage_request(&missing).into()));
+            log(&format!("NRAP AP requested datapackage for {}", missing.join(", ")));
         }
     }
     let connect = format!(
