@@ -195,6 +195,7 @@ const RUNE_10000: i64 = 839_100_123;
 struct RuneBank {
     seed: String,
     piles: HashMap<i64, i32>,
+    paid_now: HashMap<i64, i32>,
     day1_at: Option<Instant>,
     saw_day1: bool,
     paid_this_rise: bool,
@@ -203,6 +204,7 @@ struct RuneBank {
 static RUNES: Mutex<RuneBank> = Mutex::new(RuneBank {
     seed: String::new(),
     piles: HashMap::new(),
+    paid_now: HashMap::new(),
     day1_at: None,
     saw_day1: false,
     paid_this_rise: false,
@@ -225,13 +227,14 @@ fn bind_seed(bank: &mut RuneBank, seed: &str) {
     if bank.seed != seed {
         bank.seed = seed.to_string();
         bank.piles.clear();
+        bank.paid_now.clear();
         bank.day1_at = None;
         bank.saw_day1 = false;
         bank.paid_this_rise = false;
     }
 }
 
-pub fn note_starting_runes(seed: &str, index: i64, item_id: i64, _expedition: bool) -> Option<String> {
+pub fn note_starting_runes(seed: &str, index: i64, item_id: i64, expedition: bool) -> Option<String> {
     let amt = rune_amount(item_id)?;
     let mut bank = RUNES.lock().unwrap();
     bind_seed(&mut bank, seed);
@@ -240,10 +243,16 @@ pub fn note_starting_runes(seed: &str, index: i64, item_id: i64, _expedition: bo
     }
     bank.piles.insert(index, amt);
     let total: i32 = bank.piles.values().sum();
-    Some(format!(
-        "NRAP starting runes banked +{amt} {} ({item_id}) index={index} total={total}",
-        crate::ap::item_name(item_id)
-    ))
+    let name = crate::ap::item_name(item_id);
+    if expedition {
+        bank.paid_now.insert(index, amt);
+        drop(bank);
+        return Some(match add_runes(amt) {
+            Ok(detail) => format!("NRAP starting runes +{amt} {name} ({item_id}) index={index} banked={total} {detail}"),
+            Err(e) => format!("NRAP starting runes banked +{amt} {name} index={index} grant failed ({e})"),
+        });
+    }
+    Some(format!("NRAP starting runes banked +{amt} {name} ({item_id}) index={index} total={total}"))
 }
 
 pub fn tick_starting_runes(seed: &str, day1: bool) -> Option<String> {
@@ -259,6 +268,7 @@ pub fn tick_starting_runes(seed: &str, day1: bool) -> Option<String> {
         bank.day1_at = None;
         bank.saw_day1 = false;
         bank.paid_this_rise = false;
+        bank.paid_now.clear();
         return None;
     }
     if !bank.saw_day1 {
@@ -273,9 +283,13 @@ pub fn tick_starting_runes(seed: &str, day1: bool) -> Option<String> {
     if started.elapsed() < Duration::from_secs(5) {
         return None;
     }
-    let total: i32 = bank.piles.values().sum();
-    let n = bank.piles.len();
+    let total: i32 = bank.piles.iter().filter(|(k, _)| !bank.paid_now.contains_key(k)).map(|(_, v)| *v).sum();
+    let n = bank.piles.len() - bank.paid_now.len();
     drop(bank);
+    if total <= 0 {
+        RUNES.lock().unwrap().paid_this_rise = true;
+        return None;
+    }
     match add_runes(total) {
         Ok(detail) => {
             RUNES.lock().unwrap().paid_this_rise = true;
