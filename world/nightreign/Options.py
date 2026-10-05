@@ -187,7 +187,7 @@ class BuriedTreasureCount(Range):
 
 
 class FlaskCount(Range):
-    """How many crimson flask max-use increases become locations. Flag 9041 rises when an expedition starts, so the check is the later 1 to 0. Only read during an expedition."""
+    """How many crimson flask max-use increases become locations. Flag 9041. Edges within 7 seconds of the Day 1 start are ignored. A clear at the end of the run is ignored."""
     display_name = "Flask Count"
     range_start = 0
     range_end = 60

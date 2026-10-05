@@ -88,10 +88,10 @@ Template counts. The generator spreads them across spheres, one band per Nightlo
 | Open Magician Tower N | 30 in the template, 10 if omitted | 1–50 | Tower opened, flag 8140 |
 | Defeat Invaders N | 20 | 0–50 | Invader dies, flag 8155. 6 and up need Deep of Night |
 | Buried Treasure Map N | 40 | 0–100 | Map point opens, flags 8120–8131 |
-| Flask Max Uses Increased N | 30 | 0–60 | Flag 9041 falls during an expedition |
+| Flask Max Uses Increased N | 30 | 0–60 | Flag 9041 rises or falls. Edges within 7 seconds of Day 1 start are ignored |
 | Defeat Tutorial Margit | 1 | toggle, default on | Flag 6012 |
 
-Leaving an expedition clears the toggling flags. Those clears do not add another check. Flask ignores the rise at expedition start.
+Leaving an expedition clears the toggling flags. Those clears do not add another check. Flask also ignores any edge within 7 seconds of the Day 1 start flag.
 
 ## Other locations
 

@@ -573,18 +573,17 @@ fn worker() {
                                 log_line(&watch_dir, &format!("NRAP day boss {flag} count {n} loc {loc}"));
                             }
                         }
+                        if last.is_some() && *flag == 7500 && on {
+                            DAY1_RISE_MS.store(now_ms(), Ordering::SeqCst);
+                            let rise = DAY1_RISE_MS.load(Ordering::SeqCst);
+                            FLASK_PENDING.lock().unwrap().retain(|(at, _)| at.abs_diff(rise) > 7000);
+                        }
                         if last.is_some() && *flag == 9041 {
-                            static SEEN_FALL: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
-                            if !flag_write::in_expedition() {
-                                SEEN_FALL.store(false, Ordering::SeqCst);
-                            } else if !on || SEEN_FALL.load(Ordering::SeqCst) {
-                                if !on {
-                                    SEEN_FALL.store(true, Ordering::SeqCst);
-                                }
-                                if let Some((n, loc)) = flag_write::note_toggle(*flag, on) {
-                                    let _ = watch_tx.send(loc);
-                                    log_line(&watch_dir, &format!("NRAP flask {flag} count {n} loc {loc}"));
-                                }
+                            let at = now_ms();
+                            if flask_near_day1(at) {
+                                log_line(&watch_dir, &format!("NRAP flask 9041 {} ignored, day 1 start window", if on { "rise" } else { "fall" }));
+                            } else {
+                                FLASK_PENDING.lock().unwrap().push((at, on));
                             }
                         }
                         if last.is_some() && matches!(*flag, 8140 | 8145 | 8155) {
@@ -606,6 +605,7 @@ fn worker() {
                 }
             }
             drop(day);
+            flush_flask(&watch_tx, &watch_dir);
             let cfg = config.as_ref().and_then(|p| std::fs::read_to_string(p).ok()).unwrap_or_default();
             static EXTRA: std::sync::Mutex<Vec<(u32, Option<bool>)>> = std::sync::Mutex::new(Vec::new());
             let mut extra = EXTRA.lock().unwrap();
@@ -806,6 +806,47 @@ fn apply_death_link() -> String {
             Ok(msg) => { ap::suppress_local_death(8); format!("NRAP death link instant; {msg}") }
             Err(e) => format!("NRAP hp kill failed: {e}"),
         },
+    }
+}
+
+
+static DAY1_RISE_MS: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+static FLASK_PENDING: std::sync::Mutex<Vec<(u64, bool)>> = std::sync::Mutex::new(Vec::new());
+
+fn now_ms() -> u64 {
+    std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_millis() as u64).unwrap_or(0)
+}
+
+fn flask_near_day1(at: u64) -> bool {
+    let rise = DAY1_RISE_MS.load(Ordering::SeqCst);
+    rise != 0 && at.abs_diff(rise) <= 7000
+}
+
+fn flush_flask(watch_tx: &std::sync::mpsc::Sender<i64>, watch_dir: &Option<std::path::PathBuf>) {
+    let now = now_ms();
+    let ready: Vec<(u64, bool)> = {
+        let mut pending = FLASK_PENDING.lock().unwrap();
+        let mut later = Vec::new();
+        let mut ready = Vec::new();
+        for edge in pending.drain(..) {
+            if flask_near_day1(edge.0) {
+                log_line(watch_dir, &format!("NRAP flask 9041 {} ignored, day 1 start window", if edge.1 { "rise" } else { "fall" }));
+            } else if now.saturating_sub(edge.0) < 7000 {
+                later.push(edge);
+            } else {
+                ready.push(edge);
+            }
+        }
+        *pending = later;
+        ready
+    };
+    for (_at, rising) in ready {
+        if let Some((n, loc)) = flag_write::note_toggle(9041, rising) {
+            let _ = watch_tx.send(loc);
+            log_line(watch_dir, &format!("NRAP flask 9041 count {n} loc {loc}"));
+        } else if !rising {
+            log_line(watch_dir, "NRAP flask 9041 clear ignored");
+        }
     }
 }
 
