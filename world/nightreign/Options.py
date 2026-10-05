@@ -235,7 +235,7 @@ class MurkHoard(Range):
 
 
 class DeathLink(Toggle):
-    """Not implemented. Leave off. A death does not kill other players."""
+    """On: a run-ending death (flag 9017) kills every other Nightreign player with this on. Their current HP is set to 0."""
     display_name = "Death Link"
     default = False
 

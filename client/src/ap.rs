@@ -2,6 +2,7 @@
 
 use std::net::TcpStream;
 use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering};
+use std::time::{SystemTime, UNIX_EPOCH};
 use std::sync::Mutex;
 use std::sync::mpsc::{Receiver, RecvTimeoutError};
 use std::time::Duration;
@@ -15,6 +16,22 @@ const ITEMS_HANDLING: u8 = 0b111;
 pub static RECONNECT: AtomicBool = AtomicBool::new(false);
 static BACKOFF: AtomicU64 = AtomicU64::new(1);
 static SHOP_HINTS: Mutex<Vec<i64>> = Mutex::new(Vec::new());
+static DEATH_LINK: AtomicBool = AtomicBool::new(false);
+static LOCAL_DEATH: AtomicBool = AtomicBool::new(false);
+static INCOMING_DEATH: AtomicBool = AtomicBool::new(false);
+static LAST_SENT: AtomicU64 = AtomicU64::new(0);
+static SLOT_NAME: Mutex<String> = Mutex::new(String::new());
+
+pub fn note_local_death() {
+    if DEATH_LINK.load(Ordering::SeqCst) {
+        LOCAL_DEATH.store(true, Ordering::SeqCst);
+    }
+}
+
+pub fn take_death() -> bool {
+    INCOMING_DEATH.swap(false, Ordering::SeqCst)
+}
+
 
 pub fn request_reconnect() {
     RECONNECT.store(true, Ordering::SeqCst);
@@ -467,6 +484,10 @@ fn apply_slot_data(text: &str, log: &impl Fn(&str)) {
     if let (Some(in_pool), Some(count)) = (json_bool(text, "heolstor_in_pool"), json_u32(text, "heolstor_unlock_count")) {
         crate::flag_write::configure_heolstor(in_pool, count);
     }
+    if let Some(on) = json_bool(text, "death_link") {
+        DEATH_LINK.store(on, Ordering::SeqCst);
+        log(&format!("NRAP death link {}", if on { "on" } else { "off" }));
+    }
     if let (Some(purse), Some(bundle), Some(coffer), Some(chest), Some(hoard)) = (
         json_u32(text, "murk_purse"),
         json_u32(text, "murk_bundle"),
@@ -494,6 +515,15 @@ fn handle_server_text(text: &str, log: &impl Fn(&str), next_index: &mut i64, dro
     if text.contains("ConnectionRefused") {
         log(&format!("NRAP AP server refused: {text}"));
         return;
+    }
+    if text.contains("\"cmd\":\"Bounce\"") && text.contains("DeathLink") && DEATH_LINK.load(Ordering::SeqCst) {
+        let source = object_str(text, "source").unwrap_or_default();
+        let now = SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
+        let mine = SLOT_NAME.lock().unwrap().clone();
+        if !source.is_empty() && source != mine && now.saturating_sub(LAST_SENT.load(Ordering::SeqCst)) > 3 {
+            INCOMING_DEATH.store(true, Ordering::SeqCst);
+            log(&format!("NRAP death link from {source}"));
+        }
     }
     remember_players(text);
     if text.contains("RoomInfo") {
@@ -648,7 +678,7 @@ fn connect_and_handshake(
         }
     }
     let connect = format!(
-        "[{{\"cmd\":\"Connect\",\"password\":\"{}\",\"game\":\"{}\",\"name\":\"{}\",\"uuid\":\"\",\"version\":{{\"major\":0,\"minor\":5,\"build\":1,\"class\":\"Version\"}},\"items_handling\":{},\"tags\":[\"AP\"],\"slot_data\":true}}]",
+        "[{{\"cmd\":\"Connect\",\"password\":\"{}\",\"game\":\"{}\",\"name\":\"{}\",\"uuid\":\"\",\"version\":{{\"major\":0,\"minor\":5,\"build\":1,\"class\":\"Version\"}},\"items_handling\":{},\"tags\":[\"AP\",\"DeathLink\"],\"slot_data\":true}}]",
         escape(&cfg.password),
         GAME,
         escape(&cfg.slot),
@@ -807,7 +837,22 @@ fn send_checks(socket: &mut Socket, ids: &[i64]) -> Result<(), String> {
         .map_err(|e| format!("LocationChecks: {e}"))
 }
 
+
+fn send_death(socket: &mut Socket, slot: &str) -> Result<(), String> {
+    let now = SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
+    LAST_SENT.store(now, Ordering::SeqCst);
+    let cause = format!("{slot} was slain.");
+    let pkt = format!(
+        "[{{\"cmd\":\"Bounce\",\"tags\":[\"DeathLink\"],\"data\":{{\"time\":{now}.0,\"source\":\"{}\",\"cause\":\"{}\"}}}}]",
+        escape(slot),
+        escape(&cause)
+    );
+    socket.send(Message::Text(pkt.into())).map_err(|e| format!("DeathLink: {e}"))?;
+    Ok(())
+}
+
 pub fn run(mut cfg: ApConfig, rx: Receiver<i64>, say_rx: Receiver<String>, drop_goods: i32, config_path: std::path::PathBuf, log: impl Fn(&str)) {
+    *SLOT_NAME.lock().unwrap() = cfg.slot.clone();
     log(&format!("NRAP AP targeting {} slot {}", cfg.host, cfg.slot));
     let mut pending: Vec<i64> = Vec::new();
     let mut hold = false;
@@ -834,6 +879,7 @@ pub fn run(mut cfg: ApConfig, rx: Receiver<i64>, say_rx: Receiver<String>, drop_
             if let Ok(text) = std::fs::read_to_string(&config_path) {
                 cfg = ApConfig::from_toml(&text);
             }
+            *SLOT_NAME.lock().unwrap() = cfg.slot.clone();
             log(&format!("NRAP AP reconnecting to {} slot {}", cfg.host, cfg.slot));
         }
         let mut next_index = 0i64;
@@ -881,6 +927,12 @@ pub fn run(mut cfg: ApConfig, rx: Receiver<i64>, say_rx: Receiver<String>, drop_
                                 break;
                             }
                             flush_shop_hints(&mut socket, &log);
+                            if LOCAL_DEATH.swap(false, Ordering::SeqCst) {
+                                match send_death(&mut socket, &cfg.slot) {
+                                    Ok(()) => log("NRAP death link sent"),
+                                    Err(e) => log(&format!("NRAP death link send failed: {e}")),
+                                }
+                            }
                             match send_goal(&mut socket) {
                                 Ok(true) => log("NRAP AP goal sent"),
                                 Ok(false) => {}
@@ -893,6 +945,12 @@ pub fn run(mut cfg: ApConfig, rx: Receiver<i64>, say_rx: Receiver<String>, drop_
                                 break;
                             }
                             flush_shop_hints(&mut socket, &log);
+                            if LOCAL_DEATH.swap(false, Ordering::SeqCst) {
+                                match send_death(&mut socket, &cfg.slot) {
+                                    Ok(()) => log("NRAP death link sent"),
+                                    Err(e) => log(&format!("NRAP death link send failed: {e}")),
+                                }
+                            }
                             match send_goal(&mut socket) {
                                 Ok(true) => log("NRAP AP goal sent"),
                                 Ok(false) => {}

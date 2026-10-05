@@ -8,6 +8,7 @@ mod flagdiff_opts;
 mod flag_write;
 mod flagman;
 mod grant;
+mod hp;
 mod hero;
 mod menu;
 mod names;
@@ -329,6 +330,10 @@ fn worker() {
     let dir = dll_dir();
     bind_console();
     log_line(&dir, &format!("NRAP attached {}", env!("CARGO_PKG_VERSION")));
+    match hp::init() {
+        Ok(msg) => log_line(&dir, &msg),
+        Err(e) => log_line(&dir, &format!("NRAP hp hook failed: {e}")),
+    }
 
     let base = unsafe { GetModuleHandleA(std::ptr::null()) };
     log_line(&dir, &format!("NRAP nightreign.exe base = {base:p}"));
@@ -490,6 +495,21 @@ fn worker() {
             }
             if FLAG_DIFF.load(Ordering::SeqCst) {
                 scan_flag_diff(&found, &watch_dir);
+            }
+            if ap::take_death() {
+                match hp::set_zero() {
+                    Ok(msg) => log_line(&watch_dir, &msg),
+                    Err(e) => log_line(&watch_dir, &format!("NRAP hp kill failed: {e}")),
+                }
+            }
+            static DEAD: std::sync::Mutex<Option<bool>> = std::sync::Mutex::new(None);
+            if let Some(on) = found.get(9017) {
+                let mut last = DEAD.lock().unwrap();
+                if *last == Some(false) && on {
+                    log_line(&watch_dir, "NRAP run-ending death 9017");
+                    ap::note_local_death();
+                }
+                *last = Some(on);
             }
             if !in_game {
                 if flag_write::in_expedition() {
