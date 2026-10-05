@@ -65,11 +65,17 @@ class NightreignWorld(World):
         return rows
 
     def _everdark(self):
-        if not self.options.include_everdark:
-            return []
-        rows = list(EVERDARK_NIGHTLORDS)
-        if self.options.include_dlc:
-            rows += EVERDARK_DLC
+        rows = []
+        if self.options.include_everdark:
+            rows = list(EVERDARK_NIGHTLORDS)
+            if self.options.include_dlc:
+                rows += EVERDARK_DLC
+        if self.options.goal.current_key == "specific":
+            goal = SPECIFIC_LOCATION.get(self.options.specific_nightlord.current_key, "")
+            if goal.startswith("Everdark - ") and all(loc != goal for loc, _item in rows):
+                for loc, item in list(EVERDARK_NIGHTLORDS) + list(EVERDARK_DLC):
+                    if loc == goal:
+                        rows.append((loc, item))
         return rows
 
     def _unlocks(self) -> List[str]:

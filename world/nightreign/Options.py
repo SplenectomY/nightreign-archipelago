@@ -25,8 +25,12 @@ class NightlordCount(Range):
 
 
 class SpecificNightlord(Choice):
-    """Used when goal is specific. gladius, adel, gnoster, maris, libra, fulghor, caligo, heolstor, harmonia, straghess.
-    harmonia and straghess need include_dlc.
+    """Used when goal is specific.
+    gladius, adel, gnoster, maris, libra, fulghor, caligo, heolstor, harmonia, straghess,
+    everdark_gladius, everdark_adel, everdark_gnoster, everdark_maris, everdark_libra,
+    everdark_fulghor, everdark_caligo, everdark_harmonia.
+    harmonia, straghess, and everdark_harmonia need include_dlc.
+    An everdark goal still creates that defeat location if include_everdark is off.
     """
     display_name = "Specific Nightlord"
     option_gladius = 0
@@ -39,6 +43,14 @@ class SpecificNightlord(Choice):
     option_heolstor = 7
     option_harmonia = 8
     option_straghess = 9
+    option_everdark_gladius = 10
+    option_everdark_adel = 11
+    option_everdark_gnoster = 12
+    option_everdark_maris = 13
+    option_everdark_libra = 14
+    option_everdark_fulghor = 15
+    option_everdark_caligo = 16
+    option_everdark_harmonia = 17
     default = 7
 
 

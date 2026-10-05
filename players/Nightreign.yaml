@@ -33,8 +33,10 @@ Elden Ring Nightreign:
   nightlord_count: 4
 
   # Used only when goal is specific. Ignored for heolstor and count.
-  # gladius, adel, gnoster, maris, libra, fulghor, caligo, heolstor, harmonia, straghess.
-  # harmonia and straghess need include_dlc.
+  # gladius, adel, gnoster, maris, libra, fulghor, caligo, heolstor, harmonia, straghess,
+  # everdark_gladius, everdark_adel, everdark_gnoster, everdark_maris, everdark_libra,
+  # everdark_fulghor, everdark_caligo, everdark_harmonia.
+  # harmonia, straghess, and everdark_harmonia need include_dlc.
   specific_nightlord:
     heolstor: 50
     gladius: 0
@@ -46,6 +48,14 @@ Elden Ring Nightreign:
     caligo: 0
     harmonia: 0
     straghess: 0
+    everdark_gladius: 0
+    everdark_adel: 0
+    everdark_gnoster: 0
+    everdark_maris: 0
+    everdark_libra: 0
+    everdark_fulghor: 0
+    everdark_caligo: 0
+    everdark_harmonia: 0
 
   # false: Heolstor is not a shuffled unlock. He opens locally after heolstor_unlock_count
   # other Nightlord defeats. This is the default, and it forces a few expeditions before the goal.

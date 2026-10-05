@@ -691,4 +691,12 @@ SPECIFIC_LOCATION = {
     "heolstor": "Nightlord - Heolstor",
     "harmonia": "Nightlord - Harmonia",
     "straghess": "Nightlord - Straghess",
+    "everdark_gladius": "Everdark - Gladius",
+    "everdark_adel": "Everdark - Adel",
+    "everdark_gnoster": "Everdark - Gnoster",
+    "everdark_maris": "Everdark - Maris",
+    "everdark_libra": "Everdark - Libra",
+    "everdark_fulghor": "Everdark - Fulghor",
+    "everdark_caligo": "Everdark - Caligo",
+    "everdark_harmonia": "Everdark - Harmonia",
 }
