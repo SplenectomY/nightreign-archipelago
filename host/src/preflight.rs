@@ -1,4 +1,4 @@
-use std::net::TcpStream;
+use std::net::{TcpStream, ToSocketAddrs};
 use std::path::PathBuf;
 use std::time::Duration;
 use tungstenite::{client, Message};
@@ -22,12 +22,13 @@ fn classify(err: &str) -> Gate {
 }
 
 pub fn connect_and_cache(host: &str, slot: &str, password: &str, dir: &PathBuf) -> Result<(), Gate> {
-    let addr = host.trim().trim_start_matches("wss://").trim_start_matches("ws://");
+    let addr = host.trim().trim_start_matches("wss://").trim_start_matches("ws://").trim_end_matches('/');
+    let addr = addr.replace([\u{ff1a}, \u{2236}], ":");
     let local = addr.starts_with("127.") || addr.starts_with("localhost") || addr.starts_with("0.0.0.0") || addr.starts_with("[::1]");
     let url = if local { format!("ws://{addr}") } else { format!("wss://{addr}") };
     let tcp_addr = if addr.contains(':') { addr.to_string() } else { format!("{addr}:38281") };
-    let stream = TcpStream::connect_timeout(&tcp_addr.parse().map_err(|e: std::net::AddrParseError| classify(&e.to_string()))?, Duration::from_secs(8))
-        .map_err(|e| classify(&e.to_string()))?;
+    let socket_addr = tcp_addr.to_socket_addrs().map_err(|e| classify(&e.to_string()))?.next().ok_or(Gate::HostNotFound)?;
+    let stream = TcpStream::connect_timeout(&socket_addr, Duration::from_secs(8)).map_err(|e| classify(&e.to_string()))?;
     stream.set_read_timeout(Some(Duration::from_secs(8))).ok();
     stream.set_write_timeout(Some(Duration::from_secs(8))).ok();
     let mut socket = client(url, stream).map_err(|e| classify(&e.to_string()))?.0;
