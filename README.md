@@ -1,4 +1,4 @@
-# Nightreign Archipelago
+# Nightreign Archipelago (NRAP)
 
 Archipelago world for *Elden Ring Nightreign*
 
