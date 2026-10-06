@@ -186,8 +186,22 @@ pub fn apply() -> Option<String> {
         return Some(format!("NRAP hero write failed slot=0x{slot:X}; {gear}"));
     }
     let after = unsafe { std::ptr::read_unaligned(slot as *const u8) };
-    let skin = default_model(id)
-        .map(|model| crate::grant::set_skin(model).unwrap_or_else(|e| format!("NRAP skin failed: {e}")))
-        .unwrap_or_else(|| "NRAP skin skipped".to_string());
-    Some(format!("NRAP hero Wylder not granted, slot=0x{slot:X} {before}->{after}; {skin}; {gear}"))
+    Some(format!("NRAP hero Wylder not granted, slot=0x{slot:X} {before}->{after}; {gear}"))
+}
+
+/// Force the wanted default skin even if the session id was already switched.
+pub fn apply_model() -> Option<String> {
+    if WYLDER_GRANTED.load(Ordering::SeqCst) != 0 {
+        return None;
+    }
+    let id = WANTED.load(Ordering::SeqCst) as u8;
+    let model = default_model(id)?;
+    if id == 1 {
+        return None;
+    }
+    match crate::grant::set_skin(model) {
+        Ok(msg) if msg.contains("already") => None,
+        Ok(msg) => Some(msg),
+        Err(e) => Some(format!("NRAP skin failed: {e}")),
+    }
 }

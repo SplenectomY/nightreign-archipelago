@@ -753,6 +753,9 @@ fn worker() {
         if let Some(msg) = hero::apply() {
             log_line(&dir, &msg);
         }
+        if let Some(msg) = hero::apply_model() {
+            log_line(&dir, &msg);
+        }
         }
         if hold {
             if let Some(msg) = grant::retry() {
