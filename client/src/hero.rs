@@ -145,6 +145,23 @@ pub fn want(item_id: i64) -> Option<String> {
     apply()
 }
 
+fn default_model(session: u8) -> Option<i32> {
+    // Hexinton Change Skin defaults. Scholar and Undertaker follow the same +0x1000 step.
+    Some(match session {
+        1 => 5_000_100, // Wylder
+        2 => 5_001_100, // Guardian
+        3 => 5_002_100, // Ironeye
+        4 => 5_003_100, // Duchess
+        5 => 5_004_100, // Raider
+        6 => 5_005_100, // Revenant
+        7 => 5_006_100, // Recluse
+        8 => 5_007_100, // Executor
+        9 => 5_008_100, // Scholar
+        10 => 5_009_100, // Undertaker
+        _ => return None,
+    })
+}
+
 /// Write only when the live body is Wylder and Wylder was not granted.
 pub fn apply() -> Option<String> {
     if WYLDER_GRANTED.load(Ordering::SeqCst) != 0 {
@@ -168,5 +185,8 @@ pub fn apply() -> Option<String> {
         return Some(format!("NRAP hero write failed slot=0x{slot:X}"));
     }
     let after = unsafe { std::ptr::read_unaligned(slot as *const u8) };
-    Some(format!("NRAP hero Wylder not granted, slot=0x{slot:X} {before}->{after}"))
+    let skin = default_model(id)
+        .map(|model| crate::grant::set_skin(model).unwrap_or_else(|e| format!("NRAP skin failed: {e}")))
+        .unwrap_or_else(|| "NRAP skin skipped".to_string());
+    Some(format!("NRAP hero Wylder not granted, slot=0x{slot:X} {before}->{after}; {skin}"))
 }

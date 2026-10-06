@@ -58,6 +58,21 @@ pub fn add_runes(amount: i32) -> Result<String, String> {
     Ok(format!("NRAP runes +{amount} player=0x{player:X} ret={ret}"))
 }
 
+pub fn set_skin(model: i32) -> Result<String, String> {
+    if SLOT.load(Ordering::SeqCst) == 0 {
+        let _ = init();
+    }
+    let player = player_data().ok_or_else(|| "GameDataMan+8 not live".to_string())?;
+    let addr = player + 0x350;
+    let before = unsafe { std::ptr::read_unaligned(addr as *const i32) };
+    if before == model {
+        return Ok(format!("NRAP skin already {model}"));
+    }
+    unsafe { std::ptr::write_unaligned(addr as *mut i32, model) };
+    let after = unsafe { std::ptr::read_unaligned(addr as *const i32) };
+    Ok(format!("NRAP skin {before}->{after} player=0x{player:X}"))
+}
+
 fn player_data() -> Option<usize> {
     let slot = SLOT.load(Ordering::SeqCst);
     if slot < 0x10000 {
