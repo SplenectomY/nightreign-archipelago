@@ -545,6 +545,7 @@ fn worker() {
             }
             let expedition = found.get(7500) == Some(true) || found.get(7505) == Some(true) || found.get(7510) == Some(true);
             flag_write::set_day1(found.get(7500) == Some(true));
+            flag_write::set_in_tutorial(found.get(9801) == Some(true));
             if flag_write::in_expedition() != expedition {
                 flag_write::set_in_expedition(expedition);
                 log_line(&watch_dir, &format!("NRAP expedition {}", if expedition { "started, unlock writes paused" } else { "ended" }));
@@ -754,6 +755,9 @@ fn worker() {
             log_line(&dir, &msg);
         }
         if let Some(msg) = hero::apply_model() {
+            log_line(&dir, &msg);
+        }
+        if let Some(msg) = hero::apply_tutorial() {
             log_line(&dir, &msg);
         }
         }

@@ -162,9 +162,13 @@ fn default_model(session: u8) -> Option<i32> {
     })
 }
 
+fn tutorial_override() -> bool {
+    crate::ap::always_wylder_tutorial() && crate::flag_write::in_tutorial()
+}
+
 /// Write only when the live body is Wylder and Wylder was not granted.
 pub fn apply() -> Option<String> {
-    if WYLDER_GRANTED.load(Ordering::SeqCst) != 0 {
+    if tutorial_override() || WYLDER_GRANTED.load(Ordering::SeqCst) != 0 {
         return None;
     }
     let id = WANTED.load(Ordering::SeqCst) as u8;
@@ -191,7 +195,7 @@ pub fn apply() -> Option<String> {
 
 /// Force the wanted default skin even if the session id was already switched.
 pub fn apply_model() -> Option<String> {
-    if WYLDER_GRANTED.load(Ordering::SeqCst) != 0 {
+    if tutorial_override() || WYLDER_GRANTED.load(Ordering::SeqCst) != 0 {
         return None;
     }
     let id = WANTED.load(Ordering::SeqCst) as u8;
@@ -204,4 +208,27 @@ pub fn apply_model() -> Option<String> {
         Ok(msg) => Some(msg),
         Err(e) => Some(format!("NRAP skin failed: {e}")),
     }
+}
+
+/// Tutorial is the opposite of the Hold rule: put the body back on Wylder.
+pub fn apply_tutorial() -> Option<String> {
+    if !tutorial_override() {
+        return None;
+    }
+    let saved = OBJECT.load(Ordering::SeqCst);
+    if saved < 0x10000 {
+        return None;
+    }
+    let object = unsafe { std::ptr::read_unaligned(saved as *const usize) };
+    let slot = slot_addr(object)?;
+    let before = unsafe { std::ptr::read_unaligned(slot as *const u8) };
+    if before != 1 && !write_byte(slot, 1) {
+        return Some(format!("NRAP tutorial Wylder write failed slot=0x{slot:X}"));
+    }
+    let after = unsafe { std::ptr::read_unaligned(slot as *const u8) };
+    let skin = crate::grant::set_skin(5_000_100).unwrap_or_else(|e| format!("NRAP skin failed: {e}"));
+    if before == 1 && skin.contains("already") {
+        return None;
+    }
+    Some(format!("NRAP tutorial forces Wylder slot=0x{slot:X} {before}->{after}; {skin}"))
 }

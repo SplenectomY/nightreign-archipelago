@@ -13,6 +13,7 @@ What the current world generates. The template is `players/Nightreign.yaml`. A c
 - Starting Runes + 1000 / + 5000 / + 10000. A pile received in an expedition is granted immediately and banked. Every later run pays the full bank 5 seconds after day 1 starts.
 - Goal: defeat Heolstor, defeat `nightlord_count` Nightlords, or defeat one specific Nightlord, including an Everdark.
 - Death Link, off by default. `instant`, `percent`, or `dice`. Incoming links are ignored outside an expedition.
+- `always_wylder_in_tutorial`, on by default. Flag 9801 forces the body back to Wylder. The Hold still uses the granted Nightfarer.
 
 ## Planned
 

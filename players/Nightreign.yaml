@@ -78,6 +78,12 @@ Elden Ring Nightreign:
   # false: the tutorial fight is not a check.
   tutorial_margit: true
 
+  # true: flag 9801 forces the active Nightfarer back to Wylder. The Hold still uses the granted character.
+  # false: the forced Nightfarer stays active in the tutorial.
+  always_wylder_in_tutorial:
+    true: 50
+    false: 0
+
   # Which Hold purchases become locations.
   # none: no shop locations. The bazaar stays empty unless you turn this back on.
   # unique_only: Small Jar Bazaar rows. Finding the item stocks the shelf. Buying it is the check.

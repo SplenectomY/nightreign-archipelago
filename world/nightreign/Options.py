@@ -86,6 +86,14 @@ class TutorialMargit(Toggle):
     default = True
 
 
+class AlwaysWylderInTutorial(Toggle):
+    """While flag 9801 is on, force the active Nightfarer back to Wylder.
+    The Hold still uses the granted Nightfarer. Turn this off to keep the forced character in the tutorial.
+    """
+    display_name = "Always Wylder in tutorial"
+    default = True
+
+
 class ShopChecks(Choice):
     """Which Hold purchases become locations.
     none: no shop locations.
@@ -324,6 +332,7 @@ class NightreignOptions(PerGameCommonOptions):
     include_everdark: IncludeEverdark
     include_dlc: IncludeDlc
     tutorial_margit: TutorialMargit
+    always_wylder_in_tutorial: AlwaysWylderInTutorial
     shop_checks: ShopChecks
     starting_nightlords: StartingNightlords
     starting_nightfarers: StartingNightfarers

@@ -396,6 +396,16 @@ pub fn day1() -> bool {
     DAY1.load(std::sync::atomic::Ordering::SeqCst)
 }
 
+static IN_TUTORIAL: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+pub fn set_in_tutorial(on: bool) {
+    IN_TUTORIAL.store(on, std::sync::atomic::Ordering::SeqCst);
+}
+
+pub fn in_tutorial() -> bool {
+    IN_TUTORIAL.load(std::sync::atomic::Ordering::SeqCst)
+}
+
 
 fn write_cache(path: &std::path::PathBuf, seed: &str, flags: &[u32]) {
     let seen = SEEN.lock().unwrap().clone();

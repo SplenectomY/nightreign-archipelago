@@ -338,6 +338,11 @@ fn parse_i64_after(hay: &str, key: &str) -> Option<i64> {
 
 static GOAL: AtomicBool = AtomicBool::new(false);
 static TUTORIAL_MARGIT: AtomicBool = AtomicBool::new(true);
+static ALWAYS_WYLDER_TUTORIAL: AtomicBool = AtomicBool::new(true);
+
+pub fn always_wylder_tutorial() -> bool {
+    ALWAYS_WYLDER_TUTORIAL.load(Ordering::SeqCst)
+}
 
 pub fn tutorial_margit() -> bool {
     TUTORIAL_MARGIT.load(Ordering::SeqCst)
@@ -397,6 +402,9 @@ fn remember_players(text: &str) {
     }
     if text.contains("\"tutorial_margit\":false") || text.contains("\"tutorial_margit\": false") {
         TUTORIAL_MARGIT.store(false, Ordering::SeqCst);
+    }
+    if text.contains("\"always_wylder_in_tutorial\":false") || text.contains("\"always_wylder_in_tutorial\": false") {
+        ALWAYS_WYLDER_TUTORIAL.store(false, Ordering::SeqCst);
     }
     if text.contains("\"goal\":\"count\"") || text.contains("\"goal\": \"count\"") {
         if let Some(n) = parse_i64_after(text, "nightlord_count") {

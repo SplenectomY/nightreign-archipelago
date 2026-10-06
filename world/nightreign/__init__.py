@@ -554,6 +554,7 @@ class NightreignWorld(World):
             "include_everdark": bool(self.options.include_everdark),
             "include_dlc": bool(self.options.include_dlc),
             "tutorial_margit": bool(self.options.tutorial_margit),
+            "always_wylder_in_tutorial": bool(self.options.always_wylder_in_tutorial),
             "starting_nightfarers": int(self.options.starting_nightfarers),
             "shop_checks": self.options.shop_checks.current_key,
             "murk_purse": int(self.options.murk_purse),
