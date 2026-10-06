@@ -115,11 +115,27 @@ class StartingNightlords(OptionSet):
 
 
 class StartingNightfarers(Range):
-    """How many Nightfarers are unlocked at the start. Chosen at random from the enabled roster."""
+    """How many Nightfarers are unlocked at the start. Chosen at random from starting_nightfarer_pool."""
     display_name = "Starting Nightfarers"
     range_start = 1
     range_end = 10
     default = 1
+
+
+class StartingNightfarerPool(OptionSet):
+    """Nightfarers eligible to be unlocked at the start. starting_nightfarers are chosen at random from this list.
+    Possible values: wylder, guardian, ironeye, duchess, raider, revenant, recluse, executor, scholar, undertaker.
+    Scholar and Undertaker are ignored unless include_dlc is on. Default is the full roster.
+    """
+    display_name = "Starting Nightfarer Pool"
+    valid_keys = {
+        "wylder", "guardian", "ironeye", "duchess", "raider", "revenant",
+        "recluse", "executor", "scholar", "undertaker",
+    }
+    default = {
+        "wylder", "guardian", "ironeye", "duchess", "raider", "revenant",
+        "recluse", "executor", "scholar", "undertaker",
+    }
 
 
 class StartingShopMin(Range):
@@ -311,6 +327,7 @@ class NightreignOptions(PerGameCommonOptions):
     shop_checks: ShopChecks
     starting_nightlords: StartingNightlords
     starting_nightfarers: StartingNightfarers
+    starting_nightfarer_pool: StartingNightfarerPool
     starting_shop_min: StartingShopMin
     starting_shop_min: StartingShopMin
     starting_shop_max: StartingShopMax

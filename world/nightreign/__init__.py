@@ -169,14 +169,30 @@ class NightreignWorld(World):
         self.push_precollected(self.create_item(start))
         self._ladder = self._unlock_ladder(unlocks, everdark, start)
         roster = self._nightfarers()
-        self.random.shuffle(roster)
-        start_count = min(int(self.options.starting_nightfarers), len(roster))
-        for name in roster[:start_count]:
+        farer_names = {
+            "wylder": "Nightfarer - Wylder",
+            "guardian": "Nightfarer - Guardian",
+            "ironeye": "Nightfarer - Ironeye",
+            "duchess": "Nightfarer - Duchess",
+            "raider": "Nightfarer - Raider",
+            "revenant": "Nightfarer - Revenant",
+            "recluse": "Nightfarer - Recluse",
+            "executor": "Nightfarer - Executor",
+            "scholar": "Nightfarer - Scholar",
+            "undertaker": "Nightfarer - Undertaker",
+        }
+        start_pool = [farer_names[key] for key in self.options.starting_nightfarer_pool if farer_names.get(key) in roster]
+        if not start_pool:
+            start_pool = list(roster)
+        self.random.shuffle(start_pool)
+        start_count = min(int(self.options.starting_nightfarers), len(start_pool))
+        started = start_pool[:start_count]
+        for name in started:
             self.push_precollected(self.create_item(name))
         ladder = getattr(self, "_ladder", {})
         pool: List[Item] = [self.create_item(name) for name in unlocks if name != start and name not in ladder]
         pool += [self.create_item(name) for name in everdark if name != start and name not in ladder]
-        pool += [self.create_item(name) for name in roster[start_count:]]
+        pool += [self.create_item(name) for name in roster if name not in started]
         shop = list(SHOP_ITEMS) if self.options.shop_checks.current_key != "none" else []
         self.random.shuffle(shop)
         low = int(self.options.starting_shop_min)

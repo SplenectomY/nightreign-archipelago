@@ -85,7 +85,8 @@ Filler:
 
 Start inventory:
 
-- `starting_nightfarers`: int, default **1**, chosen at random from the enabled roster (base six + optional locked/DLC according to YAML).
+- `starting_nightfarers`: int, default **1**, chosen at random from `starting_nightfarer_pool`.
+- `starting_nightfarer_pool`: string list, default all ten. Possible values: wylder, guardian, ironeye, duchess, raider, revenant, recluse, executor, scholar, undertaker. DLC names are ignored unless `include_dlc` is on. Names left out stay in the item pool.
 - The player does not begin with the full vanilla six unless they set the count that high.
 
 ## Goals (YAML)

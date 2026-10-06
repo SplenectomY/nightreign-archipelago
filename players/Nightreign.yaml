@@ -99,9 +99,24 @@ Elden Ring Nightreign:
     - fulghor
     - caligo
 
-  # Nightfarers unlocked at the start, chosen at random from the enabled roster.
-  # 1 is the intended seed. Higher values put fewer Nightfarers in the pool. 1 to 10.
+  # Nightfarers unlocked at the start, chosen at random from starting_nightfarer_pool.
+  # 1 is the intended seed. Higher values put fewer Nightfarers in the item pool. 1 to 10.
   starting_nightfarers: 1
+
+  # Who the starting Nightfarer roll can pick. Set this to one name to force that character for testing.
+  # Possible values: wylder, guardian, ironeye, duchess, raider, revenant, recluse, executor, scholar, undertaker.
+  # Scholar and Undertaker are skipped unless include_dlc is on. Anyone left out of this list stays in the item pool.
+  starting_nightfarer_pool:
+    - wylder
+    - guardian
+    - ironeye
+    - duchess
+    - raider
+    - revenant
+    - recluse
+    - executor
+    - scholar
+    - undertaker
 
   # Shop rows already stocked at the start. One number is rolled between min and max.
   # 0 stocks nothing. The two flatstones are infinite and are not checks.
