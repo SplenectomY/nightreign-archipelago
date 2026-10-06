@@ -73,6 +73,59 @@ pub fn set_skin(model: i32) -> Result<String, String> {
     Ok(format!("NRAP skin {before}->{after} player=0x{player:X}"))
 }
 
+
+const EMPTY_GEAR: i32 = 110000;
+const WYLDER_SWORD: i32 = 3_750_000;
+const WYLDER_SHIELD: i32 = 30_750_000;
+const GEAR_SLOTS: [usize; 6] = [0x30C, 0x314, 0x31C, 0x310, 0x318, 0x320];
+
+pub fn swap_wylder_gear(session: u8) -> Result<String, String> {
+    // Hexinton weapon list. Right hand replaces the greatsword, left replaces the shield.
+    // Scholar and Undertaker are not in that list, so their Wylder gear is cleared.
+    let (right, left) = match session {
+        2 => (18_750_000, 32_750_000), // Guardian halberd, greatshield
+        3 => (41_750_000, EMPTY_GEAR), // Ironeye bow
+        4 => (1_750_000, EMPTY_GEAR), // Duchess dagger
+        5 => (23_750_000, EMPTY_GEAR), // Raider greataxe
+        6 => (21_750_000, EMPTY_GEAR), // Revenant claws
+        7 => (33_750_000, EMPTY_GEAR), // Recluse staff
+        8 => (9_750_000, EMPTY_GEAR), // Executor blade
+        9 | 10 => (EMPTY_GEAR, EMPTY_GEAR),
+        _ => return Err("no starter gear".into()),
+    };
+    if SLOT.load(Ordering::SeqCst) == 0 {
+        let _ = init();
+    }
+    let player = player_data().ok_or_else(|| "GameDataMan+8 not live".to_string())?;
+    let mut changed = Vec::new();
+    let mut sword_used = false;
+    let mut shield_used = false;
+    for off in GEAR_SLOTS {
+        let addr = player + off;
+        let cur = unsafe { std::ptr::read_unaligned(addr as *const i32) };
+        let next = if cur == WYLDER_SWORD {
+            let n = if sword_used { EMPTY_GEAR } else { right };
+            sword_used = true;
+            n
+        } else if cur == WYLDER_SHIELD {
+            let n = if shield_used { EMPTY_GEAR } else { left };
+            shield_used = true;
+            n
+        } else {
+            continue;
+        };
+        if next == cur {
+            continue;
+        }
+        unsafe { std::ptr::write_unaligned(addr as *mut i32, next) };
+        changed.push(format!("+{off:X}:{cur}->{next}"));
+    }
+    if changed.is_empty() {
+        return Ok("NRAP gear already clear".into());
+    }
+    Ok(format!("NRAP gear {}", changed.join(" ")))
+}
+
 fn player_data() -> Option<usize> {
     let slot = SLOT.load(Ordering::SeqCst);
     if slot < 0x10000 {

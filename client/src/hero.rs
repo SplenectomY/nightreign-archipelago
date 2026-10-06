@@ -178,15 +178,16 @@ pub fn apply() -> Option<String> {
     let object = unsafe { std::ptr::read_unaligned(saved as *const usize) };
     let slot = slot_addr(object)?;
     let before = unsafe { std::ptr::read_unaligned(slot as *const u8) };
+    let gear = crate::grant::swap_wylder_gear(id).unwrap_or_else(|e| format!("NRAP gear failed: {e}"));
     if before != 1 {
-        return None;
+        return if gear.contains("already") { None } else { Some(gear) };
     }
     if !write_byte(slot, id) {
-        return Some(format!("NRAP hero write failed slot=0x{slot:X}"));
+        return Some(format!("NRAP hero write failed slot=0x{slot:X}; {gear}"));
     }
     let after = unsafe { std::ptr::read_unaligned(slot as *const u8) };
     let skin = default_model(id)
         .map(|model| crate::grant::set_skin(model).unwrap_or_else(|e| format!("NRAP skin failed: {e}")))
         .unwrap_or_else(|| "NRAP skin skipped".to_string());
-    Some(format!("NRAP hero Wylder not granted, slot=0x{slot:X} {before}->{after}; {skin}"))
+    Some(format!("NRAP hero Wylder not granted, slot=0x{slot:X} {before}->{after}; {skin}; {gear}"))
 }
