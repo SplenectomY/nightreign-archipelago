@@ -81,8 +81,7 @@ const GEAR_SLOTS: [usize; 6] = [0x30C, 0x314, 0x31C, 0x310, 0x318, 0x320];
 
 pub fn swap_wylder_gear(session: u8) -> Result<String, String> {
     // Hexinton weapon list. Right hand replaces the greatsword, left replaces the shield.
-    // Scholar and Undertaker are not in that list, so their Wylder gear is cleared.
-    let (right, left) = match session {
+        let (right, left) = match session {
         2 => (18_750_000, 32_750_000), // Guardian halberd, greatshield
         3 => (41_750_000, EMPTY_GEAR), // Ironeye bow
         4 => (1_750_000, EMPTY_GEAR), // Duchess dagger
@@ -90,7 +89,8 @@ pub fn swap_wylder_gear(session: u8) -> Result<String, String> {
         6 => (21_750_000, EMPTY_GEAR), // Revenant claws
         7 => (33_750_000, EMPTY_GEAR), // Recluse staff
         8 => (9_750_000, EMPTY_GEAR), // Executor blade
-        9 | 10 => (EMPTY_GEAR, EMPTY_GEAR),
+        9 => (5_750_000, EMPTY_GEAR), // Scholar
+        10 => (11_750_000, EMPTY_GEAR), // Undertaker
         _ => return Err("no starter gear".into()),
     };
     if SLOT.load(Ordering::SeqCst) == 0 {
