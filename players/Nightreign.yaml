@@ -1,15 +1,16 @@
 # Elden Ring Nightreign player options.
 #
 # A line starting with # is a comment. The generator ignores it.
-# A choice can be a single value, or a weighted set. Weights are chances, not percents:
+# A choice or toggle is a weighted set. Weights are chances, not percents:
 #
 #   goal:
 #     heolstor: 50
-#     count: 1
+#     count: 0
 #
-# That is 50 chances of Heolstor and 1 chance of a Nightlord count. A lone value is the same as weight 1.
-# A range is a number, or random / random-low / random-high / random-range-low-high.
-# true and false are the only toggle values. yes and no are accepted too.
+# That is 50 chances of Heolstor and 0 chances of a Nightlord count.
+# A range is the same shape. The number key is a fixed roll. random, random-low,
+# random-high, and random-range-low-high are the other rolls.
+# An option set is a list. A name in the list is eligible. A name left out is not.
 
 description: Default Elden Ring Nightreign template
 name: Player1
@@ -19,7 +20,7 @@ requires:
 
 Elden Ring Nightreign:
   # How this slot is completed.
-  # heolstor: defeat Heolstor, the Night Aspect. This is the default.
+  # heolstor: defeat Heolstor, the Night Aspect.
   # count: defeat nightlord_count distinct Nightlords. Heolstor counts once he is open.
   # specific: defeat the Nightlord named by specific_nightlord.
   goal:
@@ -27,15 +28,16 @@ Elden Ring Nightreign:
     count: 0
     specific: 0
 
-  # Used only when goal is count. Distinct Nightlord defeats required.
+  # Used only when goal is count. Distinct Nightlord defeats required. 1 to 10.
   # 1 is the shortest seed. 10 is every Nightlord, including DLC when include_dlc is on.
-  # Default 4 is about the vanilla board unlock.
-  nightlord_count: 4
+  nightlord_count:
+    4: 50
+    random: 0
+    random-low: 0
+    random-high: 0
+    random-range-1-10: 0
 
   # Used only when goal is specific. Ignored for heolstor and count.
-  # gladius, adel, gnoster, maris, libra, fulghor, caligo, heolstor, harmonia, straghess,
-  # everdark_gladius, everdark_adel, everdark_gnoster, everdark_maris, everdark_libra,
-  # everdark_fulghor, everdark_caligo, everdark_harmonia.
   # harmonia, straghess, and everdark_harmonia need include_dlc.
   specific_nightlord:
     heolstor: 50
@@ -58,25 +60,38 @@ Elden Ring Nightreign:
     everdark_harmonia: 0
 
   # false: Heolstor is not a shuffled unlock. He opens locally after heolstor_unlock_count
-  # other Nightlord defeats. This is the default, and it forces a few expeditions before the goal.
+  # other Nightlord defeats. This forces a few expeditions before the goal.
   # true: Expedition Unlock - Heolstor is in the item pool. Someone has to find it and send it.
-  heolstor_in_pool: false
+  heolstor_in_pool:
+    false: 50
+    true: 0
 
   # Other Nightlord defeats required before this slot can open Heolstor.
-  # Ignored when heolstor_in_pool is true. 1 to 9. Default 4.
-  heolstor_unlock_count: 4
+  # Ignored when heolstor_in_pool is true. 1 to 9.
+  heolstor_unlock_count:
+    4: 50
+    random: 0
+    random-low: 0
+    random-high: 0
+    random-range-1-9: 0
 
   # true: Everdark Sovereign defeats are locations, and their unlocks are items.
   # false: no Everdark locations or items.
-  include_everdark: true
+  include_everdark:
+    true: 50
+    false: 0
 
   # true: Forsaken Hollows Nightlords (Harmonia, Straghess) and their Nightfarers are in the pool.
   # false: base game roster only.
-  include_dlc: true
+  include_dlc:
+    true: 50
+    false: 0
 
   # true: Defeat Tutorial Margit is a location (flag 6012).
   # false: the tutorial fight is not a check.
-  tutorial_margit: true
+  tutorial_margit:
+    true: 50
+    false: 0
 
   # true: flag 9801 forces the active Nightfarer back to Wylder. The Hold still uses the granted character.
   # false: the forced Nightfarer stays active in the tutorial.
@@ -92,10 +107,9 @@ Elden Ring Nightreign:
     none: 0
 
   # Nightlords eligible to be the starting expedition. One is chosen at random.
-  # Possible values: gladius, adel, gnoster, maris, libra, fulghor, caligo, heolstor, harmonia, straghess,
-  # everdark_gladius, everdark_adel, everdark_gnoster, everdark_maris, everdark_libra, everdark_fulghor,
-  # everdark_caligo, everdark_harmonia.
-  # gladius is Tricephalos. harmonia and straghess are the DLC bosses. Default excludes everdarks, Heolstor, and DLC.
+  # This is an option set, not a weight table. Leave a name out to ban it.
+  # gladius is Tricephalos. harmonia and straghess are the DLC bosses.
+  # Default excludes everdarks, Heolstor, and DLC.
   starting_nightlords:
     - gladius
     - adel
@@ -105,13 +119,18 @@ Elden Ring Nightreign:
     - fulghor
     - caligo
 
-  # Nightfarers unlocked at the start, chosen at random from starting_nightfarer_pool.
-  # 1 is the intended seed. Higher values put fewer Nightfarers in the item pool. 1 to 10.
-  starting_nightfarers: 1
+  # Nightfarers unlocked at the start, chosen at random from starting_nightfarer_pool. 1 to 10.
+  # 1 is the intended seed. Higher values put fewer Nightfarers in the item pool.
+  starting_nightfarers:
+    1: 50
+    random: 0
+    random-low: 0
+    random-high: 0
+    random-range-1-10: 0
 
-  # Who the starting Nightfarer roll can pick. Set this to one name to force that character for testing.
-  # Possible values: wylder, guardian, ironeye, duchess, raider, revenant, recluse, executor, scholar, undertaker.
-  # Scholar and Undertaker are skipped unless include_dlc is on. Anyone left out of this list stays in the item pool.
+  # Who the starting Nightfarer roll can pick. Option set, not a weight table.
+  # Set this to one name to force that character for testing.
+  # Scholar and Undertaker are skipped unless include_dlc is on. Anyone left out stays in the item pool.
   starting_nightfarer_pool:
     - wylder
     - guardian
@@ -124,76 +143,186 @@ Elden Ring Nightreign:
     - scholar
     - undertaker
 
-  # Shop rows already stocked at the start. One number is rolled between min and max.
+  # Shop rows already stocked at the start. One number is rolled between min and max. 0 to 40.
   # 0 stocks nothing. The two flatstones are infinite and are not checks.
   # If min is above max, generation swaps them.
-  starting_shop_min: 3
-  starting_shop_max: 6
+  starting_shop_min:
+    3: 50
+    random: 0
+    random-low: 0
+    random-high: 0
+    random-range-0-40: 0
+  starting_shop_max:
+    6: 50
+    random: 0
+    random-low: 0
+    random-high: 0
+    random-range-0-40: 0
 
-  # Counter checks are split across (required Nightlords - 1) spheres. Sphere 0 is open. Each later sphere requires one more Nightlord defeat. Invaders 6 and up also require Deep of Night. Shop and garb purchases are shuffled into the same spheres.
-  # Day 1 night-boss defeats that become locations.
-  # 1 to 30. Default 10. A wipe after the kill still keeps the check.
-  day1_boss_count: 10
+  # Counter checks are split across (required Nightlords - 1) spheres. Sphere 0 is open.
+  # Each later sphere requires one more Nightlord defeat. Invaders 6 and up also require Deep of Night.
+  # Shop and garb purchases are shuffled into the same spheres.
 
-  # Day 2 night-boss defeats that become locations.
-  # 1 to 30. Default 10.
-  day2_boss_count: 10
+  # Day 1 night-boss defeats that become locations. 1 to 30. A wipe after the kill still keeps the check.
+  day1_boss_count:
+    10: 50
+    random: 0
+    random-low: 0
+    random-high: 0
+    random-range-1-30: 0
 
-  # Evergaol seals that become locations.
-  # 1 to 40. Default 20.
-  evergaol_count: 20
+  # Day 2 night-boss defeats that become locations. 1 to 30.
+  day2_boss_count:
+    10: 50
+    random: 0
+    random-low: 0
+    random-high: 0
+    random-range-1-30: 0
 
-  # Magician tower openings that become locations.
-  # 1 to 50. Default 30.
-  tower_count: 30
+  # Evergaol seals that become locations. 1 to 40.
+  evergaol_count:
+    20: 50
+    random: 0
+    random-low: 0
+    random-high: 0
+    random-range-1-40: 0
 
-  # Invader defeats that become locations. Flag 8155 toggles, so both edges count.
-  # 0 to 50. Default 20. Counts after 5 require Expedition Unlock - Deep of Night.
-  invader_count: 20
+  # Magician tower openings that become locations. 1 to 50.
+  tower_count:
+    30: 50
+    random: 0
+    random-low: 0
+    random-high: 0
+    random-range-1-50: 0
 
-  # Buried treasure chests opened. Flags 8120-8131 rise to 1 and clear when the expedition ends.
-  # Only the rise counts. 0 to 100. Default 50.
-  buried_treasure_count: 40
+  # Invader defeats that become locations. Flag 8155 toggles, so both edges count. 0 to 50.
+  # Counts after 5 require Expedition Unlock - Deep of Night.
+  invader_count:
+    20: 50
+    random: 0
+    random-low: 0
+    random-high: 0
+    random-range-0-50: 0
 
-  # Crimson flask max-use increases. Flag 9041. A rise or fall within 7 seconds of Day 1 starting is ignored.
-  # A clear when the run ends is ignored. 0 to 60. Default 30.
-  flask_count: 30
+  # Buried treasure maps. Flags 8120-8131 rise to 1 and clear when the expedition ends.
+  # Only the rise counts. 0 to 80.
+  buried_treasure_count:
+    40: 50
+    random: 0
+    random-low: 0
+    random-high: 0
+    random-range-0-80: 0
 
-  # Murk granted by each filler item. The client reads these from the seed.
-  # 1 to 100000. Defaults pay 96,000 if a seed places 32 of each, about the full shop.
-  murk_purse: 150
-  murk_bundle: 300
-  murk_coffer: 500
-  murk_chest: 750
-  murk_hoard: 1300
+  # Crimson flask max-use increases. Flag 9041. 0 to 60.
+  # A rise or fall within 7 seconds of Day 1 starting is ignored. A clear when the run ends is ignored.
+  flask_count:
+    30: 50
+    random: 0
+    random-low: 0
+    random-high: 0
+    random-range-0-60: 0
 
-  # Starting runes. Useful items, so they take leftover slots before Murk filler.
+  # Murk granted by each filler item. The client reads these from the seed. 1 to 100000.
+  # Defaults pay 96,000 if a seed places 32 of each, about the full shop.
+  murk_purse:
+    150: 50
+    random: 0
+    random-low: 0
+    random-high: 0
+    random-range-1-100000: 0
+  murk_bundle:
+    300: 50
+    random: 0
+    random-low: 0
+    random-high: 0
+    random-range-1-100000: 0
+  murk_coffer:
+    500: 50
+    random: 0
+    random-low: 0
+    random-high: 0
+    random-range-1-100000: 0
+  murk_chest:
+    750: 50
+    random: 0
+    random-low: 0
+    random-high: 0
+    random-range-1-100000: 0
+  murk_hoard:
+    1300: 50
+    random: 0
+    random-low: 0
+    random-high: 0
+    random-range-1-100000: 0
+
+  # Starting runes. Useful items, so they take leftover slots before Murk filler. 0 to 100.
   # +1000 can be anywhere. +5000 needs one Nightlord defeat. +10000 needs the back half of spheres.
   # Received in an expedition: granted immediately and banked. Every run pays the full bank 5 seconds after flag 7500 rises.
-  # 0 to 100. Defaults 20, 10, and 5.
-  starting_runes_1000_count: 20
-  starting_runes_5000_count: 10
-  starting_runes_10000_count: 5
+  starting_runes_1000_count:
+    20: 50
+    random: 0
+    random-low: 0
+    random-high: 0
+    random-range-0-100: 0
+  starting_runes_5000_count:
+    10: 50
+    random: 0
+    random-low: 0
+    random-high: 0
+    random-range-0-100: 0
+  starting_runes_10000_count:
+    5: 50
+    random: 0
+    random-low: 0
+    random-high: 0
+    random-range-0-100: 0
 
   # Death Link. Off ignores deaths and incoming links. Only applies in an expedition.
-  # mode: instant (HP to 0), percent (remove death_link_percent of max HP), dice (instant kill on a roll).
-  # death_link_percent: 1 to 100, used by percent. Default 50.
-  # death_link_chance: 1 to 100, used by dice. Default 50. A miss does nothing.
-  death_link: false
-  death_link_mode: instant
-  death_link_percent: 50
-  death_link_chance: 50
+  death_link:
+    false: 50
+    true: 0
 
-  # Common Archipelago options. These are optional.
-  #
+  # instant: HP to 0. percent: remove death_link_percent of max HP. dice: instant kill on a roll.
+  death_link_mode:
+    instant: 50
+    percent: 0
+    dice: 0
+
+  # Used by percent. 1 to 100.
+  death_link_percent:
+    50: 50
+    random: 0
+    random-low: 0
+    random-high: 0
+    random-range-1-100: 0
+
+  # Used by dice. 1 to 100. A miss does nothing.
+  death_link_chance:
+    50: 50
+    random: 0
+    random-low: 0
+    random-high: 0
+    random-range-1-100: 0
+
+  # Common Archipelago options.
   # progression_balancing: 0 to 99. Higher pushes progression toward worlds that are behind.
-  # accessibility: items (full), or minimal (locations can require more than the logical route).
-  # local_items: item names that must be in this world.
-  # non_local_items: item names that must be in another world.
-  # start_inventory: items granted before the first check. Name: count.
-  # start_hints: item names hinted at the start.
-  # start_location_hints: location names hinted at the start.
-  # exclude_locations: locations removed from the pool.
-  # priority_locations: locations filled earlier.
-  progression_balancing: 50
-  accessibility: items
+  progression_balancing:
+    50: 50
+    random: 0
+    random-low: 0
+    random-high: 0
+    random-range-0-99: 0
+
+  # items: full accessibility. minimal: locations can require more than the logical route.
+  accessibility:
+    items: 50
+    minimal: 0
+
+  # These stay lists or name-to-count maps. They are not weight tables.
+  # local_items: []
+  # non_local_items: []
+  # start_inventory: {}
+  # start_hints: []
+  # start_location_hints: []
+  # exclude_locations: []
+  # priority_locations: []
