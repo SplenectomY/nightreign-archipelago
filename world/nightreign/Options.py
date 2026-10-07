@@ -167,7 +167,7 @@ class Day1BossCount(Range):
     display_name = "Day 1 Boss Count"
     range_start = 1
     range_end = 50
-    default = 30
+    default = 10
 
 
 class Day2BossCount(Range):
@@ -182,7 +182,7 @@ class EvergaolCount(Range):
     """How many evergaol seals become locations. The flag toggles, so both edges count."""
     display_name = "Evergaol Count"
     range_start = 1
-    range_end = 40
+    range_end = 60
     default = 20
 
 
@@ -190,15 +190,15 @@ class TowerCount(Range):
     """How many magician tower openings become locations. The flag toggles, so both edges count."""
     display_name = "Tower Count"
     range_start = 1
-    range_end = 30
-    default = 10
+    range_end = 100
+    default = 30
 
 
 class InvaderCount(Range):
     """How many invader defeats become locations. Flag 8155 toggles, so both edges count. Counts after 5 require Deep of Night."""
     display_name = "Invader Count"
     range_start = 0
-    range_end = 50
+    range_end = 70
     default = 20
 
 
@@ -206,7 +206,7 @@ class BuriedTreasureCount(Range):
     """How many buried treasure openings become locations. Flags 8120-8131 rise to 1 and clear on exit, so only the rise counts."""
     display_name = "Buried Treasure Count"
     range_start = 0
-    range_end = 80
+    range_end = 100
     default = 40
 
 

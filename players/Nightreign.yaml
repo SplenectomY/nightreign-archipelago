@@ -163,13 +163,13 @@ Elden Ring Nightreign:
   # Each later sphere requires one more Nightlord defeat. Invaders 6 and up also require Deep of Night.
   # Shop and garb purchases are shuffled into the same spheres.
 
-  # Day 1 night-boss defeats that become locations. 1 to 30. A wipe after the kill still keeps the check.
+  # Day 1 night-boss defeats that become locations. 1 to 50. A wipe after the kill still keeps the check.
   day1_boss_count:
     10: 50
     random: 0
     random-low: 0
     random-high: 0
-    random-range-1-30: 0
+    random-range-1-50: 0
 
   # Day 2 night-boss defeats that become locations. 1 to 30.
   day2_boss_count:
@@ -179,39 +179,39 @@ Elden Ring Nightreign:
     random-high: 0
     random-range-1-30: 0
 
-  # Evergaol seals that become locations. 1 to 40.
+  # Evergaol seals that become locations. 1 to 60.
   evergaol_count:
     20: 50
     random: 0
     random-low: 0
     random-high: 0
-    random-range-1-40: 0
+    random-range-1-60: 0
 
-  # Magician tower openings that become locations. 1 to 50.
+  # Magician tower openings that become locations. 1 to 100.
   tower_count:
     30: 50
     random: 0
     random-low: 0
     random-high: 0
-    random-range-1-50: 0
+    random-range-1-100: 0
 
-  # Invader defeats that become locations. Flag 8155 toggles, so both edges count. 0 to 50.
+  # Invader defeats that become locations. Flag 8155 toggles, so both edges count. 0 to 70.
   # Counts after 5 require Expedition Unlock - Deep of Night.
   invader_count:
     20: 50
     random: 0
     random-low: 0
     random-high: 0
-    random-range-0-50: 0
+    random-range-0-70: 0
 
   # Buried treasure maps. Flags 8120-8131 rise to 1 and clear when the expedition ends.
-  # Only the rise counts. 0 to 80.
+  # Only the rise counts. 0 to 100.
   buried_treasure_count:
     40: 50
     random: 0
     random-low: 0
     random-high: 0
-    random-range-0-80: 0
+    random-range-0-100: 0
 
   # Crimson flask max-use increases. Flag 9041. 0 to 60.
   # A rise or fall within 7 seconds of Day 1 starting is ignored. A clear when the run ends is ignored.
