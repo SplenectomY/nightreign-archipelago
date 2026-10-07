@@ -171,13 +171,13 @@ Elden Ring Nightreign:
     random-high: 0
     random-range-1-50: 0
 
-  # Day 2 night-boss defeats that become locations. 1 to 30.
+  # Day 2 night-boss defeats that become locations. 1 to 50.
   day2_boss_count:
     10: 50
     random: 0
     random-low: 0
     random-high: 0
-    random-range-1-30: 0
+    random-range-1-50: 0
 
   # Evergaol seals that become locations. 1 to 60.
   evergaol_count:

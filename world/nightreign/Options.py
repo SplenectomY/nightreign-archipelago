@@ -174,7 +174,7 @@ class Day2BossCount(Range):
     """How many Day 2 night-boss defeats become locations."""
     display_name = "Day 2 Boss Count"
     range_start = 1
-    range_end = 30
+    range_end = 50
     default = 10
 
 
