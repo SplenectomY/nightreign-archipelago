@@ -426,6 +426,27 @@ fn worker() {
                 continue;
             }
             let lower = line.to_ascii_lowercase();
+            if lower == "/energy" {
+                let joules = ap::energy_pool_joules();
+                log_line(&console_dir, &format!("NRAP energy pool {joules} J ({} murk)", joules / 1_000_000));
+                continue;
+            }
+            if lower.starts_with("/withdraw") {
+                let hold = flag_write::in_session() && !flag_write::in_expedition() && !flag_write::in_tutorial();
+                if !hold {
+                    log_line(&console_dir, "NRAP withdraw only works in the Hold");
+                    continue;
+                }
+                let arg = lower.split_whitespace().nth(1).unwrap_or("");
+                let murk: i64 = arg.parse().unwrap_or(0);
+                if murk <= 0 {
+                    log_line(&console_dir, "NRAP withdraw needs a murk amount, /withdraw 1000");
+                    continue;
+                }
+                ap::queue_withdraw(murk);
+                log_line(&console_dir, &format!("NRAP withdraw queued {murk} murk"));
+                continue;
+            }
             if lower == "/reconnect" {
                 ap::request_reconnect();
                 log_line(&console_dir, "NRAP AP reconnect requested");

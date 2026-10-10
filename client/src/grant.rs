@@ -139,6 +139,10 @@ fn player_data() -> Option<usize> {
     if player < 0x10000 { None } else { Some(player) }
 }
 
+pub fn grant_murk(amount: i32) -> Result<String, String> {
+    add_murk(amount)
+}
+
 fn add_murk(amount: i32) -> Result<String, String> {
     let func = FUNC.load(Ordering::SeqCst);
     let player = player_data().ok_or_else(|| "GameDataMan+8 not live".to_string())?;

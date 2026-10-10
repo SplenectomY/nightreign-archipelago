@@ -131,3 +131,7 @@ instant sets HP to 0. percent removes a yaml percent of max HP. dice kills on a 
 - Named catalog of every field boss
 - In-run weapon shuffle
 - Official online
+
+## Energy Link
+
+Withdraw only. `/withdraw <murk>` in the Hold depletes the shared Energy Link pool at 1 murk = 1,000,000 J and grants that murk. `/energy` prints the pool. Deposits are not implemented. Ignored outside the Hold.

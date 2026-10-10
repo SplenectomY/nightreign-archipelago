@@ -348,6 +348,88 @@ pub fn tutorial_margit() -> bool {
     TUTORIAL_MARGIT.load(Ordering::SeqCst)
 }
 static GOAL_SENT: AtomicBool = AtomicBool::new(false);
+
+// 1 murk = 1,000,000 J. Withdraw only. Factorio is 1:1, Satisfactory is 1:1e3, Stardew gold is 1:1e7.
+const MURK_JOULES: i64 = 1_000_000;
+static ENERGY_POOL: AtomicI64 = AtomicI64::new(0);
+static WITHDRAW: Mutex<Vec<i64>> = Mutex::new(Vec::new());
+static WITHDRAW_PENDING: AtomicI64 = AtomicI64::new(0);
+
+pub fn energy_pool_joules() -> i64 {
+    ENERGY_POOL.load(Ordering::SeqCst)
+}
+
+pub fn queue_withdraw(murk: i64) {
+    if murk > 0 {
+        WITHDRAW.lock().unwrap().push(murk);
+    }
+}
+
+fn pop_withdraw() -> Option<i64> {
+    let mut q = WITHDRAW.lock().unwrap();
+    if q.is_empty() { None } else { Some(q.remove(0)) }
+}
+
+fn in_hold() -> bool {
+    crate::flag_write::in_session()
+        && !crate::flag_write::in_expedition()
+        && !crate::flag_write::in_tutorial()
+}
+
+fn send_energy_watch(socket: &mut Socket) -> Result<(), String> {
+    socket
+        .send(Message::Text("[{"cmd":"SetNotify","keys":["EnergyLink"]}]".into()))
+        .map_err(|e| format!("SetNotify: {e}"))?;
+    socket
+        .send(Message::Text("[{"cmd":"Get","keys":["EnergyLink"]}]".into()))
+        .map_err(|e| format!("Get EnergyLink: {e}"))
+}
+
+fn send_energy_deplete(socket: &mut Socket, joules: i64) -> Result<(), String> {
+    let pkt = format!(
+        "[{{"cmd":"Set","key":"EnergyLink","want_reply":true,"operations":[{{"operation":"deplete","value":{joules}}}]}}]"
+    );
+    socket.send(Message::Text(pkt.into())).map_err(|e| format!("EnergyLink deplete: {e}"))
+}
+
+fn note_energy(text: &str, log: &impl Fn(&str)) {
+    if !text.contains("EnergyLink") {
+        return;
+    }
+    if text.contains(""cmd":"Retrieved"") || text.contains(""cmd": "Retrieved"") {
+        if let Some(v) = parse_i64_after(text, "EnergyLink") {
+            ENERGY_POOL.store(v.max(0), Ordering::SeqCst);
+            log(&format!("NRAP energy pool {v} J ({} murk)", v / MURK_JOULES));
+        }
+        return;
+    }
+    if !(text.contains(""cmd":"SetReply"") || text.contains(""cmd": "SetReply"")) {
+        return;
+    }
+    let value = parse_i64_after(text, "value");
+    let original = parse_i64_after(text, "original_value");
+    if let Some(v) = value {
+        ENERGY_POOL.store(v.max(0), Ordering::SeqCst);
+    }
+    let pending = WITHDRAW_PENDING.swap(0, Ordering::SeqCst);
+    if pending <= 0 {
+        return;
+    }
+    let gained = match (original, value) {
+        (Some(before), Some(after)) => (before - after).max(0),
+        _ => 0,
+    };
+    let murk = (gained / MURK_JOULES) as i32;
+    if murk <= 0 {
+        log(&format!("NRAP withdraw empty pool={value:?} gained={gained} J"));
+        return;
+    }
+    match crate::grant::grant_murk(murk) {
+        Ok(detail) => log(&format!("NRAP withdraw +{murk} murk ({gained} J) {detail}")),
+        Err(e) => log(&format!("NRAP withdraw +{murk} murk grant failed: {e}")),
+    }
+}
+
 static COUNT_NEED: AtomicU32 = AtomicU32::new(0);
 
 pub fn count_need() -> u32 {
@@ -557,6 +639,7 @@ fn apply_slot_data(text: &str, log: &impl Fn(&str)) {
 }
 
 fn handle_server_text(text: &str, log: &impl Fn(&str), next_index: &mut i64, drop_goods: i32) {
+    note_energy(text, log);
     if text.contains("\"type\":\"ItemSend\"") || text.contains("\"type\": \"ItemSend\"") {
         if let Some(msg) = printjson_text(text) {
             let team = parse_i64_after(text, "team").unwrap_or(0) + 1;
@@ -774,6 +857,9 @@ fn connect_and_handshake(
     handle_server_text(&reply, log, next_index, drop_goods);
     tune(&mut socket, Duration::from_millis(80));
     let _ = socket.send(Message::Text("[{\"cmd\":\"Sync\"}]".into()));
+    if let Err(e) = send_energy_watch(&mut socket) {
+        log(&format!("NRAP energy watch failed: {e}"));
+    }
     Ok(socket)
 }
 
@@ -784,6 +870,25 @@ fn hard_refusal(text: &str) -> Option<&'static str> {
         }
     }
     None
+}
+
+fn flush_withdraw(socket: &mut Socket, log: &impl Fn(&str)) {
+    if WITHDRAW_PENDING.load(Ordering::SeqCst) > 0 {
+        return;
+    }
+    let Some(murk) = pop_withdraw() else { return };
+    if !in_hold() {
+        log("NRAP withdraw ignored, not in the Hold");
+        return;
+    }
+    let joules = murk.saturating_mul(MURK_JOULES);
+    match send_energy_deplete(socket, joules) {
+        Ok(()) => {
+            WITHDRAW_PENDING.store(joules, Ordering::SeqCst);
+            log(&format!("NRAP withdraw requested {murk} murk ({joules} J)"));
+        }
+        Err(e) => log(&format!("NRAP withdraw failed: {e}")),
+    }
 }
 
 fn send_goal(socket: &mut Socket) -> Result<bool, String> {
@@ -1003,6 +1108,7 @@ pub fn run(mut cfg: ApConfig, rx: Receiver<i64>, say_rx: Receiver<String>, drop_
                                     Err(e) => log(&format!("NRAP death link send failed: {e}")),
                                 }
                             }
+                            flush_withdraw(&mut socket, &log);
                             match send_goal(&mut socket) {
                                 Ok(true) => log("NRAP AP goal sent"),
                                 Ok(false) => {}
@@ -1021,6 +1127,7 @@ pub fn run(mut cfg: ApConfig, rx: Receiver<i64>, say_rx: Receiver<String>, drop_
                                     Err(e) => log(&format!("NRAP death link send failed: {e}")),
                                 }
                             }
+                            flush_withdraw(&mut socket, &log);
                             match send_goal(&mut socket) {
                                 Ok(true) => log("NRAP AP goal sent"),
                                 Ok(false) => {}
