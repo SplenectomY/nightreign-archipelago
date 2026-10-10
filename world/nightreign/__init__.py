@@ -321,7 +321,7 @@ class NightreignWorld(World):
             ("Day 2 Boss", int(self.options.day2_boss_count)),
             ("Seal Evergaol", int(self.options.evergaol_count)),
             ("Open Magician Tower", int(self.options.tower_count)),
-            ("Defeat Invaders", min(5, int(self.options.invader_count))),
+            ("Defeat Invaders", int(self.options.invader_count)),
             ("Buried Treasure Map", int(self.options.buried_treasure_count)),
             ("Flask Max Uses Increased", int(self.options.flask_count)),
         ]

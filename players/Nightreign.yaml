@@ -59,6 +59,7 @@ Elden Ring Nightreign:
 
   # Used only when goal is specific. Ignored for heolstor and count.
   # harmonia, straghess, and everdark_harmonia need include_dlc.
+  # An everdark goal still creates that defeat location if include_everdark is off.
   specific_nightlord:
     heolstor: 50
     gladius: 0
@@ -96,7 +97,7 @@ Elden Ring Nightreign:
     random-range-1-9: 0
 
   # true: Everdark Sovereign defeats are locations, and their unlocks are items.
-  # false: no Everdark locations or items.
+  # false: no Everdark locations or items, unless the specific goal names an Everdark.
   include_everdark:
     true: 50
     false: 0
@@ -179,7 +180,8 @@ Elden Ring Nightreign:
     random-high: 0
     random-range-0-40: 0
 
-  # Counter checks are split across (required Nightlords - 1) spheres. Sphere 0 is open.
+  # Default and count goals split counters across (required Nightlords - 1) spheres. Sphere 0 is open.
+  # A specific goal uses one sphere. If Heolstor is in the pool, spheres are min(4, other unlocks).
   # Each later sphere requires one more Nightlord defeat. Invaders 6 and up also require Deep of Night.
   # Shop and garb purchases are shuffled into the same spheres.
 
@@ -276,7 +278,7 @@ Elden Ring Nightreign:
 
   # Starting runes. Useful items, so they take leftover slots before Murk filler. 0 to 100.
   # +1000 can be anywhere. +5000 logically needs one Nightlord defeat. +10000 logically needs the back half of spheres.
-  # Received in an expedition: granted immediately and banked. Every run pays the full bank 5 seconds after flying in.
+  # Received in an expedition: granted immediately and banked. Later runs pay the full bank 5 seconds after flying in. The receiving run skips piles already paid.
   starting_runes_1000_count:
     20: 50
     random: 0

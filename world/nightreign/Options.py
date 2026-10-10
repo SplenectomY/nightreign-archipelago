@@ -96,8 +96,8 @@ class AlwaysWylderInTutorial(Toggle):
 
 class ShopChecks(Choice):
     """Which Hold purchases become locations.
-    none: no shop locations.
-    unique_only: Small Jar Bazaar rows. Finding the item stocks it. Buying it is the check.
+    none: no shop locations. The client stocks the shelves like vanilla.
+    unique_only: Small Jar Bazaar and Garb Shop rows. Finding the item stocks it. Buying it is the check.
     """
     display_name = "Shop Checks"
     option_none = 0
