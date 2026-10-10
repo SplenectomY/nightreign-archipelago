@@ -430,6 +430,14 @@ fn note_energy(text: &str, log: &impl Fn(&str)) {
     }
 }
 
+static COUNT_NEED: AtomicU32 = AtomicU32::new(0);
+
+pub fn count_need() -> u32 {
+    COUNT_NEED.load(Ordering::SeqCst)
+}
+
+static PLAYERS: Mutex<Vec<(i64, String)>> = Mutex::new(Vec::new());
+
 fn player_name(id: i64) -> Option<String> {
     PLAYERS.lock().unwrap().iter().find(|(slot, _)| *slot == id).map(|(_, name)| name.clone())
 }
