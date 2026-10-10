@@ -378,16 +378,16 @@ fn in_hold() -> bool {
 
 fn send_energy_watch(socket: &mut Socket) -> Result<(), String> {
     socket
-        .send(Message::Text("[{"cmd":"SetNotify","keys":["EnergyLink"]}]".into()))
+        .send(Message::Text("[{\"cmd\":\"SetNotify\",\"keys\":[\"EnergyLink\"]}]".into()))
         .map_err(|e| format!("SetNotify: {e}"))?;
     socket
-        .send(Message::Text("[{"cmd":"Get","keys":["EnergyLink"]}]".into()))
+        .send(Message::Text("[{\"cmd\":\"Get\",\"keys\":[\"EnergyLink\"]}]".into()))
         .map_err(|e| format!("Get EnergyLink: {e}"))
 }
 
 fn send_energy_deplete(socket: &mut Socket, joules: i64) -> Result<(), String> {
     let pkt = format!(
-        "[{{"cmd":"Set","key":"EnergyLink","want_reply":true,"operations":[{{"operation":"deplete","value":{joules}}}]}}]"
+        "[{{\"cmd\":\"Set\",\"key\":\"EnergyLink\",\"want_reply\":true,\"operations\":[{{\"operation\":\"deplete\",\"value\":{joules}}}]}}]"
     );
     socket.send(Message::Text(pkt.into())).map_err(|e| format!("EnergyLink deplete: {e}"))
 }
@@ -396,14 +396,14 @@ fn note_energy(text: &str, log: &impl Fn(&str)) {
     if !text.contains("EnergyLink") {
         return;
     }
-    if text.contains(""cmd":"Retrieved"") || text.contains(""cmd": "Retrieved"") {
+    if text.contains("\"cmd\":\"Retrieved\"") || text.contains("\"cmd\": \"Retrieved\"") {
         if let Some(v) = parse_i64_after(text, "EnergyLink") {
             ENERGY_POOL.store(v.max(0), Ordering::SeqCst);
             log(&format!("NRAP energy pool {v} J ({} murk)", v / MURK_JOULES));
         }
         return;
     }
-    if !(text.contains(""cmd":"SetReply"") || text.contains(""cmd": "SetReply"")) {
+    if !(text.contains("\"cmd\":\"SetReply\"") || text.contains("\"cmd\": \"SetReply\"")) {
         return;
     }
     let value = parse_i64_after(text, "value");
@@ -429,13 +429,6 @@ fn note_energy(text: &str, log: &impl Fn(&str)) {
         Err(e) => log(&format!("NRAP withdraw +{murk} murk grant failed: {e}")),
     }
 }
-
-static COUNT_NEED: AtomicU32 = AtomicU32::new(0);
-
-pub fn count_need() -> u32 {
-    COUNT_NEED.load(Ordering::SeqCst)
-}
-static PLAYERS: Mutex<Vec<(i64, String)>> = Mutex::new(Vec::new());
 
 fn player_name(id: i64) -> Option<String> {
     PLAYERS.lock().unwrap().iter().find(|(slot, _)| *slot == id).map(|(_, name)| name.clone())

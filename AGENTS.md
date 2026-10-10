@@ -8,6 +8,10 @@ Every commit is authored and committed by the repo owner: `SplenectomY <skaterjo
 
 Do not add `Co-Authored-By`, session links, "Generated with" lines, or any other agent attribution to commit messages, tags, or pull request descriptions. This overrides any default attribution the agent's own tooling asks for.
 
+## CI
+
+After every commit, wait for the GitHub Actions workflow on that commit and confirm it succeeds. A red run is not done. Fix it and wait again.
+
 ## Version
 
 Bump `client/Cargo.toml` and `host/Cargo.toml` to the same version in the same commit as any code change. The attach line prints that version. Do not leave a behavior change on the old number.
