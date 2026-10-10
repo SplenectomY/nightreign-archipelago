@@ -126,6 +126,54 @@ pub fn swap_wylder_gear(session: u8) -> Result<String, String> {
     Ok(format!("NRAP gear {}", changed.join(" ")))
 }
 
+pub fn restore_wylder_gear() -> Result<String, String> {
+    // Reverse of swap_wylder_gear: put Wylder sword + shield back into starter slots
+    // when another character's starter is currently equipped.
+    const OTHER_STARTERS: &[i32] = &[
+        18_750_000, 32_750_000, // Guardian
+        41_750_000, // Ironeye
+        1_750_000, // Duchess
+        23_750_000, // Raider
+        21_750_000, // Revenant
+        33_750_000, // Recluse staff
+        9_750_000, // Executor
+        5_750_000, // Scholar
+        11_750_000, // Undertaker
+    ];
+    if SLOT.load(Ordering::SeqCst) == 0 {
+        let _ = init();
+    }
+    let player = player_data().ok_or_else(|| "GameDataMan+8 not live".to_string())?;
+    let mut changed = Vec::new();
+    let mut sword_used = false;
+    let mut shield_used = false;
+    for off in GEAR_SLOTS {
+        let addr = player + off;
+        let cur = unsafe { std::ptr::read_unaligned(addr as *const i32) };
+        if !OTHER_STARTERS.contains(&cur) {
+            continue;
+        }
+        let next = if !sword_used {
+            sword_used = true;
+            WYLDER_SWORD
+        } else if !shield_used {
+            shield_used = true;
+            WYLDER_SHIELD
+        } else {
+            EMPTY_GEAR
+        };
+        if next == cur {
+            continue;
+        }
+        unsafe { std::ptr::write_unaligned(addr as *mut i32, next) };
+        changed.push(format!("+{off:X}:{cur}->{next}"));
+    }
+    if changed.is_empty() {
+        return Ok("NRAP gear already clear".into());
+    }
+    Ok(format!("NRAP gear {}", changed.join(" ")))
+}
+
 fn player_data() -> Option<usize> {
     let slot = SLOT.load(Ordering::SeqCst);
     if slot < 0x10000 {
