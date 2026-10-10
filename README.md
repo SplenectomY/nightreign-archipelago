@@ -49,4 +49,3 @@ Catalog: [`docs/LOCATIONS_AND_UNLOCKS.md`](docs/LOCATIONS_AND_UNLOCKS.md).
 ## Known issues
 1. Rare crash to desktop when going to the title menu or loading the game due to eventflag read/write contention. Minimal impact, just relaunch from the NRAP console.
 2. Even rarer crashes during other loading sequences, such as starting an expedition
-3. If you don't have Wylder unlocked at game start, NRAP will force your Nightfarer to one that's unlocked. However, Wylder's character model will remain applied, so it will look weird until you launch an expedition or manually switch the character in the normal menu
