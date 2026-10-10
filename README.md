@@ -15,6 +15,7 @@ Archipelago world for *Elden Ring Nightreign*
 - Configurable onscreen overlay (requires Borderless Window display setting)
 - Fresh save game per seed
 - Deathlink with various modes
+- Energy Link withdraw for murk. In the Hold, `/withdraw 1000` takes 1,000,000,000 J from the shared pool at 1 murk = 1,000,000 J and grants whatever murk the pool actually has. `/energy` shows the pool. Deposits are not implemented, and the command is ignored outside the Hold.
 
 ## Notes
 - Garb shop purchase checks are logically gated behind having access to two non-dlc expeditions. Per normal game logic, you must defeat two nightlords to access the garb shop.
@@ -23,6 +24,7 @@ Archipelago world for *Elden Ring Nightreign*
 - Logical spheres for counter checks are equally divided by the number of nightlords you need to kill to win. This is to help prevent other players' early sphere items from being buried in your late checks
 - It is perfectly valid and might be helpful to other players to spam day-1-only expeditions where you rush churches, fort map rooms, gaols, towers and invader camps, if they hint something they need that's buried under those checks
 - Revenant character unlock battle is gated behind being able to purchase the Besmirched Frame
+- Energy Link is withdraw only. Another game in the multiworld has to deposit currency before `/withdraw` can grant murk.
 
 ## Planned features
 
