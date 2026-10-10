@@ -50,6 +50,12 @@ pub fn commit(nrap_dir: &Path, new_seed: &str) -> Result<(), String> {
     Ok(())
 }
 
+pub fn has_seamless_saves() -> bool {
+    nightreign_save_dir()
+        .map(|d| !co2_files(&d).is_empty())
+        .unwrap_or(false)
+}
+
 fn steam_ids() -> Vec<String> {
     let mut ids = Vec::new();
     let out = Command::new("reg")
