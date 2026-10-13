@@ -108,17 +108,19 @@ fn connect_rustls(url: &str, insecure: bool) -> Result<(tungstenite::WebSocket<M
 
 pub fn connect_and_cache(host: &str, slot: &str, password: &str, dir: &PathBuf) -> Result<(), Gate> {
     let ver = env!("CARGO_PKG_VERSION");
-    let addr = host.trim().trim_start_matches("wss://").trim_start_matches("ws://").trim_end_matches('/');
+    let host = host.trim();
+    let force_plain = host.starts_with("ws://");
+    let addr = host.trim_start_matches("wss://").trim_start_matches("ws://").trim_end_matches('/');
     let addr = addr.replace(['\u{ff1a}', '\u{2236}'], ":");
     let local = addr.starts_with("127.") || addr.starts_with("localhost") || addr.starts_with("0.0.0.0") || addr.starts_with("[::1]");
     let addr = if addr.contains(':') { addr.to_string() } else { format!("{addr}:38281") };
-    let url = if local { format!("ws://{addr}") } else { format!("wss://{addr}") };
+    let url = if local || force_plain { format!("ws://{addr}") } else { format!("wss://{addr}") };
 
     let flags = std::fs::read_to_string(dir.join("flags.toml")).unwrap_or_default();
     let ignore = flags.lines().any(|l| l.trim() == "ignore_tls_errors = true");
     let fallback = !flags.lines().any(|l| l.trim() == "tls_fallback = false"); // on by default
 
-    let (mut socket, _) = if local {
+    let (mut socket, _) = if url.starts_with("ws://") {
         connect(&url).map_err(|e| classify(&format!("{ver} {e}")))?
     } else if ignore {
         // Pure rustls with no cert verification — never touches Schannel.

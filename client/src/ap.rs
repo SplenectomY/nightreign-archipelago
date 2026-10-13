@@ -112,6 +112,10 @@ impl ApConfig {
             .trim_start_matches("wss://")
             .to_string()
     }
+
+    fn force_plain(&self) -> bool {
+        self.host.trim_start().starts_with("ws://")
+    }
 }
 
 type Socket = WebSocket<MaybeTlsStream<TcpStream>>;
@@ -806,7 +810,7 @@ fn connect_and_handshake(
         || host.starts_with("172.30.")
         || host.starts_with("172.31.")
         || host == "::1";
-    let url = if local { format!("ws://{addr}") } else { format!("wss://{addr}") };
+    let url = if local || cfg.force_plain() { format!("ws://{addr}") } else { format!("wss://{addr}") };
     let (mut socket, _) = ws_connect(&url).map_err(|e| format!("ws handshake {url}: {e}"))?;
     tune(&mut socket, Duration::from_secs(8));
     if let Ok(Some(room)) = read_text(&mut socket) {

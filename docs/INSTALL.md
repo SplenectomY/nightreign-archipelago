@@ -14,6 +14,6 @@ The first screen only shows Don't run. More info reveals the app name and Run an
 5. Generate, host, then launch with me3. Launch connects to Archipelago first, then swaps the Seamless `.co2` save for that seed. Do not also run `nrsc_launcher.exe`.
 6. Expect `NRAP attached 0.5.0` and `NRAP AP connected`.
 
-`flags.toml` host is `host:port` with no scheme. `archipelago.gg` is connected with `wss`. Localhost stays `ws`.
+`flags.toml` host is `host:port` with no scheme by default. `archipelago.gg` is connected with `wss`; for a public custom server without TLS, enter `ws://host:port` explicitly. Localhost stays `ws`.
 
 The regulation override hides shop rows and locks Nightfarers and expeditions until a grant. Open the board only after the unlock cache is armed.

@@ -1191,6 +1191,7 @@ fn main() {
         SendMessageW(cmd, EM_SETCUEBANNER, 1, cue.as_ptr() as isize);
         let send = CreateWindowExW(0, button.as_ptr(), wide("Send").as_ptr(), WS_CHILD | WS_VISIBLE | WS_DISABLED, 660, 360, 72, 26, win, SEND, std::ptr::null_mut(), std::ptr::null_mut());
         CreateWindowExW(0, wide("STATIC").as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE | SS_ETCHEDHORZ, 12, 404, 720, 2, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
+        CreateWindowExW(0, wide("STATIC").as_ptr(), wide("Add 'ws://' before the address to bypass TLS if you're having issues connecting to custom servers").as_ptr(), WS_CHILD | WS_VISIBLE, 12, 407, 700, 16, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
         CreateWindowExW(0, wide("STATIC").as_ptr(), wide("Host").as_ptr(), WS_CHILD | WS_VISIBLE, 12, 428, 60, 20, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
         let host = CreateWindowExW(WS_EX_CLIENTEDGE, edit.as_ptr(), wide("").as_ptr(), WS_CHILD | WS_VISIBLE, 80, 424, 240, 24, win, HOST, std::ptr::null_mut(), std::ptr::null_mut());
         CreateWindowExW(0, wide("STATIC").as_ptr(), wide("Slot").as_ptr(), WS_CHILD | WS_VISIBLE, 340, 428, 40, 20, win, 0, std::ptr::null_mut(), std::ptr::null_mut());
